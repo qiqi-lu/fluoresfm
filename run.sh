@@ -1,0 +1,2 @@
+C:/Users/ASUS/miniconda3/envs/pytorch-gpu/python.exe "e:/qiqilu/Project/2024 Foundation model/code/train.py"
+C:/Users/ASUS/miniconda3/envs/pytorch-gpu/python.exe "e:/qiqilu/Project/2024 Foundation model/code/train copy 2.py"
