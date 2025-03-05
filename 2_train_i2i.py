@@ -1,4 +1,4 @@
-import torch, os, tqdm, json, pandas, datetime
+import torch, os, tqdm, json, pandas, datetime, math
 from torchinfo import summary
 from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
@@ -8,6 +8,7 @@ import numpy as np
 from models.unet import UNet
 from models.care import CARE
 from models.dfcan import DFCAN
+from models.unifmir import UniModel
 
 import utils.data as utils_data
 import utils.evaluation as utils_eva
@@ -18,7 +19,7 @@ import utils.optim as utils_optim
 # ------------------------------------------------------------------------------
 params = {
     # device
-    "device": "cuda:0",
+    "device": "cuda:1",
     "num_workers": 5,
     "random_seed": 3,
     "data_shuffle": True,
@@ -28,7 +29,8 @@ params = {
     # model parameters ---------------------------------------------------------
     "dim": 2,
     # "model_name": "care",
-    "model_name": "dfcan",
+    # "model_name": "dfcan",
+    "model_name": "unifmir",
     # loss function ------------------------------------------------------------
     # "loss": "mse",
     "loss": "mae",
@@ -46,6 +48,7 @@ params = {
     "validate_every_iter": 5000,
     # dataset ------------------------------------------------------------------
     "path_dataset_excel": "dataset_train_transformer.xlsx",
+    "data_output_type": "ii",
     "sheet_name": "64x64",
     "datasets_id": [],
     # "datasets_id": [
@@ -71,13 +74,14 @@ params = {
     # "datasets_id": ["biosr-er"],
     # "datasets_id": ["biosr-actin"],
     # "datasets_id": ["biosr-mt"],
-    # "task": ["sr"],
+    "task": ["sr"],
     "scale_factor": 1,
-    "task": ["dcv"],
+    # "task": [],
+    # "task": ["dcv"],
     # "task": ["dn"],
     # "task": ["iso"],
     # checkpoints --------------------------------------------------------------
-    "suffix": "_dcv",
+    "suffix": "_sr",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
@@ -94,6 +98,12 @@ if os.name == "posix":
     if params["saved_checkpoint"] is not None:
         params["saved_checkpoint"] = utils_data.win2linux(params["saved_checkpoint"])
 
+if params["model_name"] == "unifmir":
+    params["data_output_type"] = "ii-task"
+    params["batch_size"] = 1
+
+if not params["datasets_id"] and not params["task"]:
+    params["frac_val"] = 0.001
 
 # checkpoints save path
 path_save_model = os.path.join(
@@ -137,6 +147,11 @@ dataset_index = list(data_frame["index"])
 dataset_scale_factor_lr = list(data_frame["sf_lr"])
 dataset_scale_factor_hr = list(data_frame["sf_hr"])
 
+if params["model_name"] == "unifmir":
+    tasks = list(data_frame["task"])
+else:
+    tasks = None
+
 if params["scale_factor"] != 1:
     dataset_scale_factor_lr = [1] * len(dataset_scale_factor_lr)
     dataset_scale_factor_hr = [1] * len(dataset_scale_factor_hr)
@@ -159,7 +174,8 @@ dataset_all = utils_data.Dataset_iit(
     transform=transform,
     scale_factor_lr=dataset_scale_factor_lr,
     scale_factor_hr=dataset_scale_factor_hr,
-    output_type="ii",
+    output_type=params["data_output_type"],
+    task=tasks,
 )
 
 # create training and validation dataset
@@ -225,8 +241,35 @@ if params["model_name"] == "dfcan":
         num_groups=4,
     )
 
+if params["model_name"] == "unifmir":
+    model = UniModel(
+        in_channels=1,
+        out_channels=1,
+        tsk=0,
+        img_size=(64, 64),
+        patch_size=1,
+        embed_dim=180 // 2,
+        depths=[6, 6, 6],
+        num_heads=[6, 6, 6],
+        window_size=8,
+        mlp_ratio=2,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0,
+        attn_drop_rate=0,
+        drop_path_rate=0.1,
+        norm_layer=torch.nn.LayerNorm,
+        patch_norm=True,
+        use_checkpoint=False,
+        num_feat=32,
+        srscale=1,
+    )
+
 model.to(device=device)
-summary(model=model, input_size=(1,) + img_lr_shape)
+try:
+    summary(model=model, input_size=(1,) + img_lr_shape)
+except:
+    print("Fial to show the summary of model.")
 
 # ------------------------------------------------------------------------------
 # pre-trained model parameters
@@ -284,10 +327,16 @@ try:
 
             imgs_lr, imgs_hr = (data["lr"].to(device), data["hr"].to(device))
 
+            if params["model_name"] == "unifmir":
+                task = data["task"].to(device)
+
             with torch.autocast(
                 device_type="cuda", dtype=torch.float16, enabled=params["enable_amp"]
             ):
-                imgs_est = model(imgs_lr)
+                if params["model_name"] == "unifmir":
+                    imgs_est = model(imgs_lr, task)
+                else:
+                    imgs_est = model(imgs_lr)
 
                 if params["loss"] == "mse":
                     loss = torch.nn.MSELoss()(imgs_est, imgs_hr)
@@ -320,12 +369,13 @@ try:
                 img_true=imgs_hr, img_test=imgs_est, data_range=None
             )
 
-            pbar.set_postfix(
-                Metrics="Loss: {:>.6f}, PSNR: {:>.6f}, SSIM: {:>.6f}".format(
-                    loss.cpu().detach().numpy(), psnr, ssim
+            if i_iter % 10 == 0:
+                pbar.set_postfix(
+                    Metrics="Loss: {:>.6f}, PSNR: {:>.6f}, SSIM: {:>.6f}".format(
+                        loss.cpu().detach().numpy(), psnr, ssim
+                    )
                 )
-            )
-            pbar.update(1)
+                pbar.update(10)
 
             # ----------------------------------------------------------------------
             # update learning rate
@@ -366,15 +416,21 @@ try:
                 # convert model to evaluation model
                 model.eval()
                 # ------------------------------------------------------------------
-                running_val_ssim, running_val_psnr = 0, 0
+                running_val_ssim, running_val_psnr = [], []
                 for i_batch_val, data_val in enumerate(dataloader_validation):
                     imgs_lr_val, imgs_hr_val = (
                         data_val["lr"].to(device),
                         data_val["hr"].to(device),
                     )
 
+                    if params["model_name"] == "unifmir":
+                        task_val = data_val["task"].to(device)
+
                     with torch.no_grad():
-                        imgs_est_val = model(imgs_lr_val)
+                        if params["model_name"] == "unifmir":
+                            imgs_est_val = model(imgs_lr_val, task_val)
+                        else:
+                            imgs_est_val = model(imgs_lr_val)
 
                     # evaluation
                     # linear transform
@@ -397,23 +453,25 @@ try:
                         img_true=imgs_hr_val, img_test=imgs_est_val, data_range=None
                     )
 
-                    running_val_psnr += psnr_val
-                    running_val_ssim += ssim_val
+                    if not math.isinf(psnr_val):
+                        running_val_psnr.append(psnr_val)
+                        running_val_ssim.append(ssim_val)
 
-                    pbar_val.set_postfix(
-                        Metrics="PSNR: {:>.6f}, SSIM: {:>.6f}".format(
-                            running_val_psnr / (i_batch_val + 1),
-                            running_val_ssim / (i_batch_val + 1),
-                        )
-                    )
+                        if i_batch_val % 10 == 0:
+                            pbar_val.set_postfix(
+                                Metrics="PSNR: {:>.6f}, SSIM: {:>.6f}".format(
+                                    np.array(running_val_psnr).mean(),
+                                    np.array(running_val_ssim).mean(),
+                                )
+                            )
                     pbar_val.update(1)
 
                 if log_writer is not None:
                     log_writer.add_scalar(
-                        "psnr_val", running_val_psnr / num_batches_validation, i_iter
+                        "psnr_val", np.array(running_val_psnr).mean(), i_iter
                     )
                     log_writer.add_scalar(
-                        "ssim_val", running_val_ssim / num_batches_validation, i_iter
+                        "ssim_val", np.array(running_val_ssim).mean(), i_iter
                     )
                 # convert model to train mode
                 model.train(True)

@@ -274,10 +274,10 @@ path_results = [
     # "fmd-wf-bpae-g-avg4",
     # "fmd-wf-bpae-g-avg8",
     # "fmd-wf-bpae-g-avg16",
-    "fmd-wf-bpae-r-avg2",
-    "fmd-wf-bpae-r-avg4",
-    "fmd-wf-bpae-r-avg8",
-    "fmd-wf-bpae-r-avg16",
+    # "fmd-wf-bpae-r-avg2",
+    # "fmd-wf-bpae-r-avg4",
+    # "fmd-wf-bpae-r-avg8",
+    # "fmd-wf-bpae-r-avg16",
 ]
 
 num_nl = len(path_results)

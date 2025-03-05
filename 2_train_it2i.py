@@ -83,7 +83,7 @@ params = {
     # "suffix": "_dn_crossx",
     # "suffix": "_dcv_crossx",
     # "suffix": "_iso_crossx",
-    "suffix": "_all_crossx_test",
+    "suffix": "_all_crossx",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
@@ -92,8 +92,8 @@ params = {
     # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_sr_123_adamw_bmc_v3_crossx\epoch_0_iter_290000.pt",
     # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dn\epoch_0_iter_370000.pt",
     # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dcv\epoch_4_iter_498420.pt",
-    # "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_iso\epoch_4_iter_400000.pt",
-    "saved_checkpoint": None,
+    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_crossx\epoch_0_iter_250000.pt",
+    # "saved_checkpoint": None,
 }
 
 # ------------------------------------------------------------------------------
@@ -164,7 +164,7 @@ dataset_all = utils_data.Dataset_iit(
     transform=transform,
     scale_factor_lr=dataset_scale_factor_lr,
     scale_factor_hr=dataset_scale_factor_hr,
-    output_type="iit",
+    output_type="iit-text",
 )
 
 # create training and validation dataset
