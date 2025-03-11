@@ -4,6 +4,7 @@ import skimage.io as io
 from models.unet import UNet
 from models.care import CARE
 from models.dfcan import DFCAN
+from models.unifmir import UniModel
 
 import utils.data as utils_data
 import utils.evaluation as utils_eva
@@ -13,7 +14,7 @@ import utils.optim as utils_optim
 # parameters
 # ------------------------------------------------------------------------------
 params = {
-    "device": "cuda:0",
+    "device": "cuda:1",
     # model parameters ---------------------------------------------------------
     # "model_name": "care",
     # "suffix": "_sr",
@@ -38,14 +39,18 @@ params = {
     "model_name": "dfcan",
     # "suffix": "_biosr_sr_2",
     # "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_biosr_sr_2\epoch_7_iter_600000.pt",
-    # "suffix": "_sr_2",
-    # "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
+    "suffix": "_sr_2",
+    "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
     # "suffix": "_dcv",
     # "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dcv\epoch_16_iter_1015000.pt",
     # "suffix": "_dn",
     # "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dn\epoch_0_iter_410000.pt",
-    "suffix": "_iso",
-    "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_iso\epoch_9_iter_890000.pt",
+    # "suffix": "_iso",
+    # "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_iso\epoch_9_iter_890000.pt",
+    # --------------------------------------------------------------------------
+    # "model_name": "unifmir",
+    # "suffix": "_all",
+    # "path_model": "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_all\epoch_0_iter_2550000.pt",
     # dataset ------------------------------------------------------------------
     "dim": 2,
     "path_dataset_test": "dataset_test.xlsx",
@@ -74,18 +79,18 @@ params = {
         # "biosr-mt-sr-7",
         # "biosr-mt-sr-8",
         # "biosr-mt-sr-9",
-        # "biosr-actin-sr-1",
-        # "biosr-actin-sr-2",
-        # "biosr-actin-sr-3",
-        # "biosr-actin-sr-4",
-        # "biosr-actin-sr-5",
-        # "biosr-actin-sr-6",
-        # "biosr-actin-sr-7",
-        # "biosr-actin-sr-8",
-        # "biosr-actin-sr-9",
-        # "biosr-actin-sr-10",
-        # "biosr-actin-sr-11",
-        # "biosr-actin-sr-12",
+        "biosr-actin-sr-1",
+        "biosr-actin-sr-2",
+        "biosr-actin-sr-3",
+        "biosr-actin-sr-4",
+        "biosr-actin-sr-5",
+        "biosr-actin-sr-6",
+        "biosr-actin-sr-7",
+        "biosr-actin-sr-8",
+        "biosr-actin-sr-9",
+        "biosr-actin-sr-10",
+        "biosr-actin-sr-11",
+        "biosr-actin-sr-12",
         # "deepbacs-sim-ecoli-sr",
         # "deepbacs-sim-saureus-sr",
         # "w2s-c0-sr-1",
@@ -118,6 +123,8 @@ params = {
         # "srcaco2-tubulin-sr-8",
         # "srcaco2-tubulin-sr-4",
         # "srcaco2-tubulin-sr-2",
+        # "vmsim-mito-sr",
+        # "vmsim-er-sr",
         # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
         # "biosr-cpp-dn-2",
@@ -355,21 +362,26 @@ params = {
         # "w2s-c2-dcv-5",
         # "w2s-c2-dcv-6",
         # "w2s-c2-dcv-7",
+        # "vmsim-mito-dcv",
+        # "vmsim-er-dcv",
         # ----------------------------------------------------------------------
-        "care-drosophila-iso",
-        "care-retina0-iso",
-        "care-retina1-iso",
-        "care-liver-iso",
+        # "care-drosophila-iso",
+        # "care-retina0-iso",
+        # "care-retina1-iso",
+        # "care-liver-iso",
     ],
     "scale_factor": 1,
-    "id_sample": [0, 1, 2, 3, 4, 5, 6, 7],
+    "num_sample": 8,
+    # "num_sample": None,
     "p_low": 0.0,
     "p_high": 0.9999,
     "patch_image": True,
     # "patch_image": False,
-    "patch_size": 64,
-    "overlap": 32,
+    "patch_size": 384,
+    "overlap": 64,
     "batch_size": 64,
+    "patch_scale": True,
+    "center_crop": True,
     # output -------------------------------------------------------------------
     "path_output": "outputs\\unet_c",
 }
@@ -379,7 +391,9 @@ if params["model_name"] == "dfcan" and ("sr" in params["suffix"]):
         {
             "scale_factor": 2,
             "patch_size": 32,
-            "overlap": 16,
+            "overlap": 24,
+            "center_crop": False,
+            "patch_scale": True,
         }
     )
 
@@ -425,6 +439,30 @@ if params["model_name"] == "dfcan":
         num_groups=4,
     )
 
+if params["model_name"] == "unifmir":
+    model = UniModel(
+        in_channels=1,
+        out_channels=1,
+        tsk=0,
+        img_size=(64, 64),
+        patch_size=1,
+        embed_dim=180 // 2,
+        depths=[6, 6, 6],
+        num_heads=[6, 6, 6],
+        window_size=8,
+        mlp_ratio=2,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0,
+        attn_drop_rate=0,
+        drop_path_rate=0.1,
+        norm_layer=torch.nn.LayerNorm,
+        patch_norm=True,
+        use_checkpoint=False,
+        num_feat=32,
+        srscale=1,
+    )
+
 model = model.to(device)
 # normalization
 normalizer = utils_data.NormalizePercentile(
@@ -460,20 +498,32 @@ for i_dataset in range(num_datasets):
     )
     utils_data.make_path(path_results)
 
-    path_sample = utils_data.read_txt(path_txt=ds["path_index"])
-    num_sample = len(path_sample)
-
-    print("- Number of test data:", len(params["id_sample"]), "/", num_sample)
-
-    if params["id_sample"]:
-        idxs = params["id_sample"]
-        if len(idxs) > num_sample:
-            idxs = range(num_sample)
+    # check task
+    task = 1
+    if ds["task"] == "sr":
+        task = 1
+    elif ds["task"] == "dn":
+        task = 2
+    elif ds["task"] == "iso":
+        task = 3
+    elif ds["task"] == "dcv":
+        task = 4
     else:
-        idxs = range(num_sample)
-    print(idxs)
+        raise ValueError("Unsupported Task.")
+    task = torch.tensor(task, device=device)
 
-    for i_sample in idxs:
+    path_sample = utils_data.read_txt(path_txt=ds["path_index"])
+
+    num_sample = len(path_sample)
+    if params["num_sample"] is not None:
+        if params["num_sample"] > num_sample:
+            params["num_sample"] = num_sample
+    else:
+        params["num_sample"] = num_sample
+
+    print("- Number of test data:", params["num_sample"], "/", num_sample)
+
+    for i_sample in range(params["num_sample"]):
         sample_filename = path_sample[i_sample]
         print(f"- File Name: {sample_filename}")
 
@@ -511,20 +561,7 @@ for i_dataset in range(num_datasets):
         # prediction -----------------------------------------------------------
         bs = params["batch_size"]
         with torch.no_grad():
-            if not params["patch_image"]:
-                input_shape = img_lr.shape
-                # padding for care model, which is a unet model requires specific image size
-                if params["model_name"] == "care":
-                    if input_shape[-1] % 4 > 0:
-                        pad_size = 4 - input_shape[-1] % 4
-                        img_lr = torch.nn.functional.pad(
-                            img_lr, pad=(0, pad_size, 0, pad_size), mode="reflect"
-                        )
-                img_est = model(img_lr)
-                if params["model_name"] == "care":
-                    if input_shape[-1] % 4 > 0:
-                        img_est = img_est[:, :, : input_shape[-2], : input_shape[-1]]
-            else:
+            if params["patch_image"] and params["patch_size"] < img_lr.shape[-1]:
                 # patching image
                 img_lr_patches = utils_data.unfold(
                     img=img_lr,
@@ -535,17 +572,23 @@ for i_dataset in range(num_datasets):
                 num_patches = img_lr_patches.shape[0]
                 num_iter = math.ceil(num_patches / bs)
 
-                pbar = tqdm.tqdm(desc="Predicting ...", total=num_iter, ncols=100)
-
+                # --------------------------------------------------------------
+                pbar = tqdm.tqdm(desc="PREDICT", total=num_iter, ncols=100)
                 img_est_patches = []
                 for i_iter in range(num_iter):
-                    img_est_patch = model(
-                        img_lr_patches[i_iter * bs : bs + i_iter * bs]
-                    )
+                    if params["model_name"] == "unifmir":
+                        img_est_patch = model(
+                            img_lr_patches[i_iter * bs : bs + i_iter * bs], task
+                        )
+                    else:
+                        img_est_patch = model(
+                            img_lr_patches[i_iter * bs : bs + i_iter * bs]
+                        )
                     img_est_patches.append(img_est_patch)
                     pbar.update(1)
                 pbar.close()
                 img_est_patches = torch.cat(img_est_patches, dim=0)
+                # --------------------------------------------------------------
 
                 # fold the patches
                 img_est = utils_data.fold_scale(
@@ -557,9 +600,29 @@ for i_dataset in range(num_datasets):
                         img_lr.shape[3] * params["scale_factor"],
                     ),
                     overlap=params["overlap"] * params["scale_factor"],
-                    crop_center=True,
-                    enable_scale=False,
+                    crop_center=params["center_crop"],
+                    enable_scale=params["patch_scale"],
                 )
+            else:
+                input_shape = img_lr.shape
+                # padding for care model, which is a unet model requires
+                # specific image size
+                if params["model_name"] == "care":
+                    if input_shape[-1] % 4 > 0:
+                        pad_size = 4 - input_shape[-1] % 4
+                        img_lr = torch.nn.functional.pad(
+                            img_lr, pad=(0, pad_size, 0, pad_size), mode="reflect"
+                        )
+                # --------------------------------------------------------------
+                if params["model_name"] == "unifmir":
+                    img_est = model(img_lr, task)
+                else:
+                    img_est = model(img_lr)
+                # --------------------------------------------------------------
+
+                if params["model_name"] == "care":
+                    if input_shape[-1] % 4 > 0:
+                        img_est = img_est[:, :, : input_shape[-2], : input_shape[-1]]
 
         img_est = torch.clip(img_est, min=0.0)
 
