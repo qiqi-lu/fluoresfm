@@ -57,6 +57,17 @@ def SSIM(
 ):
     """
     Structrual similarity index.
+
+    ### Parameters:
+    - `img_true`: ground truth image.
+    - `img_test`: test image.
+    - `data_range`: the dynamic range of the images.
+    - `multichannel`: whether the image is multi-channel.
+    - `channle_axis`: the axis of the channel.
+    - `version_wang`: whether to use the Wang et al. version of SSIM.
+
+    ### Returns:
+    - `ssim`: structural similarity index.
     """
     if data_range == None:
         data_range = img_true.max() - img_true.min()
@@ -88,7 +99,17 @@ def SSIM(
 
 def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
     """
-    SSIM for a batch of np tensor, input should be [B, C, [depth], H, W].
+    SSIM for a batch of tensor.
+    Support 3d and 2d single/multi-channel images.
+
+    ### Parameters:
+    - `img_true`: ground truth image. [B, C, [depth], H, W]
+    - `img_test`: test image. [B, C, [depth], H, W]
+    - `data_range`: the dynamic range of the images. default is None.
+    - `version_wang`: whether to use the Wang et al. version of SSIM. default is False.
+
+    ### Returns:
+    - `ssim`: structural similarity index.
     """
     # tensor to numpy array
     img_true = tensor_to_array(img_true)
@@ -96,12 +117,13 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
 
     ssims = []
 
-    for i in range(img_true.shape[0]):
-        x, y = img_test[i], img_true[i]
+    for i_sample in range(img_true.shape[0]):  # loop through each sample
+        x, y = img_test[i_sample], img_true[i_sample]
 
-        if len(y.shape) == 4:
-            if y.shape[0] == 1:  # one channel
+        if len(y.shape) == 4:  # 3D image
+            if y.shape[0] == 1:  # one channel 3D image
                 if y.shape[1] >= 7:
+                    # SSIM only supports 3D images with more than 7 slices.
                     ssims.append(
                         SSIM(
                             img_true=y[0],
@@ -113,12 +135,14 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
                         )
                     )
                 else:
+                    # if the image is 3D but with less than 7 slices,
+                    # calculate SSIM for each slice. And take the mean.
                     tmp = []
-                    for j in range(y.shape[1]):
+                    for i_slice in range(y.shape[1]):  # loop through each slice
                         tmp.append(
                             SSIM(
-                                img_true=y[0][j],
-                                img_test=x[0][j],
+                                img_true=y[0][i_slice],
+                                img_test=x[0][i_slice],
                                 data_range=data_range,
                                 multichannel=False,
                                 channle_axis=None,
@@ -126,8 +150,8 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
                             )
                         )
                     ssims.append(np.mean(tmp))
-            else:  # multi-channel
-                if y.shape[1] > 7:
+            else:  # multi-channel 3D image
+                if y.shape[1] > 7:  # multi-channel 3D image with more than 7 slices.
                     ssims.append(
                         SSIM(
                             img_true=y,
@@ -139,12 +163,14 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
                         )
                     )
                 else:
+                    # if the image is 3D but with less than 7 slices,
+                    # calculate SSIM for each sclice. And take the mean.
                     tmp = []
-                    for j in range(y.shape[1]):
+                    for i_slice in range(y.shape[1]):
                         tmp.append(
                             SSIM(
-                                img_true=y[:, j, ...],
-                                img_test=x[:, j, ...],
+                                img_true=y[:, i_slice, ...],
+                                img_test=x[:, i_slice, ...],
                                 data_range=data_range,
                                 multichannel=True,
                                 channle_axis=0,
@@ -155,16 +181,7 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
 
         if len(y.shape) == 3:  # 2D
             if y.shape[0] == 1:  # single-channel
-                ssims.append(
-                    SSIM(
-                        img_true=y[0],
-                        img_test=x[0],
-                        data_range=data_range,
-                        multichannel=False,
-                        channle_axis=None,
-                        version_wang=False,
-                    )
-                )
+                ssims.append(SSIM(img_true=y[0], img_test=x[0], data_range=data_range))
             else:  # mutli-channel
                 ssims.append(
                     SSIM(
@@ -183,6 +200,14 @@ def SSIM_tb(img_true, img_test, data_range=None, version_wang=False):
 def PSNR(img_true, img_test, data_range=None):
     """
     Peak signal-to-noise ratio.
+
+    ### Args:
+    - `img_true`: ground truth image.
+    - `img_test`: test image.
+    - `data_range`: the dynamic range of the images.
+
+    ### Returns:
+    - `psnr`: peak signal-to-noise ratio.
     """
     if data_range == None:
         data_range = img_true.max() - img_true.min()
@@ -247,6 +272,13 @@ def NRMSE(img_true, img_test):
 def ZNCC(img_true, img_test):
     """
     Zero-Normalized Cross-Correlation.
+
+    ### Parameters:
+    - `img_true`: ground truth image.
+    - `img_test`: test image.
+
+    ### Returns
+    - `zncc`: zero-normalized cross-correlation.
     """
     if len(img_true.shape) == 5:  # 3d
         axis = (2, 3, 4)
@@ -287,25 +319,40 @@ def intensity_balance(img_true, img_test, axis=None):
 
 
 def linear_transform(img_true, img_test, axis=None):
+    """
+    Linear transform.
+
+    ### Args
+    - `img_true`: ground truth image.
+    - `img_test`: test image.
+    - `axis`: axis to calculate the linear transform.
+
+    ### Returns
+    - `img_test_transform`: linear-transformed test image.
+    """
     # tensor to numpy array
-    img_true = tensor_to_array(img_true)
-    img_test = tensor_to_array(img_test)
-    img_true = img_true.astype(np.float32)
-    img_test = img_test.astype(np.float32)
+    img_true = tensor_to_array(img_true).astype(np.float32)
+    img_test = tensor_to_array(img_test).astype(np.float32)
 
     if axis is None:
         keepdims = False
     else:
         keepdims = True
 
+    # calculate mean and std
     mean_true = np.mean(img_true, axis=axis, keepdims=keepdims)
     mean_test = np.mean(img_test, axis=axis, keepdims=keepdims)
 
+    # calculate slope and intercept
     b = np.mean(
-        (img_test - mean_test) * (img_true - mean_true), axis=axis, keepdims=keepdims
+        (img_test - mean_test) * (img_true - mean_true),
+        axis=axis,
+        keepdims=keepdims,
     ) / np.mean(np.square(img_test - mean_test), axis=axis, keepdims=keepdims)
 
     a = mean_true - b * mean_test
 
+    # linear transform
     img_test_transform = a + b * img_test
+
     return img_test_transform

@@ -1,11 +1,14 @@
+"""
+Calculate the metrics of each image in each dataset.
+Saved into a excel file.
+Each row is a dataset, each column is a methods, each sheet is a metric.
+"""
+
+import os, pandas
 import numpy as np
-import skimage.io as io
-import matplotlib.pyplot as plt
-import os
+from skimage.measure import profile_line
 import utils.data as utils_data
 import utils.evaluation as eva
-from skimage.measure import profile_line
-import pandas
 
 # ------------------------------------------------------------------------------
 # parameters
@@ -36,7 +39,7 @@ params = {
         # "biosr-mt-sr-7",
         # "biosr-mt-sr-8",
         # "biosr-mt-sr-9",
-        "biosr-actin-sr-1",
+        # "biosr-actin-sr-1",
         # "biosr-actin-sr-2",
         # "biosr-actin-sr-3",
         # "biosr-actin-sr-4",
@@ -80,9 +83,7 @@ params = {
         # "srcaco2-tubulin-sr-8",
         # "srcaco2-tubulin-sr-4",
         # "srcaco2-tubulin-sr-2",
-        # "vmsim-mito-sr",
-        # "vmsim-er-sr",
-        # ----------------------------------------------------------------------
+        # # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
         # "biosr-cpp-dn-2",
         # "biosr-cpp-dn-3",
@@ -319,17 +320,89 @@ params = {
         # "w2s-c2-dcv-5",
         # "w2s-c2-dcv-6",
         # "w2s-c2-dcv-7",
-        # "vmsim-mito-dcv",
-        # "vmsim-er-dcv",
-        # ----------------------------------------------------------------------
+        # # --------------------------------------------------------------------
         # "care-drosophila-iso",
         # "care-retina0-iso",
         # "care-retina1-iso",
         # "care-liver-iso",
+        # # --------------------------------------------------------------------
+        # "sim-actin-3d-dcv",
+        # "sim-actin-2d-patch-dcv",
+        # "sim-microtubule-3d-dcv",
+        # "sim-microtubule-2d-patch-dcv",
+        # "bpae-dcv",
+        # "vmsim3-mito-dcv",
+        # "vmsim3-er-dcv",
+        # "vmsim5-mito-dcv",
+        # "vmsim488-bead-patch-dcv",
+        # "vmsim568-bead-patch-dcv",
+        # "vmsim647-bead-patch-dcv",
+        "rcan3d-c2s-mt-dcv",
+        "rcan3d-c2s-npc-dcv",
+        # "biotisr-ccp-dcv-1",
+        # "biotisr-ccp-dcv-2",
+        # "biotisr-ccp-dcv-3",
+        # "biotisr-factin-dcv-1",
+        # "biotisr-factin-dcv-2",
+        # "biotisr-factin-dcv-3",
+        # "biotisr-factin-nonlinear-dcv-1",
+        # "biotisr-factin-nonlinear-dcv-2",
+        # "biotisr-factin-nonlinear-dcv-3",
+        # "biotisr-lysosome-dcv-1",
+        # "biotisr-lysosome-dcv-2",
+        # "biotisr-lysosome-dcv-3",
+        # "biotisr-mt-dcv-1",
+        # "biotisr-mt-dcv-2",
+        # "biotisr-mt-dcv-3",
+        # "biotisr-mito-dcv-1",
+        # "biotisr-mito-dcv-2",
+        # "biotisr-mito-dcv-3",
+        # --------------------------------------------------------------------------
+        # "bpae-dn",
+        "rcan3d-dn-actin-dn",
+        "rcan3d-dn-er-dn",
+        "rcan3d-dn-golgi-dn",
+        "rcan3d-dn-lysosome-dn",
+        "rcan3d-dn-mixtrixmito-dn",
+        "rcan3d-dn-mt-dn",
+        "rcan3d-dn-tomm20mito-dn",
+        # "biotisr-ccp-dn-1",
+        # "biotisr-ccp-dn-2",
+        # "biotisr-factin-dn-1",
+        # "biotisr-factin-dn-2",
+        # "biotisr-factin-nonlinear-dn-1",
+        # "biotisr-factin-nonlinear-dn-2",
+        # "biotisr-lysosome-dn-1",
+        # "biotisr-lysosome-dn-2",
+        # "biotisr-mt-dn-1",
+        # "biotisr-mt-dn-2",
+        # "biotisr-mito-dn-1",
+        # "biotisr-mito-dn-2",
+        # # # --------------------------------------------------------------------------
+        # "vmsim3-mito-sr",
+        # "vmsim3-er-sr",
+        # "vmsim5-mito-sr",
+        # "biotisr-ccp-sr-1",
+        # "biotisr-ccp-sr-2",
+        # "biotisr-ccp-sr-3",
+        # "biotisr-factin-sr-1",
+        # "biotisr-factin-sr-2",
+        # "biotisr-factin-sr-3",
+        # "biotisr-factin-nonlinear-sr-1",
+        # "biotisr-factin-nonlinear-sr-2",
+        # "biotisr-factin-nonlinear-sr-3",
+        # "biotisr-lysosome-sr-1",
+        # "biotisr-lysosome-sr-2",
+        # "biotisr-lysosome-sr-3",
+        # "biotisr-mt-sr-1",
+        # "biotisr-mt-sr-2",
+        # "biotisr-mt-sr-3",
+        # "biotisr-mito-sr-1",
+        # "biotisr-mito-sr-2",
+        # "biotisr-mito-sr-3",
     ],
     "num_sample": 8,
     # "num_sample": None,
-    "index_show": 2,
     "path_dataset_test": "dataset_test.xlsx",
     "path_results": "outputs\\unet_c",
     "path_figure": "outputs\\figures\\imgtext",
@@ -354,8 +427,8 @@ params = {
         # ("UNet-uc:dn", "unet_sd_c_dn_crossx"),
         # ("UNet-c:dn", "unet_sd_c_dn"),
         # ----------------------------------------------------------------------
-        ("CARE:sr", "care_sr"),
-        ("DFCAN:sr-2", "dfcan_sr_2"),
+        # ("CARE:sr", "care_sr"),
+        # ("DFCAN:sr-2", "dfcan_sr_2"),
         # ("UNet-uc:sr", "unet_sd_c_sr_crossx"),
         # ("UNet-c:sr", "unet_sd_c_sr"),
         # ----------------------------------------------------------------------
@@ -364,49 +437,70 @@ params = {
         # ("UNet-uc:iso", "unet_sd_c_iso_crossx"),
         # ("UNet-c:iso", "unet_sd_c_iso"),
         # ----------------------------------------------------------------------
-        ("UniFMIR:all", "unifmir_all"),
+        # ("UniFMIR:all", "unifmir_all"),
         ("UNet-uc:all", "unet_sd_c_all_cross"),
-        ("UNet-c:all", "unet_sd_c_all"),
+        # ("UNet-c:all", "unet_sd_c_all"),
+        # ("UNet-c:all-clean", "unet_sd_c_all_clean"),
+        ("UNet-uc:all-newnorm", "unet_sd_c_all_crossx_newnorm"),
+        # ("UNet-c:all-newnorm", "unet_sd_c_all_newnorm"),
+        # ("UNet-c:all-TSpixel", "unet_sd_c_all_TSpixel"),
+        # ("UNet-c:all-newnorm-TS", "unet_sd_c_all_newnorm_TS"),
+        # ("UNet-c:all-newnorm_TSmicro", "unet_sd_c_all_newnorm_TSmicro"),
     ),
-    "p_low": 0.0,
-    "p_high": 0.9999,
+    "p_low": 0.001,
+    "p_high": 0.999,
 }
 
-# ------------------------------------------------------------------------------
-if os.name == "posix":
-    params["path_results"] = utils_data.win2linux(params["path_results"])
-    params["path_figure"] = utils_data.win2linux(params["path_figure"])
-
-titles = [i[0] for i in params["methods"]]
-methods = [i[1] for i in params["methods"]]
-
-# ------------------------------------------------------------------------------
-data_frame = pandas.read_excel(params["path_dataset_test"])
 normalizer = utils_data.NormalizePercentile(
     p_low=params["p_low"], p_high=params["p_high"]
 )
 
 # ------------------------------------------------------------------------------
+# convert win path to linux path
+if os.name == "posix":
+    params["path_results"] = utils_data.win2linux(params["path_results"])
+    params["path_figure"] = utils_data.win2linux(params["path_figure"])
+
+titles = [i[0] for i in params["methods"]]  # table title
+methods = [i[1] for i in params["methods"]]
+
+# ------------------------------------------------------------------------------
+data_frame = pandas.read_excel(params["path_dataset_test"])
+
 for id_dataset in params["dataset_names"]:
     print("-" * 80)
-    print("- Datasset:", id_dataset)
+    print("Datasset:", id_dataset)
 
-    ds = data_frame[data_frame["id"] == id_dataset]
-    if ds["path_hr"].iloc[0] == "Unknown":
+    # get the information of current dataset
+    ds = data_frame[data_frame["id"] == id_dataset].iloc[0]
+
+    # check if the dataset has ground truth
+    if ds["path_hr"] == "Unknown":
         print("The ground truth is inexistent.")
         continue
-    # read file names of test images
-    sample_filenames = utils_data.read_txt(ds["path_index"].iloc[0])
-    path_results = os.path.join(params["path_results"], ds["id"].iloc[0])
+
+    # read filenames of test images
+    sample_filenames = utils_data.read_txt(ds["path_index"])
+
+    # get the dataset group (internal_dataset/external_dataset)
+    if ds["in#ex"] == "in":
+        dataset_group = "internal_dataset"
+    elif ds["in#ex"] == "ex":
+        dataset_group = "external_dataset"
+    else:
+        raise ValueError(f"Unknown dataset group: {ds['in#ex']}")
+
+    path_results = os.path.join(params["path_results"], dataset_group, ds["id"])
 
     # set the number of samples used for test
     if params["num_sample"] is not None:
         if params["num_sample"] > len(sample_filenames):
-            params["num_sample"] = len(sample_filenames)
+            num_sample_analysis = len(sample_filenames)
+        else:
+            num_sample_analysis = params["num_sample"]
     else:
-        params["num_sample"] = len(sample_filenames)
-    num_sample_analysis = params["num_sample"]
-    print(f"- Number of test samples: {num_sample_analysis}/{len(sample_filenames)}")
+        num_sample_analysis = len(sample_filenames)
+    print(f"Number of test samples: {num_sample_analysis}/{len(sample_filenames)}")
 
     # check the existence of metrics file
     path_metrics_file = os.path.join(path_results, f"metrics.xlsx")
@@ -427,63 +521,59 @@ for id_dataset in params["dataset_names"]:
     # --------------------------------------------------------------------------
     with pandas.ExcelWriter(path_metrics_file, engine="xlsxwriter") as writer:
         imgs_gt, imgs_est, metrics = [], [], []
-        for i_sample in range(params["num_sample"]):
-            print(f"load results of {sample_filenames[i_sample]} ...")
+        for i_sample in range(num_sample_analysis):
+            sample_name = sample_filenames[i_sample]
+            print(f"load results of {sample_name} ...")
+            img_est_multi_meth = []  # collect estimated images
 
-            # ----------------------------------------------------------------------
-            # load ground truth image and apply normalization
-            path_gt = os.path.join(ds["path_hr"].iloc[0], sample_filenames[i_sample])
-            img_gt = utils_data.read_image(path_gt)
-            img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"].iloc[0])
-            img_gt = normalizer(img_gt)[0]
+            # ------------------------------------------------------------------
+            # get ground truth image and apply normalization
+            img_gt = utils_data.read_image(os.path.join(ds["path_hr"], sample_name))
+            img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"])[0]
+            img_gt = normalizer(img_gt)
             imgs_gt.append(img_gt)
 
-            # ----------------------------------------------------------------------
-            img_est_multi_meth = []  # collect estimated images
-            # ----------------------------------------------------------------------
-            # load raw image and apply normalization
-            img_raw = utils_data.read_image(
-                os.path.join(ds["path_lr"].iloc[0], sample_filenames[i_sample])
-            )
-            img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"].iloc[0])
-            img_raw = normalizer(img_raw)[0]
-            # linear transform
+            # ------------------------------------------------------------------
+            # get raw image and apply normalization
+            img_raw = utils_data.read_image(os.path.join(ds["path_lr"], sample_name))
+            img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"])[0]
             img_raw = eva.linear_transform(img_true=img_gt, img_test=img_raw)
 
             img_est_multi_meth.append(img_raw)
 
-            # ----------------------------------------------------------------------
-            # images form different methods
+            # ------------------------------------------------------------------
+            # get estimated images form different methods
             for meth in methods:
-                tmp = utils_data.read_image(
-                    os.path.join(path_results, meth, sample_filenames[i_sample])
+                img_tmp = utils_data.read_image(
+                    os.path.join(path_results, meth, sample_name)
                 )
-                tmp = eva.linear_transform(img_true=img_gt, img_test=tmp)[0]
-                img_est_multi_meth.append(tmp)
+                img_tmp = eva.linear_transform(img_true=img_gt, img_test=img_tmp)[0]
+                img_est_multi_meth.append(img_tmp)
 
             imgs_est.append(img_est_multi_meth)
 
-            # ----------------------------------------------------------------------
-            # evaluate all results
+            # ------------------------------------------------------------------
+            # evaluate all the images
             metrics_multi_meth = []
             for img in img_est_multi_meth:
                 m = []
-                psnr = eva.PSNR(img_true=img_gt, img_test=img, data_range=None)
-                ssim = eva.SSIM(
-                    img_true=img_gt, img_test=img, data_range=None, version_wang=False
-                )
+                psnr = eva.PSNR(img_true=img_gt, img_test=img)
+                ssim = eva.SSIM(img_true=img_gt, img_test=img)
                 zncc = eva.ZNCC(img_true=img_gt, img_test=img)
                 m.extend([psnr, ssim, zncc])
-                metrics_multi_meth.append(m)
-            metrics.append(metrics_multi_meth)
+                metrics_multi_meth.append(m)  # (num_meth, 3)
+            metrics.append(metrics_multi_meth)  # (num_sample, num_meth, 3)
 
-        metrics = np.array(metrics)  # (N_sample, N_method, N_metrics)
+        metrics = np.array(metrics)  # (num_sample, num_meth, 3)
+
         # --------------------------------------------------------------------------
         all_titles = ["raw"] + titles
         for i_df, df in enumerate([df_psnr, df_ssim, df_zncc]):
             for i_title, title in enumerate(all_titles):
+                # if current method is not in the dataframe, add it at the last column
                 if title not in list(df.columns):
                     df.insert(df.shape[-1], title, value="")
+                # insert the metrics of current method into the dataframe
                 df[title] = metrics[:, i_title, i_df]
 
         # --------------------------------------------------------------------------

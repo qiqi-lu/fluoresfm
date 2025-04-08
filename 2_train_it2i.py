@@ -1,8 +1,12 @@
+"""
+MODEL TRAINING
+- (2D image, text) to (image,)
+"""
+
 import torch, os, tqdm, json, pandas, datetime
 from torchinfo import summary
 from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import v2
 import numpy as np
 
 from models.unet_sd_c import UNetModel
@@ -18,7 +22,7 @@ import utils.loss_functions as utils_loss
 # ------------------------------------------------------------------------------
 params = {
     # device
-    "device": "cuda:1",
+    "device": "cuda:0",
     "random_seed": 7,
     "data_shuffle": True,
     "num_workers": 3,
@@ -40,8 +44,8 @@ params = {
     "channel_multipliers": [1, 2, 4, 4],
     "n_heads": 8,
     "tf_layers": 1,
-    # "d_cond": 768,
-    "d_cond": None,
+    "d_cond": 768,
+    # "d_cond": None,
     "pixel_shuffle": False,
     "scale_factor": 4,
     # loss function ------------------------------------------------------------
@@ -77,23 +81,31 @@ params = {
     # "task": ["dn"],
     # "task": ["dcv"],
     # "task": ["iso"],
-    "path_dataset_text": "dataset_text",
+    # "path_dataset_text": "text\dataset_text",
+    "path_dataset_text": "text\dataset_text_TSpixel_77",
+    # "path_dataset_text": "text\dataset_text_TSmicro_77",
+    # "path_dataset_text": "text\dataset_text_TS_77",
+    # "use_clean_data": True,
+    "use_clean_data": False,
     # checkpoints --------------------------------------------------------------
     # "suffix": "_biosr_sr",
     # "suffix": "_dn_crossx",
     # "suffix": "_dcv_crossx",
     # "suffix": "_iso_crossx",
-    "suffix": "_all_crossx",
+    # "suffix": "_all",
+    # "suffix": "_all_crossx",
+    # "suffix": "_all_clean_crossx",
+    # "suffix": "_all_TSpixel",
+    # "suffix": "_all_newnorm",
+    # "suffix": "_all_newnorm_TSmicro",
+    "suffix": "_all_newnorm_TSpixel",
+    # "suffix": "_all_newnorm_TS",
+    # "suffix": "_all_newnorm_crossx",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
-    # saved model --------------------------------------------------------
-    # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_123_adamw_bmc_v3_single256\epoch_0_iter_405000.pt",
-    # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_sr_123_adamw_bmc_v3_crossx\epoch_0_iter_290000.pt",
-    # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dn\epoch_0_iter_370000.pt",
-    # "saved_checkpoint": "E:\qiqilu\Project\\2024 Foundation model\code\checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dcv\epoch_4_iter_498420.pt",
-    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_crossx\epoch_0_iter_250000.pt",
-    # "saved_checkpoint": None,
+    # saved model --------------------------------------------------------------
+    "saved_checkpoint": None,
 }
 
 # ------------------------------------------------------------------------------
@@ -164,7 +176,8 @@ dataset_all = utils_data.Dataset_iit(
     transform=transform,
     scale_factor_lr=dataset_scale_factor_lr,
     scale_factor_hr=dataset_scale_factor_hr,
-    output_type="iit-text",
+    output_type="ii-text",
+    use_clean_data=params["use_clean_data"],
 )
 
 # create training and validation dataset
@@ -301,10 +314,11 @@ try:
             ncols=120,
         )
 
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         for i_batch, data in enumerate(dataloader_train):
             i_iter = i_batch + i_epoch * num_batches_train + start_iter
             pbar.update(1)
+            # skip
             # if i_iter < start_iter:
             #     continue
 
@@ -342,7 +356,7 @@ try:
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
-            # ----------------------------------------------------------------------
+            # ------------------------------------------------------------------
             # evaluation
             if params["dim"] == 3:
                 imgs_est = utils_eva.linear_transform(
@@ -367,11 +381,11 @@ try:
                 )
             )
 
-            # ----------------------------------------------------------------------
+            # ------------------------------------------------------------------
             # update learning rate
             LR_schedule.update(i_iter=i_iter)
 
-            # ----------------------------------------------------------------------
+            # ------------------------------------------------------------------
             # log
             if i_iter % params["plot_every_iter"] == 0:
                 if log_writer is not None:
@@ -392,7 +406,7 @@ try:
                     os.path.join(path_save_model, f"epoch_{i_epoch}_iter_{i_iter}.pt"),
                 )
 
-            # ----------------------------------------------------------------------
+            # ------------------------------------------------------------------
             # validation
             if (i_iter % params["validate_every_iter"] == 0) and (
                 params["enable_validation"] == True
@@ -405,7 +419,7 @@ try:
                 )
                 # convert model to evaluation model
                 model.eval()
-                # ------------------------------------------------------------------
+                # --------------------------------------------------------------
                 running_val_ssim, running_val_psnr = 0, 0
                 for i_batch_val, data_val in enumerate(dataloader_validation):
 
@@ -476,9 +490,9 @@ try:
                 pbar_val.close()
         pbar.close()
 
-    # ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # save and finish
-    # ------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     print("\nsave model (epoch: {}, iter: {})".format(i_epoch, i_iter))
 
     # saving general checkpoint
@@ -493,7 +507,7 @@ try:
     print("Training done.")
 
 except KeyboardInterrupt:
-    print("training stop, saving model ...")
+    print("\ntraining stop, saving model ...")
     print("\nsave model (epoch: {}, iter: {})".format(i_epoch, i_iter))
 
     # saving general checkpoint

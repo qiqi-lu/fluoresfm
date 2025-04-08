@@ -1,6 +1,13 @@
 import torch
 
 
+def mae_mse(x, y, scale=(0.5, 0.5)):
+    mae = torch.nn.L1Loss()(x, y)
+    mse = torch.nn.MSELoss()(x, y)
+    loss = scale[0] * mae + scale[1] * mse
+    return loss
+
+
 def ZNCC(x, y, mean_one=False):
     if len(x.shape) == 5:  # 3d
         dims = (2, 3, 4)

@@ -36,11 +36,11 @@ params = {
     # "suffix": "_iso",
     # "path_model": "checkpoints\conditional\care_mae_bs_4_lr_0.0001_iso\epoch_11_iter_1170000.pt",
     # --------------------------------------------------------------------------
-    "model_name": "dfcan",
+    # "model_name": "dfcan",
     # "suffix": "_biosr_sr_2",
     # "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_biosr_sr_2\epoch_7_iter_600000.pt",
-    "suffix": "_sr_2",
-    "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
+    # "suffix": "_sr_2",
+    # "path_model": "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
     # "suffix": "_dcv",
     # "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dcv\epoch_16_iter_1015000.pt",
     # "suffix": "_dn",
@@ -48,9 +48,9 @@ params = {
     # "suffix": "_iso",
     # "path_model": "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_iso\epoch_9_iter_890000.pt",
     # --------------------------------------------------------------------------
-    # "model_name": "unifmir",
-    # "suffix": "_all",
-    # "path_model": "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_all\epoch_0_iter_2550000.pt",
+    "model_name": "unifmir",
+    "suffix": "_all",
+    "path_model": "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_all\epoch_0_iter_2550000.pt",
     # dataset ------------------------------------------------------------------
     "dim": 2,
     "path_dataset_test": "dataset_test.xlsx",
@@ -79,18 +79,18 @@ params = {
         # "biosr-mt-sr-7",
         # "biosr-mt-sr-8",
         # "biosr-mt-sr-9",
-        "biosr-actin-sr-1",
-        "biosr-actin-sr-2",
-        "biosr-actin-sr-3",
-        "biosr-actin-sr-4",
-        "biosr-actin-sr-5",
-        "biosr-actin-sr-6",
-        "biosr-actin-sr-7",
-        "biosr-actin-sr-8",
-        "biosr-actin-sr-9",
-        "biosr-actin-sr-10",
-        "biosr-actin-sr-11",
-        "biosr-actin-sr-12",
+        # "biosr-actin-sr-1",
+        # "biosr-actin-sr-2",
+        # "biosr-actin-sr-3",
+        # "biosr-actin-sr-4",
+        # "biosr-actin-sr-5",
+        # "biosr-actin-sr-6",
+        # "biosr-actin-sr-7",
+        # "biosr-actin-sr-8",
+        # "biosr-actin-sr-9",
+        # "biosr-actin-sr-10",
+        # "biosr-actin-sr-11",
+        # "biosr-actin-sr-12",
         # "deepbacs-sim-ecoli-sr",
         # "deepbacs-sim-saureus-sr",
         # "w2s-c0-sr-1",
@@ -125,7 +125,7 @@ params = {
         # "srcaco2-tubulin-sr-2",
         # "vmsim-mito-sr",
         # "vmsim-er-sr",
-        # ----------------------------------------------------------------------
+        # # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
         # "biosr-cpp-dn-2",
         # "biosr-cpp-dn-3",
@@ -364,7 +364,7 @@ params = {
         # "w2s-c2-dcv-7",
         # "vmsim-mito-dcv",
         # "vmsim-er-dcv",
-        # ----------------------------------------------------------------------
+        # # ----------------------------------------------------------------------
         # "care-drosophila-iso",
         # "care-retina0-iso",
         # "care-retina1-iso",
@@ -403,8 +403,6 @@ if os.name == "posix":
 
 # ------------------------------------------------------------------------------
 datasets_frame = pandas.read_excel(params["path_dataset_test"])
-dataset_info = datasets_frame[datasets_frame["id"].isin(params["id_dataset"])]
-num_datasets = dataset_info.shape[0]
 
 utils_data.print_dict(params)
 device = torch.device(params["device"])
@@ -488,9 +486,15 @@ model.eval()
 # ------------------------------------------------------------------------------
 # predict
 # ------------------------------------------------------------------------------
-for i_dataset in range(num_datasets):
-    ds = dataset_info.iloc[i_dataset]
-    print(ds["id"])
+for id_dataset in params["id_dataset"]:
+    print("-" * 80)
+    # load dataset information
+    try:
+        ds = datasets_frame[datasets_frame["id"] == id_dataset].iloc[0]
+        print(ds["id"])
+    except:
+        print(id_dataset, "Not Exist!")
+        continue
 
     # save retuls to
     path_results = os.path.join(
@@ -512,18 +516,19 @@ for i_dataset in range(num_datasets):
         raise ValueError("Unsupported Task.")
     task = torch.tensor(task, device=device)
 
+    # load sample names in current dataset
     path_sample = utils_data.read_txt(path_txt=ds["path_index"])
-
-    num_sample = len(path_sample)
+    num_sample_total = len(path_sample)
     if params["num_sample"] is not None:
-        if params["num_sample"] > num_sample:
-            params["num_sample"] = num_sample
+        if params["num_sample"] > num_sample_total:
+            num_sample_eva = num_sample_total
+        else:
+            num_sample_eva = params["num_sample"]
     else:
-        params["num_sample"] = num_sample
+        num_sample_eva = params["num_sample"]
+    print("- Number of test data:", num_sample_eva, "/", num_sample_total)
 
-    print("- Number of test data:", params["num_sample"], "/", num_sample)
-
-    for i_sample in range(params["num_sample"]):
+    for i_sample in range(num_sample_eva):
         sample_filename = path_sample[i_sample]
         print(f"- File Name: {sample_filename}")
 
@@ -561,7 +566,22 @@ for i_dataset in range(num_datasets):
         # prediction -----------------------------------------------------------
         bs = params["batch_size"]
         with torch.no_grad():
-            if params["patch_image"] and params["patch_size"] < img_lr.shape[-1]:
+            if params["patch_image"] and (
+                params["patch_size"] < max(img_lr.shape[-2:])
+            ):
+                # padding
+                img_lr_shape_ori = img_lr.shape
+                if params["patch_size"] > img_lr.shape[-1]:
+                    pad_size = params["patch_size"] - img_lr.shape[-1]
+                    img_lr = torch.nn.functional.pad(
+                        img_lr, pad=(0, pad_size, 0, 0), mode="reflect"
+                    )
+                if params["patch_size"] > img_lr.shape[-2]:
+                    pad_size = params["patch_size"] - img_lr.shape[-2]
+                    img_lr = torch.nn.functional.pad(
+                        img_lr, pad=(0, 0, 0, pad_size), mode="reflect"
+                    )
+
                 # patching image
                 img_lr_patches = utils_data.unfold(
                     img=img_lr,
@@ -603,6 +623,8 @@ for i_dataset in range(num_datasets):
                     crop_center=params["center_crop"],
                     enable_scale=params["patch_scale"],
                 )
+                # unpadding
+                img_est = img_est[..., : img_lr_shape_ori[-2], : img_lr_shape_ori[-1]]
             else:
                 input_shape = img_lr.shape
                 # padding for care model, which is a unet model requires

@@ -13,6 +13,7 @@ from models.unifmir import UniModel
 import utils.data as utils_data
 import utils.evaluation as utils_eva
 import utils.optim as utils_optim
+from utils import loss_functions
 
 # ------------------------------------------------------------------------------
 # parameters
@@ -29,11 +30,12 @@ params = {
     # model parameters ---------------------------------------------------------
     "dim": 2,
     # "model_name": "care",
-    "model_name": "dfcan",
-    # "model_name": "unifmir",
+    # "model_name": "dfcan",
+    "model_name": "unifmir",
     # loss function ------------------------------------------------------------
     # "loss": "mse",
-    "loss": "mae",
+    # "loss": "mae",
+    "loss": "mae_mse",
     # learning rate ------------------------------------------------------------
     "lr": 0.0001,
     "batch_size": 4,
@@ -50,7 +52,7 @@ params = {
     "path_dataset_excel": "dataset_train_transformer.xlsx",
     "data_output_type": "ii",
     "sheet_name": "64x64",
-    # "datasets_id": [],
+    "datasets_id": [],
     # "datasets_id": [
     #     "biosr-cpp",
     #     "biosr-er",
@@ -70,28 +72,29 @@ params = {
     #     "srcaco2-survivin-2",
     #     "srcaco2-tubulin-2",
     # ],
-    "datasets_id": [
-        # "srcaco2-h2b-8",
-        # "srcaco2-survivin-8",
-        # "srcaco2-tubulin-8",
-        "srcaco2-h2b-4",
-        "srcaco2-survivin-4",
-        "srcaco2-tubulin-4",
-        # "deepbacs-sim-ecoli",  # 1
-        # "deepbacs-sim-saureus",  # 1
-    ],
+    # "datasets_id": [
+    #     "srcaco2-h2b-8",
+    #     "srcaco2-survivin-8",
+    #     "srcaco2-tubulin-8",
+    #     "srcaco2-h2b-4",
+    #     "srcaco2-survivin-4",
+    #     "srcaco2-tubulin-4",
+    #     "deepbacs-sim-ecoli",  # 1
+    #     "deepbacs-sim-saureus",  # 1
+    # ],
     # "datasets_id": ["biosr-cpp"],
     # "datasets_id": ["biosr-er"],
     # "datasets_id": ["biosr-actin"],
     # "datasets_id": ["biosr-mt"],
-    "task": ["sr"],
-    "scale_factor": 4,
-    # "task": [],
+    # "task": ["sr"],
+    "scale_factor": 1,
+    "task": [],
     # "task": ["dcv"],
     # "task": ["dn"],
     # "task": ["iso"],
     # checkpoints --------------------------------------------------------------
-    "suffix": "_sr_4",
+    "suffix": "_all",
+    # "suffix": "_sr_1",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
@@ -111,9 +114,7 @@ if os.name == "posix":
 if params["model_name"] == "unifmir":
     params["data_output_type"] = "ii-task"
     params["batch_size"] = 1
-
-if params["model_name"] == "dfcan":
-    params["lr"] = 0.00001
+    params["lr"] = 0.0001
 
 if not params["datasets_id"] and not params["task"]:
     params["frac_val"] = 0.001
@@ -355,6 +356,8 @@ try:
                     loss = torch.nn.MSELoss()(imgs_est, imgs_hr)
                 if params["loss"] == "mae":
                     loss = torch.nn.L1Loss()(imgs_est, imgs_hr)
+                if params["loss"] == "mae_mse":
+                    loss = loss_functions.mae_mse(imgs_est, imgs_hr)
 
                 if torch.isnan(loss):
                     print(" NaN!")

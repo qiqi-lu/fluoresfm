@@ -1,13 +1,11 @@
 import numpy as np
 import skimage.io as io
 from math import ceil
-import torch, json, os, pydicom
+import torch, json, os, pydicom, random, sys, tqdm
 import methods.convolution as conv
 import utils.evaluation as eva
 import utils.data as utils_data
 from torch.utils.data import Dataset, DataLoader
-import random
-import sys
 
 sys.path.insert(1, "E:\qiqilu\Project\\2024 Foundation model\code")
 from models.PSFmodels import BWModel
@@ -1266,7 +1264,7 @@ def win2linux(win_path):
 
 
 class Dataset_iit(Dataset):
-    """output (image, image, text) or (image, image)"""
+    """output (image, image, text), (image, image, task) or (image, image)"""
 
     def __init__(
         self,
@@ -1279,7 +1277,9 @@ class Dataset_iit(Dataset):
         transform=None,
         scale_factor_lr=1,
         scale_factor_hr=1,
-        output_type="iit",
+        task=None,
+        output_type="ii-text",
+        use_clean_data=False,
         **kwargs,
     ):
         super().__init__()
@@ -1303,8 +1303,10 @@ class Dataset_iit(Dataset):
         self.path_sample_lr, self.path_sample_hr = [], []
         self.scale_factor_lr, self.scale_factor_hr = [], []
 
-        if output_type == "iit":
+        if output_type == "ii-text":
             self.path_sample_text = []
+        if output_type == "ii-task":
+            self.sampel_task = []
 
         for i in range(num_dataset):
             sf_lr = scale_factor_lr[i]
@@ -1317,9 +1319,16 @@ class Dataset_iit(Dataset):
                 path_index = win2linux(path_index)
                 path_lr = win2linux(path_lr)
                 path_hr = win2linux(path_hr)
+                if path_dataset_text_embedding is not None:
+                    path_dataset_text_embedding = win2linux(path_dataset_text_embedding)
 
             # load all the file names in current dataset
-            sample_names = read_txt(os.path.join(path_index))
+            if not use_clean_data:
+                sample_names = read_txt(os.path.join(path_index))
+            else:
+                sample_names = read_txt(
+                    os.path.join(path_index.split(".")[0] + "_clean.txt")
+                )
 
             # connect the path of images
             for sample_name in sample_names:
@@ -1332,13 +1341,24 @@ class Dataset_iit(Dataset):
                 # high-resolution images
                 self.path_sample_hr.append(os.path.join(path_hr, sample_name))
 
-                if output_type == "iit":
+                if output_type == "ii-text":
                     # text of images
                     self.path_sample_text.append(
                         os.path.join(
                             path_dataset_text_embedding, str(dataset_index[i]) + ".npy"
                         )
                     )
+                if output_type == "ii-task":
+                    # collect task of each sample
+                    if task[i] == "sr":
+                        id_task = 1
+                    elif task[i] == "dn":
+                        id_task = 2
+                    elif task[i] == "iso":
+                        id_task = 3
+                    elif task[i] == "dcv":
+                        id_task = 4
+                    self.sampel_task.append(id_task)
 
             if len(path_dataset_lr) <= 3:
                 print(f"- Dataset:\n- LR: {path_lr}\n- HR: {path_hr}")
@@ -1392,7 +1412,7 @@ class Dataset_iit(Dataset):
         img_hr = torch.tensor(img_hr)
 
         # text
-        if self.output_type == "iit":
+        if self.output_type == "ii-text":
             text = np.load(self.path_sample_text[idx])
             text = torch.tensor(text, dtype=torch.float32)[0]
 
@@ -1411,10 +1431,13 @@ class Dataset_iit(Dataset):
         if self.dim == 3:
             img_lr, img_hr = self.to3d(img_lr), self.to3d(img_hr)
 
-        if self.output_type == "iit":
+        # output
+        if self.output_type == "ii-text":
             return {"lr": img_lr, "hr": img_hr, "text": text}
-        if self.output_type == "ii":
+        elif self.output_type == "ii":
             return {"lr": img_lr, "hr": img_hr}
+        elif self.output_type == "ii-task":
+            return {"lr": img_lr, "hr": img_hr, "task": self.sampel_task[idx]}
 
 
 def interpx(x, shape):
@@ -1427,10 +1450,18 @@ def interpx(x, shape):
 
 def interp_sf(x, sf):
     """
-    x : [Nc, Ny, Nx]
+    Interpolate the image based on the scale factor.
+    When `sf` > 1, the image is unsampled.
+    When `sf` < 1, the image is downsampled.
+
+    ### Args:
+    - `x` : numpy array, image to be interpolated. [C, H, W]
+    - `sf` : float, scale factor.
+
+    ### Returns:
+    - `x_inter` : numpy array, interpolated image. [C, H, W]
     """
-    x = torch.tensor(x)
-    x = torch.unsqueeze(x, dim=0)
+    x = torch.unsqueeze(torch.tensor(x), dim=0)
     if sf > 0:
         x_inter = torch.nn.functional.interpolate(x, scale_factor=sf, mode="nearest")
     if sf < 0:
@@ -1438,9 +1469,16 @@ def interp_sf(x, sf):
     return x_inter[0].numpy()
 
 
-def read_image(img_path, expend_channel=False):
+def read_image(img_path: str, expend_channel: bool = False):
     """
-    Read image and convert to a numpy array.
+    Read image and convert to a numpy array. Supported data formats: `.dcm`, and `.tif`.
+
+    ### Parameters:
+    - `img_path` : str, path of the image.
+    - `expend_channel` : bool, whether to expand the channel dimension at axis 0. Default is False.
+
+    ### Returns:
+    - `img` : numpy array, image. [C, H, W] or [1, C, H, W] if `expend_channel` is True.
     """
 
     if os.name == "posix":
@@ -1525,6 +1563,10 @@ class NormalizeMinMax(object):
 class NormalizePercentile(object):
     """
     Percentile-based normalization.
+
+    ### Parameters:
+    - `p_low` : float, lower percentile.
+    - `p_high` : float, upper percentile.
     """
 
     def __init__(self, p_low=0.0, p_high=1.0):
@@ -1532,6 +1574,13 @@ class NormalizePercentile(object):
         self.p_high = p_high
 
     def __call__(self, image):
+        """
+        ### Inputs:
+        - `image` : numpy array, image to be normalized. [C, H, W] or [1, C, H, W].
+
+        ### Returns:
+        - `image` : numpy array, normalized image. [C, H, W] or [1, C, H, W].
+        """
         if isinstance(image, np.ndarray):
             vmin = np.percentile(a=image, q=self.p_low * 100)
             vmax = np.percentile(a=image, q=self.p_high * 100)
@@ -1552,7 +1601,22 @@ class NormalizePercentile(object):
         return image
 
 
-def normalization(image, p_low, p_high):
+def tensor_to_array(img):
+    if not isinstance(img, np.ndarray):
+        img = img.cpu().detach().numpy()
+    return img
+
+
+def normalization(image, p_low, p_high, clip=False):
+    """
+    Normalize image using percentile-based normalization.
+    - image: numpy array or torch tensor.
+    - p_low: low percentile.
+    - p_high: high percentile.
+    - clip: clip the image to [0, 1].
+    """
+    image = tensor_to_array(image).astype(np.float32)
+
     vmin = np.percentile(a=image, q=p_low * 100)
     vmax = np.percentile(a=image, q=p_high * 100)
     if vmax == 0:
@@ -1561,6 +1625,9 @@ def normalization(image, p_low, p_high):
     if amp == 0:
         amp = 1
     image = (image - vmin) / amp
+
+    if clip:
+        image = np.clip(image, 0, 1)
 
     return image
 
@@ -1576,7 +1643,6 @@ def unfold(
         # number of patch along each dim
         num_patch_x = ceil((Nx - patch_size) / step) + 1
         num_patch_y = ceil((Ny - patch_size) / step) + 1
-        print(f"({num_patch_y},{num_patch_x})")
 
         # the size of image after padding
         Nx_pad = num_patch_x * step + overlap
@@ -1586,21 +1652,31 @@ def unfold(
             img, pad=(0, Nx_pad - Nx, 0, Ny_pad - Ny), mode=padding_mode
         )
         # patching
-        patches = []
+        patches = torch.zeros(
+            size=(
+                num_patch_x * num_patch_y,
+                img_shape[1],
+                patch_size,
+                patch_size,
+            ),
+            device=img_pad.device,
+            dtype=img_pad.dtype,
+        )
         for i in range(num_patch_y):
             for j in range(num_patch_x):
                 # extract patches
-                patch = img_pad[
-                    :,
+                patches[i * num_patch_x + j] = img_pad[
+                    0,
                     :,
                     i * step : i * step + patch_size,
                     j * step : j * step + patch_size,
                 ]
-                patches.append(patch)
-        patches = torch.cat(patches, dim=0)
     else:
         raise ValueError("Only support 2D (batch, channel, height, width) image.")
-    print(f"unfold image {img_shape} to patches {patches.shape}")
+    print(
+        f"unfold image {img_shape} to patches {patches.shape}",
+        f"({num_patch_y},{num_patch_x})",
+    )
     return patches
 
 
@@ -1670,12 +1746,13 @@ def fold_scale(
     """
     Stitch square patches.
     """
+    # patches = patches.to(device="cpu")
     patch_size = patches.shape[-1]
     step = patch_size - overlap
     batch_size, num_channel = original_image_shape[0:2]
 
     if len(original_image_shape) == 4:
-        Ny, Nx = original_image_shape[-2], original_image_shape[-1]
+        Ny, Nx = original_image_shape[-2], original_image_shape[-1]  # image shape
 
         # number of patch along each dim
         num_patch_y = ceil((Ny - patch_size) / step) + 1
@@ -1694,60 +1771,75 @@ def fold_scale(
         )
 
         # calculate the image shape after padding
-        img_shape = (
+        img_pad_shape = (
             batch_size,
             num_channel,
             num_patch_y * step + overlap,
             num_patch_x * step + overlap,
         )
-        img_pad = torch.zeros(img_shape)  # place holder
+        img_pad = torch.zeros(img_pad_shape, device=patches.device)  # place holder
+        patch_pad = torch.zeros_like(img_pad)
 
-        edge = overlap // 4
+        edge = torch.tensor(overlap // 4, device=patches.device)
+
+        patch_zero = torch.zeros_like(patches[0])
+        patch_mask_lu = patch_zero
+        patch_mask_lu[..., 0:-edge, 0:-edge] = 1.0
+
+        patch_mask_mu = patch_zero
+        patch_mask_mu[..., 0:-edge, edge:-edge] = 1.0
+
+        patch_mask_ru = patch_zero
+        patch_mask_ru[..., 0:-edge, edge:] = 1.0
+
+        patch_mask_lm = patch_zero
+        patch_mask_lm[..., edge:-edge, 0:-edge] = 1.0
+
+        patch_mask_mm = patch_zero
+        patch_mask_mm[..., edge:-edge, edge:-edge] = 1.0
+
+        patch_mask_rm = patch_zero
+        patch_mask_rm[..., edge:-edge, edge:] = 1.0
+
+        patch_mask_lb = patch_zero
+        patch_mask_lb[..., edge:, 0:-edge] = 1.0
+
+        patch_mask_mb = patch_zero
+        patch_mask_mb[..., edge:, edge:-edge] = 1.0
+
+        patch_mask_rb = patch_zero
+        patch_mask_rb[..., edge:, edge:] = 1.0
+
+        # pbar = tqdm.tqdm(desc="unfold", total=num_patch_y, ncols=80)
         for i in range(num_patch_y):
             for j in range(num_patch_x):
-                patch_pad = torch.zeros_like(img_pad)
+                patch_pad *= 0.0
                 patch = patches[i * num_patch_x + j]
-
+                patch_crop = patch
                 # crop center region -------------------------------------------
                 if overlap > 0 and crop_center:
-                    patch_crop = torch.zeros_like(patch)
                     if i == 0:
                         if j == 0:
-                            patch_crop[..., 0:-edge, 0:-edge] = patch[
-                                ..., 0:-edge, 0:-edge
-                            ]
+                            patch_crop *= patch_mask_lu
                         elif j == (num_patch_x - 1):
-                            patch_crop[..., 0:-edge, edge:] = patch[..., 0:-edge, edge:]
+                            patch_crop *= patch_mask_ru
                         else:
-                            patch_crop[..., 0:-edge, edge:-edge] = patch[
-                                ..., 0:-edge, edge:-edge
-                            ]
+                            patch_crop *= patch_mask_mu
                     elif i == (num_patch_y - 1):
                         if j == 0:
-                            patch_crop[..., edge:, 0:-edge] = patch[..., edge:, 0:-edge]
+                            patch_crop *= patch_mask_lb
                         elif j == (num_patch_x - 1):
-                            patch_crop[..., edge:, edge:] = patch[..., edge:, edge:]
+                            patch_crop *= patch_mask_rb
                         else:
-                            patch_crop[..., edge:, edge:-edge] = patch[
-                                ..., edge:, edge:-edge
-                            ]
+                            patch_crop *= patch_mask_mb
                     else:
                         if j == 0:
-                            patch_crop[..., edge:-edge, 0:-edge] = patch[
-                                ..., edge:-edge, 0:-edge
-                            ]
+                            patch_crop *= patch_mask_lm
                         elif j == (num_patch_x - 1):
-                            patch_crop[..., edge:-edge, edge:] = patch[
-                                ..., edge:-edge, edge:
-                            ]
+                            patch_crop *= patch_mask_rm
                         else:
-                            patch_crop[..., edge:-edge, edge:-edge] = patch[
-                                ..., edge:-edge, edge:-edge
-                            ]
-                else:
-                    patch_crop = patch
+                            patch_crop *= patch_mask_mm
                 # --------------------------------------------------------------
-
                 patch_pad[
                     :,
                     :,
@@ -1755,29 +1847,24 @@ def fold_scale(
                     j * step : j * step + patch_size,
                 ] = patch_crop
 
-                overlap_region = torch.where(
-                    (img_pad > 0.0) & (patch_pad > 0.0), 0.5, 1.0
+                overlap_mask = torch.where(
+                    (img_pad > 0.0) & (patch_pad > 0.0), 1.0, 0.0
                 )
-
                 # scale --------------------------------------------------------
                 if enable_scale:
-                    overlap_region_a = torch.where(
-                        (img_pad > 0.0) & (patch_pad > 0.0), img_pad, 0.0
-                    )
-                    overlap_region_b = torch.where(
-                        (img_pad > 0.0) & (patch_pad > 0.0), patch_pad, 0.0
-                    )
-                    if torch.sum(overlap_region_b) > 0.00001:
-                        scale = torch.sum(overlap_region_a) / torch.sum(
-                            overlap_region_b
-                        )
+                    sum_a = torch.sum(img_pad * overlap_mask)
+                    sum_b = torch.sum(patch_pad * overlap_mask)
+                    if sum_b > 0.00001:
+                        scale = sum_a / sum_b
                     else:
-                        scale = 1.0
+                        scale = torch.tensor(1.0, device=patches.device)
                 else:
-                    scale = 1.0
+                    scale = torch.tensor(1.0, device=patches.device)
                 # --------------------------------------------------------------
-
-                img_pad = (img_pad + patch_pad * scale) * overlap_region
-
+                overlap_region = overlap_mask * (-0.5) + 1.0
+                img_pad += patch_pad * scale
+                img_pad *= overlap_region
+            # pbar.update(1)
+        # pbar.close()
         img_fold = img_pad[..., :Ny, :Nx]
     return img_fold
