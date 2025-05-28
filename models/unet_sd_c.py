@@ -13,6 +13,12 @@ This implements the U-Net that
 We have kept to the model definition and naming unchanged from
 [CompVis/stable-diffusion](https://github.com/CompVis/stable-diffusion)
 so that we can load the checkpoints directly.
+
+This code is from:
+https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/master/labml_nn/diffusion/stable_diffusion/model/unet.py
+
+the defult setting of the U-Net is form:
+https://github.com/labmlai/annotated_deep_learning_paper_implementations/blob/90e21b5a36908a305f9dfa04a8e8ddc4d602f2b5/labml_nn/diffusion/stable_diffusion/util.py#L67
 """
 
 import math
@@ -60,12 +66,15 @@ class UNetModel(nn.Module):
         :param n_heads: is the number of attention heads in the transformers
         :param tf_layers: is the number of transformer layers in the transformers
         :param d_cond: is the size of the conditional embedding in the transformers
+        :param pixel_shuffle: is whether to use pixel shuffle (custom)
+        :param scale_factor: is the scale factor for pixel shuffle (custom)
         """
         super().__init__()
         self.channels = channels
 
         self.d_cond = d_cond
         # input pixel-unshuffle ------------------------------------------------
+        # custom defined processing for input for large image, not in original code
         self.pixel_shuffle = pixel_shuffle
         if self.pixel_shuffle:
             self.patching = nn.PixelUnshuffle(downscale_factor=scale_factor)

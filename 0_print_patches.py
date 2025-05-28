@@ -1,60 +1,97 @@
+"""
+print patches used in each datsets.
+Randomly selelct 5 patches from each dataset.
+"""
+
 import matplotlib.pyplot as plt
-import os, pandas, tqdm, torch
+import os, pandas, tqdm
 import skimage.io as io
 import numpy as np
+from utils.data import interp_sf, read_txt, win2linux
+from utils.plot import add_scale_bar
 
-
-def interp_sf(x, sf):
-    x = torch.tensor(x)
-    x = torch.unsqueeze(x, dim=0)
-    if sf > 0:
-        x_inter = torch.nn.functional.interpolate(x, scale_factor=sf, mode="nearest")
-    if sf < 0:
-        x_inter = torch.nn.functional.avg_pool2d(x, kernel_size=-sf, stride=-sf)
-    return x_inter[0].numpy()
-
-
-path_dataset_xlx = "dataset_train_transformer.xlsx"
+path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64")
 
-path_dataset_lr = list(datasets_frame["path_lr"])
-path_dataset_hr = list(datasets_frame["path_hr"])
-path_dataset_index = list(datasets_frame["path_index"])
-sf_lr = list(datasets_frame["sf_lr"])
-sf_hr = list(datasets_frame["sf_hr"])
-tasks = list(datasets_frame["task"])
+path_save_to = os.path.join("results", "figures", "datasets", "train_patch")
+use_clean = True
+file_type = "png"
 
-num_datsets = len(path_dataset_lr)
-print("num of datasets:", num_datsets)
+direction = "ver"
+# direction = 'hor'
 
-save_path = "outputs\\figures\\datasets"
-pbar = tqdm.tqdm(desc="show patches", total=num_datsets, ncols=100)
+# ------------------------------------------------------------------------------
+num_datasets = len(datasets_frame)
+print("num of datasets:", num_datasets)
 
-# show_ids = range(num_datsets)
-show_ids = range(2250, num_datsets)
+if direction == "ver":
+    fig, axes = plt.subplots(2, 1, figsize=(1, 2), dpi=300, constrained_layout=True)
+if direction == "hor":
+    fig, axes = plt.subplots(1, 2, figsize=(2, 1), dpi=300, constrained_layout=True)
 
-fig, axes = plt.subplots(
-    nrows=1, ncols=2, figsize=(3, 1.5), dpi=300, constrained_layout=True
-)
+pbar = tqdm.tqdm(desc="show patches", total=num_datasets, ncols=80)
+for i_dataset in range(num_datasets):
+    ds = datasets_frame.iloc[i_dataset]
 
-for i in show_ids:
-    with open(path_dataset_index[i]) as f:
-        files = f.read().splitlines()
-    for file in files:
-        img_hr = io.imread(os.path.join(path_dataset_hr[i], file))
-        if np.mean(img_hr) > 0.05:
-            img_lr = io.imread(os.path.join(path_dataset_lr[i], file))
+    ds_index, ds_name = ds["index"], ds["id"]
+    ds_sf_lr, ds_sf_hr = ds["sf_lr"], ds["sf_hr"]
+    ds_path_lr, ds_path_hr = ds["path_lr"], ds["path_hr"]
+    ds_path_index = ds["path_index"]
+    ps_lr, ps_hr = ds["input pixel size"], ds["target pixel size"]
+    ps_hr = float(ps_hr.split("x")[0]) / 1000.0
 
-            img_hr = interp_sf(img_hr, sf_hr[i])
-            img_lr = interp_sf(img_lr, sf_lr[i])
+    if use_clean:
+        ds_path_index = ds_path_index.split(".")[0] + "_clean.txt"
+    if os.name == "posix":
+        ds_path_hr = win2linux(ds_path_hr)
+        ds_path_lr = win2linux(ds_path_lr)
+        ds_path_index = win2linux(ds_path_index)
 
-            axes[0].cla()
-            axes[1].cla()
-            axes[0].set_axis_off()
-            axes[1].set_axis_off()
-            axes[0].imshow(img_lr[0], cmap="hot")
-            axes[1].imshow(img_hr[0], cmap="hot")
-            plt.savefig(os.path.join(save_path, str(i) + "_" + tasks[i] + ".png"))
+    filenames = read_txt(ds_path_index)
+    # idx_patches = np.random.choice(len(filenames), size=5, replace=False)
+    count = 0
+    # for idx_patch in idx_patches:
+    for idx_patch in range(len(filenames)):
+        filename = filenames[idx_patch]
+        img_hr = io.imread(os.path.join(ds_path_hr, filename))
+        if np.mean(img_hr) < 0.05:
+            continue
+        count += 1
+        if count > 5:
             break
+        img_hr = interp_sf(img_hr, ds_sf_hr)
+
+        img_lr = io.imread(os.path.join(ds_path_lr, filename))
+        img_lr = interp_sf(img_lr, ds_sf_lr)
+
+        if file_type == "tif":
+            # connect images
+            img = np.concatenate([img_lr, img_hr], axis=2)
+            io.imsave(
+                os.path.join(path_save_to, "tif", f"{ds_index}_{ds_name}_{filename}"),
+                img,
+                check_contrast=False,
+            )
+        elif file_type == "png":
+            # show images
+            axes[0].imshow(img_lr[0], vmin=0, vmax=1.0, cmap="hot")
+            axes[1].imshow(img_hr[0], vmin=0, vmax=1.0, cmap="hot")
+            add_scale_bar(
+                axes[1], img_lr[0], pixel_size=ps_hr, bar_length=0.5, pos=(5, 59)
+            )
+            axes[0].axis("off")
+            axes[1].axis("off")
+            plt.savefig(
+                os.path.join(
+                    path_save_to,
+                    "png_" + direction,
+                    f"{ds_index}_{ds_name}_{filename.split('.')[0]}.png",
+                )
+            )
+            axes[0].clear()
+            axes[1].clear()
+        else:
+            raise ValueError("file_type must be 'tif' or 'png'")
+
     pbar.update(1)
 pbar.close()

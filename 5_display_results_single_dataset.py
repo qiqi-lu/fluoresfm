@@ -43,15 +43,20 @@ params = {
         # ("vmsim3-mito-dcv", 3, (150, 150), 256),
         # ("vmsim5-mito-dcv", 0, (150, 150), 256),
         # ("biotisr-mito-dcv-1", 1, (150, 150), 256),
+        # ("biotisr-factin-nonlinear-sr-1", 1, (150, 150), 256),
+        # ("biotisr-factin-nonlinear-sr-2", 1, (150, 150), 256),
+        # ("biotisr-factin-nonlinear-sr-3", 1, (150, 150), 256),
         # ("biotisr-mito-dcv-2", 1, (150, 150), 256),
         # ("biotisr-mito-dcv-3", 1, (150, 150), 256),
-        ("rcan3d-dn-er-dn", 0, (400, 400), 256),
-        ("rcan3d-dn-golgi-dn", 0, (400, 400), 256),
+        # ("rcan3d-dn-er-dn", 0, (400, 400), 256),
+        # ("rcan3d-dn-golgi-dn", 0, (400, 400), 256),
+        # ("rcan3d-c2s-mt-dcv", 0, (400, 400), 256),
+        ("sim-actin-3d-dcv", 0, (1000, 1200), 256),
     ],
-    "path_dataset_test": "dataset_test.xlsx",
-    # "path_results": "outputs\\unet_c\\internal_dataset",
-    "path_results": "outputs\\unet_c\\external_dataset",
-    "path_figure": "outputs\\figures\\images",
+    # "path_dataset_test": "dataset_test.xlsx",
+    "path_dataset_test": "dataset_test-v2.xlsx",
+    "path_results": "results\\predictions",
+    "path_figure": "results\\figures\\images",
     "methods": (
         # ("CARE:biosr-sr-cpp", "care_biosr_sr_cpp"),
         # ("CARE:biosr-sr-actin", "care_biosr_sr_actin"),
@@ -65,13 +70,30 @@ params = {
         # ("UNet-uc:sr", "unet_sd_c_sr_crossx"),
         # ("UNet-c:sr", "unet_sd_c_sr"),
         # ("UniFMIR:all", "unifmir_all"),
-        ("UNet-uc:all", "unet_sd_c_all_cross"),
-        ("UNet-c:all", "unet_sd_c_all"),
-        ("UNet-uc:all-newnorm", "unet_sd_c_all_crossx_newnorm"),
+        # ("UNet-uc:all", "unet_sd_c_all_cross"),
+        # ("UNet-c:all", "unet_sd_c_all"),
+        # ("UNet-uc:all-newnorm", "unet_sd_c_all_crossx_newnorm"),
         ("UNet-c:all-newnorm", "unet_sd_c_all_newnorm"),
+        ("UNet-c:all-newnorm-v2", "unet_sd_c_all_newnorm-ALL-v2"),
+        (
+            "UNet-c:all-newnorm-v2-s-bs4",
+            "unet_sd_c_all_newnorm-ALL-v2-clip-160-small-bs4",
+        ),
+        (
+            "UNet-c:all-newnorm-v2-s-bs8",
+            "unet_sd_c_all_newnorm-ALL-v2-clip-160-small-bs8",
+        ),
+        (
+            "UNet-c:all-newnorm-v2-s-bs16",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+        ),
+        (
+            "UNet-c:all-newnorm-v2-s123-bs16",
+            "unet_sd_c_all_newnorm-ALL-v2-160-s123-bs16",
+        ),
     ),
-    "p_low": 0.001,
-    "p_high": 0.999,
+    "p_low": 0.03,
+    "p_high": 0.995,
 }
 
 # ------------------------------------------------------------------------------
@@ -122,6 +144,7 @@ def show_slice(
     ax[0].text(30, 60, title, fontsize=10, color="white")
     # full size image
     ax[0].imshow(img, vmin=vmin, vmax=vmax, cmap=cmap)
+    ax[1].imshow(img - img_gt, cmap="seismic", vmin=-vmax, vmax=vmax)
     # rectangle window
     rect = patches.Rectangle(
         (patch_pos[1], patch_pos[0]),
@@ -133,14 +156,15 @@ def show_slice(
     )
     ax[0].add_patch(rect)
     # patch
-    ax[1].imshow(patch, vmin=vmin, vmax=vmax, cmap=cmap)
+    ax[2].imshow(patch, vmin=vmin, vmax=vmax, cmap=cmap)
 
     if evaluate:
         # error image
-        ax[2].imshow((patch - patch_gt), cmap="seismic", vmin=-vmax, vmax=vmax)
+        ax[3].imshow((patch - patch_gt), cmap="seismic", vmin=-vmax, vmax=vmax)
         # metrics
-        psnr = eva.PSNR(img_true=img_gt, img_test=img)
-        ssim = eva.SSIM(img_true=img_gt, img_test=img)
+        data_range = 2.5
+        psnr = eva.PSNR(img_true=img_gt, img_test=img, data_range=data_range)
+        ssim = eva.SSIM(img_true=img_gt, img_test=img, data_range=data_range)
         zncc = eva.ZNCC(img_true=img_gt, img_test=img)
         ax[0].text(
             30,
@@ -176,6 +200,7 @@ for idx, dataset_setting in enumerate(params["id_datasets"]):
     img_gt = utils_data.read_image(os.path.join(ds["path_hr"], sample_name))
     img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"])[0]
     img_gt = normalizer(img_gt)
+    img_gt = np.clip(img_gt, 0, 2.5)
 
     # --------------------------------------------------------------------------
     imgs_est = []  # collect estimated images
@@ -184,17 +209,19 @@ for idx, dataset_setting in enumerate(params["id_datasets"]):
     img_raw = utils_data.read_image(os.path.join(ds["path_lr"], sample_name))
     img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"])[0]
     img_raw = eva.linear_transform(img_true=img_gt, img_test=img_raw)
+    img_raw = np.clip(img_raw, 0, 2.5)
     imgs_est.append(img_raw)
 
     # images form different methods
     for meth in methods:
         tmp = utils_data.read_image(os.path.join(path_results, meth, sample_name))[0]
         tmp = eva.linear_transform(img_true=img_gt, img_test=tmp)
+        tmp = np.clip(tmp, 0, 2.5)
         imgs_est.append(tmp)
 
     # ------------------------------------------------------------------------------
     # show
-    nr, nc = 3, num_methods + 2
+    nr, nc = 4, num_methods + 2
     fig, axes = plt.subplots(
         nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), dpi=300, constrained_layout=True
     )

@@ -60,12 +60,14 @@ class BiomedCLIPTextEmbedder(nn.Module):
 
 
 if __name__ == "__main__":
-    embedder = BiomedCLIPTextEmbedder().eval()
+    embedder = BiomedCLIPTextEmbedder(context_length=256).eval()
     text = [
         "adenocarcinoma histopathology abd",
         "adenocarcinoma histopathology",
-        "adenocarcinoma histopathology",
         "task: super-resolution with a scale factor of 2; sample: fixed COS-7 cell line; structure: clathrin-coated pits; wavelength: 488 nm; input microscope: wide-field microscope with excitation numerical aperture of 1.41, detection numerical aperture of 1.3; input pixel size: 62.6 x 62.6 nm, nearest interpolation with a factor of 2; output microscope: linear structured illumination microscope with excitation numerical aperture of 1.41, detection numerical aperture of 1.3; output pixel size: 31.2 x 31.2 nm",
+        "task: super-resolution with a scale factor of 2; structure: clathrin-coated pits; input pixel size: 62.6 x 62.6 nm, nearest interpolation with a factor of 2;; output pixel size: 31.2 x 31.2 nm",
+        "Task: super-resolution with a scale factor of 2; sample: fixed COS-7 cell line; structure: clathrin-coated pits; fluorescence indicator: mEmerald (GFP); input microscope: wide-field microscope with excitation numerical aperture (NA) of 1.41, detection numerical aperture (NA) of 1.3; input pixel size: 62.6 x 62.6 nm. Nearest interpolation with a factor of 2.; target microscope: linear structured illumination microscope with excitation numerical aperture (NA) of 1.41, detection numerical aperture (NA) of 1.3; target pixel size: 31.3 x 31.3 nm.",
+        "Task: super-resolution with a factor of 5 in one dimension; sample: D. melanogaster (Drosophila melanogaster) embryo; structure: histone; fluorescence indicator: mRFP1 (RFP); input microscope: light-sheet microscope with Nikon 10x/0.3 objectives for Illumination, Nikon 16x/0.8 objectives for detection.; input pixel size: 1950 x 390 nm, interpolation with a factor of 5 in the first dimention; target microscope: light-sheet microscope with Nikon 10x/0.3 objectives  for Illumination, Nikon 16x/0.8  objectives for detection.; target pixel size: 390 x 390 nm.",
     ]
     features = embedder(text)
     print(features.shape)

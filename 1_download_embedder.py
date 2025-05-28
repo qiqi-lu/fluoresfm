@@ -1,3 +1,7 @@
+"""
+Download BiomedCLIP model from huggingface hub.
+"""
+
 from huggingface_hub import hf_hub_download
 
 # download model and config files

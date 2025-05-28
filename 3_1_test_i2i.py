@@ -1,11 +1,10 @@
 import numpy as np
-import torch, os, json, tqdm, pandas, math
+import torch, os, json, pandas, math, tqdm
 import skimage.io as io
-from torchvision.transforms import v2
-from models.clip_embedder import CLIPTextEmbedder
-from models.biomedclip_embedder import BiomedCLIPTextEmbedder
-
-from models.unet_sd_c import UNetModel
+from models.unet import UNet
+from models.care import CARE
+from models.dfcan import DFCAN
+from models.unifmir import UniModel
 
 import utils.data as utils_data
 import utils.evaluation as utils_eva
@@ -14,71 +13,102 @@ import utils.optim as utils_optim
 # ------------------------------------------------------------------------------
 # parameters
 # ------------------------------------------------------------------------------
+checkpoints = [
+    # [
+    #     "care",
+    #     "_sr",
+    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_sr\epoch_1_iter_1035000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr_actin",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_actin\epoch_10_iter_250000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr_cpp",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_cpp\epoch_13_iter_250000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr_er",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_er\epoch_15_iter_250000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr_mt",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_mt\epoch_17_iter_250000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr\epoch_8_iter_600000.pt",
+    # ],
+    # # --------------------------------------------------------------------------
+    # [
+    #     "care",
+    #     "_dcv",
+    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_dcv\epoch_19_iter_1255000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_dcv",
+    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_dcv\epoch_19_iter_390000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_dn",
+    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_dn\epoch_1_iter_710000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_iso",
+    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_iso\epoch_11_iter_1170000.pt",
+    # ],
+    # # --------------------------------------------------------------------------
+    # [
+    #     "dfcan",
+    #     "_biosr_sr_2",
+    #     "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_biosr_sr_2\epoch_7_iter_600000.pt",
+    # ],
+    # [
+    #     "dfcan",
+    #     "_sr_2",
+    #     "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
+    # ],
+    # [
+    #     "dfcan",
+    #     "_dcv",
+    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dcv\epoch_16_iter_1015000.pt",
+    # ],
+    # [
+    #     "dfcan",
+    #     "_dn",
+    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dn\epoch_0_iter_410000.pt",
+    # ],
+    # [
+    #     "dfcan",
+    #     "_iso",
+    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_iso\epoch_9_iter_890000.pt",
+    # ],
+    # --------------------------------------------------------------------------
+    # [
+    #     "unifmir",
+    #     "_all",
+    #     "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_all\epoch_0_iter_2550000.pt",
+    # ],
+    [
+        "unifmir",
+        "_all-newnorm-v2",
+        "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_0_iter_1000000.pt",
+    ],
+]
+
 params = {
-    "device": "cuda:1",
-    "enable_amp": True,
-    # text embedder ------------------------------------------------------------
-    "embedder": "biomedclip",
-    "path_json": "checkpoints/clip//biomedclip/open_clip_config.json",
-    "path_bin": "checkpoints/clip//biomedclip/open_clip_pytorch_model.bin",
-    # model parameters ---------------------------------------------------------
-    "model_name": "unet_sd_c",
-    # --------------------------------------------------------------------------
-    # "suffix": "_all",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all\epoch_0_iter_775000.pt",
-    # "suffix": "_all_TSpixel",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_TSpixel\epoch_0_iter_700000.pt",
-    # "suffix": "_all_clean",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_clean\epoch_1_iter_1550000.pt",
-    # "suffix": "_all_newnorm",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_newnorm\epoch_0_iter_1290000.pt",
-    # "suffix": "_all_newnorm_TS",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_newnorm_TS\epoch_0_iter_1070000.pt",
-    # "suffix": "_all_newnorm_TSmicro",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_newnorm_TSmicro\epoch_0_iter_955000.pt",
-    # --------------------------------------------------------------------------
-    # "suffix": "_sr",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_sr\epoch_1_iter_1095000.pt",
-    # "suffix": "_dcv",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dcv\epoch_6_iter_915000.pt",
-    # "suffix": "_dn",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dn\epoch_0_iter_370000.pt",
-    # "suffix": "_iso",
-    # "path_model": "checkpoints\\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_iso\epoch_4_iter_830000.pt",
-    # --------------------------------------------------------------------------
-    # "suffix": "_sr_crossx",
-    # "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_sr_crossx\epoch_0_iter_565000.pt",
-    # "suffix": "_dcv_crossx",
-    # "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dcv_crossx\epoch_16_iter_1015000.pt",
-    # "suffix": "_dn_crossx",
-    # "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_dn_crossx\epoch_0_iter_660000.pt",
-    # "suffix": "_iso_crossx",
-    # "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_iso_crossx\epoch_12_iter_1220000.pt",
-    # --------------------------------------------------------------------------
-    "suffix": "_all_cross",
-    "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_crossx\epoch_0_iter_825000.pt",
-    # "suffix": "_all_crossx_newnorm",
-    # "path_model": "checkpoints\conditional\\unet_sd_c_mae_bs_4_lr_1e-05_all_newnorm_crossx\epoch_0_iter_1260000.pt",
-    # --------------------------------------------------------------------------
-    "text_type": ("all", 256),
-    # "text_type": ("TSpixel", 77),
-    # "text_type": ("TSmicro", 77),
-    # "text_type": ("TS", 77),
-    # "text_type": ("paired",256),
-    "in_channels": 1,
-    "out_channels": 1,
-    "channels": 320,
-    "n_res_blocks": 2,
-    "attention_levels": [1, 2, 3],
-    "channel_multipliers": [1, 2, 4, 4],
-    "n_heads": 8,
-    "tf_layers": 1,
-    # "d_cond": 768,
-    "d_cond": None,
-    "pixel_shuffle": False,
-    "scale_factor": 4,
+    "device": "cuda:0",
     # dataset ------------------------------------------------------------------
-    "path_dataset_test": "dataset_test.xlsx",
+    "dim": 2,
+    "path_dataset_test": "dataset_test-v2.xlsx",
     "id_dataset": [
         # "biosr-cpp-sr-1",
         # "biosr-cpp-sr-2",
@@ -148,7 +178,7 @@ params = {
         # "srcaco2-tubulin-sr-8",
         # "srcaco2-tubulin-sr-4",
         # "srcaco2-tubulin-sr-2",
-        # ----------------------------------------------------------------------
+        # # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
         # "biosr-cpp-dn-2",
         # "biosr-cpp-dn-3",
@@ -390,7 +420,7 @@ params = {
         # "care-retina0-iso",
         # "care-retina1-iso",
         # "care-liver-iso",
-        # # # --------------------------------------------------------------------
+        # # # ------------------------------------------------------------------
         # "vmsim3-mito-sr",
         # "vmsim3-er-sr",
         # "vmsim5-mito-sr",
@@ -406,15 +436,17 @@ params = {
         # "sim-microtubule-2d-patch-dcv",
         # "bpae-dcv",
         # "bpae-dn",
-        "rcan3d-c2s-mt-dcv",
-        "rcan3d-c2s-npc-dcv",
-        "rcan3d-dn-actin-dn",
-        "rcan3d-dn-er-dn",
-        "rcan3d-dn-golgi-dn",
-        "rcan3d-dn-lysosome-dn",
-        "rcan3d-dn-mixtrixmito-dn",
-        "rcan3d-dn-mt-dn",
-        "rcan3d-dn-tomm20mito-dn",
+        # "rcan3d-c2s-mt-dcv",
+        "rcan3d-c2s-mt-sr",
+        # "rcan3d-c2s-npc-dcv",
+        "rcan3d-c2s-npc-sr",
+        # "rcan3d-dn-actin-dn",
+        # "rcan3d-dn-er-dn",
+        # "rcan3d-dn-golgi-dn",
+        # "rcan3d-dn-lysosome-dn",
+        # "rcan3d-dn-mixtrixmito-dn",
+        # "rcan3d-dn-mt-dn",
+        # "rcan3d-dn-tomm20mito-dn",
         # "biotisr-ccp-sr-1",
         # "biotisr-ccp-sr-2",
         # "biotisr-ccp-sr-3",
@@ -464,214 +496,215 @@ params = {
         # "biotisr-mito-dn-1",
         # "biotisr-mito-dn-2",
     ],
+    "scale_factor": 1,
     "num_sample": 8,
     # "num_sample": None,
-    "p_low": 0.0,
-    "p_high": 0.9999,
-    # "p_low": 0.03,  # （new)
-    # "p_high": 0.995,  # （new)
+    "percentiles": (0.0, 0.9999),
     "patch_image": True,
-    "patch_size": 384,
-    "overlap": 64,
-    "batch_size": 1,
+    "patch_size": 256,
     # output -------------------------------------------------------------------
-    "path_output": "outputs\\unet_c",
+    "path_output": "results\\predictions",
 }
 
+# ------------------------------------------------------------------------------
+params.update(
+    {
+        "overlap": params["patch_size"] // 4,
+        "batch_size": int(64 / params["patch_size"] * 32),
+    }
+)
+
 if os.name == "posix":
-    params["path_model"] = utils_data.win2linux(params["path_model"])
     params["path_output"] = utils_data.win2linux(params["path_output"])
-    params["path_json"] = utils_data.win2linux(params["path_json"])
-    params["path_bin"] = utils_data.win2linux(params["path_bin"])
 
 # ------------------------------------------------------------------------------
 print("load dataset information ...")
-datasets_frame = pandas.read_excel(params["path_dataset_test"])
-
 utils_data.print_dict(params)
+
+datasets_frame = pandas.read_excel(params["path_dataset_test"])
 device = torch.device(params["device"])
+output_normalizer = utils_data.NormalizePercentile(0.03, 0.995)
+bs = params["batch_size"]
+num_checkpoints = len(checkpoints)
+
+# ------------------------------------------------------------------------------
+print("-" * 50)
+print("Number of checkpoints:", num_checkpoints)
 print("number of datasets:", len(params["id_dataset"]))
 
-
 # ------------------------------------------------------------------------------
-# model
+# PREDICT
 # ------------------------------------------------------------------------------
-# Text Embedder
-if params["embedder"] == "clip":
-    embedder = CLIPTextEmbedder(device=torch.device("cpu")).eval()
+for checkpoint in checkpoints:
+    print("-" * 50)
+    print(f"Checkpoint: {checkpoint}")
+    model_name, model_suffix, model_path = checkpoint
 
-elif params["embedder"] == "biomedclip":
-    embedder = BiomedCLIPTextEmbedder(
-        path_json=params["path_json"],
-        path_bin=params["path_bin"],
-        context_length=params["text_type"][1],
-        device=torch.device("cpu"),
-    ).eval()
-else:
-    raise ValueError(f"Embedder '{params['embedder']}' does not exist.")
+    if model_name == "dfcan" and ("_sr" in model_suffix):
+        params.update(
+            {
+                "scale_factor": 2,
+                "patch_size": 32,
+                "overlap": 24,
+            }
+        )
 
-# 2D models
-if params["model_name"] == "unet_sd_c":
-    model = UNetModel(
-        in_channels=params["in_channels"],
-        out_channels=params["out_channels"],
-        channels=params["channels"],
-        n_res_blocks=params["n_res_blocks"],
-        attention_levels=params["attention_levels"],
-        channel_multipliers=params["channel_multipliers"],
-        n_heads=params["n_heads"],
-        tf_layers=params["tf_layers"],
-        d_cond=params["d_cond"],
-        pixel_shuffle=params["pixel_shuffle"],
-        scale_factor=params["scale_factor"],
-    ).to(device)
+    if os.name == "posix":
+        model_path = utils_data.win2linux(model_path)
 
-# normalization
-input_normallizer = utils_data.NormalizePercentile(
-    p_low=params["p_low"], p_high=params["p_high"]
-)
-output_normallizer = utils_data.NormalizePercentile(p_low=0.001, p_high=0.999)
-
-# ------------------------------------------------------------------------------
-# load model parameters
-# ------------------------------------------------------------------------------
-# model.load_state_dict(
-#     torch.load(params["path_model"], map_location=device, weights_only=True)[
-#         "model_state_dict"
-#     ]
-# )
-print("load model parameters...")
-state_dict = torch.load(params["path_model"], map_location=device, weights_only=True)[
-    "model_state_dict"
-]
-# del prefix for complied model
-state_dict = utils_optim.on_load_checkpoint(checkpoint=state_dict)
-model.load_state_dict(state_dict)
-
-model.eval()
-
-# ------------------------------------------------------------------------------
-# predict
-# ------------------------------------------------------------------------------
-print("predict...")
-for id_dataset in params["id_dataset"]:
-    print("-" * 80)
-    # get dataset infomation
-    try:
-        ds = datasets_frame[datasets_frame["id"] == id_dataset].iloc[0]
-        print("Dataset:", ds["id"])
-    except:
-        print(f"{id_dataset} Not Exist")
-        continue
-
-    # get dataset group (internal/external)
-    if ds["in#ex"] == "in":
-        dataset_group = "internal_dataset"
-    elif ds["in#ex"] == "ex":
-        dataset_group = "external_dataset"
+    # normalization
+    if "norm" in model_suffix:
+        params["percentiles"] = (0.03, 0.995)
     else:
-        raise ValueError(f"Dataset group '{ds['in#ex']}' does not exist.")
+        params["percentiles"] = (0.0, 0.9999)
 
-    # save retuls to
-    path_results = os.path.join(
-        params["path_output"],
-        dataset_group,
-        ds["id"],
-        params["model_name"] + params["suffix"],
+    input_normalizer = utils_data.NormalizePercentile(
+        params["percentiles"][0], params["percentiles"][1]
     )
-    utils_data.make_path(path_results)
 
-    # load sample names in current dataset
-    filenames = utils_data.read_txt(path_txt=ds["path_index"])
-    num_sample_total = len(filenames)
+    if "clip" in model_suffix:
+        params.update({"data_clip": (0.0, 2.5)})
 
-    # set the number of samples to be evaluated
-    if params["num_sample"] is not None:
-        if params["num_sample"] > num_sample_total:
-            num_sample_eva = num_sample_total
+    # ------------------------------------------------------------------------------
+    # model
+    # ------------------------------------------------------------------------------
+    # 2D models
+    if model_name == "unet":
+        model = UNet(
+            in_channels=1, out_channels=1, bilinear=False, residual=True, pos_out=False
+        )
+
+    if model_name == "care":
+        model = CARE(
+            in_channels=1,
+            out_channels=1,
+            n_filter_base=16,
+            kernel_size=5,
+            batch_norm=False,
+            dropout=0.0,
+            residual=True,
+            expansion=2,
+            pos_out=False,
+        )
+
+    if model_name == "dfcan":
+        model = DFCAN(
+            in_channels=1,
+            scale_factor=params["scale_factor"],
+            num_features=64,
+            num_groups=4,
+        )
+
+    if model_name == "unifmir":
+        model = UniModel(
+            in_channels=1,
+            out_channels=1,
+            tsk=0,
+            img_size=(64, 64),
+            patch_size=1,
+            embed_dim=180 // 2,
+            depths=[6, 6, 6],
+            num_heads=[6, 6, 6],
+            window_size=8,
+            mlp_ratio=2,
+            qkv_bias=True,
+            qk_scale=None,
+            drop_rate=0,
+            attn_drop_rate=0,
+            drop_path_rate=0.1,
+            norm_layer=torch.nn.LayerNorm,
+            patch_norm=True,
+            use_checkpoint=False,
+            num_feat=32,
+            srscale=1,
+        )
+
+    model = model.to(device)
+
+    # --------------------------------------------------------------------------
+    # load model parameters
+    # --------------------------------------------------------------------------
+    print("loading model parameters...")
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)[
+        "model_state_dict"
+    ]
+    # del prefix for complied model
+    state_dict = utils_optim.on_load_checkpoint(checkpoint=state_dict)
+    model.load_state_dict(state_dict)
+    model.eval()
+
+    # --------------------------------------------------------------------------
+    # predict
+    # --------------------------------------------------------------------------
+    for id_dataset in params["id_dataset"]:
+        print("-" * 80)
+        # load dataset information
+        try:
+            ds = datasets_frame[datasets_frame["id"] == id_dataset].iloc[0]
+            print(ds["id"])
+        except:
+            print(id_dataset, "Not Exist!")
+            continue
+
+        # save retuls to
+        path_results = os.path.join(
+            params["path_output"], ds["id"], model_name + model_suffix
+        )
+        os.makedirs(path_results, exist_ok=True)
+
+        path_index = utils_data.win2linux(ds["path_index"])
+        path_lr = utils_data.win2linux(ds["path_lr"])
+        sf_lr = ds["sf_lr"]
+        sf_hr = ds["sf_hr"]
+
+        # check task
+        task = 1
+        if ds["task"] == "sr":
+            task = 1
+        elif ds["task"] == "dn":
+            task = 2
+        elif ds["task"] == "iso":
+            task = 3
+        elif ds["task"] == "dcv":
+            task = 4
+        else:
+            raise ValueError("Unsupported Task.")
+        task = torch.tensor(task, device=device)
+
+        # load sample names in current dataset
+        filenames = utils_data.read_txt(path_index)
+
+        num_sample_total = len(filenames)
+        if params["num_sample"] is not None:
+            if params["num_sample"] > num_sample_total:
+                num_sample_eva = num_sample_total
+            else:
+                num_sample_eva = params["num_sample"]
         else:
             num_sample_eva = params["num_sample"]
-    else:
-        num_sample_eva = params["num_sample"]
-    print("- Number of test data:", num_sample_eva, "/", num_sample_total)
-
-    # PREDICT
-    for i_sample in range(num_sample_eva):
-        print("-" * 30)
-        sample_filename = filenames[i_sample]
-        print(f"- File Name: {sample_filename}")
-
-        # load low-resolution image (input) ------------------------------------
-        img_lr = utils_data.read_image(
-            os.path.join(ds["path_lr"], sample_filename), expend_channel=False
-        )
-        # normalization
-        img_lr = input_normallizer(img_lr)
-        img_lr = utils_data.interp_sf(img_lr, sf=ds["sf_lr"])[None]
-        img_lr = torch.tensor(img_lr).to(device)
-
-        # load text and text embedding -----------------------------------------
-        # single text embedding
-        if params["text_type"][0] in ["all", "TSpixel", "TSmicro", "TS"]:
-            if params["text_type"][0] == "all":
-                text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
-                    ds["task#"],
-                    ds["sample"],
-                    ds["structure#"],
-                    ds["fluorescence indicator"],
-                    ds["input microscope"],
-                    ds["input pixel size"],
-                    ds["target microscope"],
-                    ds["target pixel size"],
-                )
-            elif params["text_type"][0] == "TSpixel":
-                text = "Task: {}; struture: {}; input pixel size: {}; target pixel size: {}.".format(
-                    ds["task#"],
-                    ds["structure#"],
-                    ds["input pixel size"],
-                    ds["target pixel size"],
-                )
-            elif params["text_type"][0] == "TSmicro":
-                text = "Task: {}; struture: {}; input microscope: {}; target microscope: {}.".format(
-                    ds["task#"],
-                    ds["structure#"],
-                    ds["input microscope-device"],
-                    ds["target microscope-device"],
-                )
-            elif params["text_type"][0] == "TS":
-                text = "Task: {}; struture: {}".format(
-                    ds["task#"],
-                    ds["structure#"],
-                )
-
-            if (params["d_cond"] == 0) or (params["d_cond"] is None):
-                text_embed = None
-            else:
-                print("- Text:", text)
-                with torch.no_grad():
-                    text_embed = embedder(text).to(device)
-
-        # paired text embedding
-        if params["text_type"][0] == "paired":
-            text_lr, text_hr = ds["text_lr"], ds["text_hr"]
-            # embedding
-            if (params["d_cond"] == 0) or (params["d_cond"] is None):
-                text_embed = None
-            else:
-                with torch.no_grad():
-                    text_embed_lr, text_embed_hr = embedder(text_lr), embedder(text_hr)
-                text_embed = torch.cat([text_embed_lr, text_embed_hr], dim=1).to(device)
+        print("- Number of test data:", num_sample_eva, "/", num_sample_total)
 
         # ----------------------------------------------------------------------
-        # time_embed = torch.zeros(size=(1,)).to(device)
-        time_embed = None
+        for i_sample in range(num_sample_eva):
+            filename = filenames[i_sample]
+            print(f"- File Name: {filename}")
 
-        # ----------------------------------------------------------------------
-        # prediction
-        bs = params["batch_size"]
-        with torch.autocast(
-            device_type="cuda", dtype=torch.float16, enabled=params["enable_amp"]
-        ):
+            # low-resolution image ---------------------------------------------
+            img_lr = utils_data.read_image(os.path.join(path_lr, filename))
+            img_lr = np.clip(img_lr, 0, None)
+            img_lr = input_normalizer(img_lr)
+
+            if params["scale_factor"] == 1:
+                img_lr = utils_data.interp_sf(img_lr, sf=sf_lr)
+            if (
+                ds["id"] in ["deepbacs-sim-ecoli-sr", "deepbacs-sim-saureus-sr"]
+                and model_name == "dfcan"
+            ):
+                img_lr = utils_data.interp_sf(img_lr, sf=-2)
+
+            img_lr = torch.tensor(img_lr[None]).to(device)
+
+            # prediction -------------------------------------------------------
             with torch.no_grad():
                 if params["patch_image"] and (
                     params["patch_size"] < max(img_lr.shape[-2:])
@@ -696,61 +729,112 @@ for id_dataset in params["id_dataset"]:
                         overlap=params["overlap"],
                         padding_mode="reflect",
                     )
-
                     num_iter = math.ceil(img_lr_patches.shape[0] / bs)
-                    # ----------------------------------------------------------
-                    pbar = tqdm.tqdm(desc="PREDICT", total=num_iter, ncols=80)
-                    img_est_patches = torch.zeros_like(img_lr_patches)
+
+                    # --------------------------------------------------------------
+                    pbar = tqdm.tqdm(desc="PREDICT", total=num_iter, ncols=100)
+                    img_est_patches = []
                     for i_iter in range(num_iter):
-                        img_est_patch = model(
-                            img_lr_patches[i_iter * bs : bs + i_iter * bs],
-                            time_embed,
-                            text_embed,
-                        )
-                        img_est_patches[i_iter * bs : bs + i_iter * bs] += img_est_patch
+                        if model_name == "unifmir":
+                            img_est_patch = model(
+                                img_lr_patches[i_iter * bs : bs + i_iter * bs], task
+                            )
+                        else:
+                            img_est_patch = model(
+                                img_lr_patches[i_iter * bs : bs + i_iter * bs]
+                            )
+                        img_est_patches.append(img_est_patch)
                         pbar.update(1)
                     pbar.close()
+                    img_est_patches = torch.cat(img_est_patches, dim=0)
                     # ----------------------------------------------------------
                     # fold the patches
-                    img_est = utils_data.fold_scale(
-                        patches=img_est_patches,
-                        original_image_shape=img_lr.shape,
-                        overlap=params["overlap"],
-                        crop_center=True,
-                        # enable_scale=False,
-                        enable_scale=True,
+                    original_image_shape = (
+                        img_lr.shape[0],
+                        img_lr.shape[1],
+                        img_lr.shape[2] * params["scale_factor"],
+                        img_lr.shape[3] * params["scale_factor"],
                     )
+
+                    overlap = params["overlap"] * params["scale_factor"]
+
+                    # ----------------------------------------------------------
+                    # img_est = utils_data.fold_scale(
+                    #     patches=img_est_patches,
+                    #     original_image_shape=original_image_shape,
+                    #     overlap=overlap,
+                    #     crop_center=True,
+                    #     enable_scale=True,
+                    # )
+
+                    img_est = utils_data.fold_linear_ramp(
+                        patches=img_est_patches,
+                        original_image_shape=original_image_shape,
+                        overlap=overlap,
+                    )
+                    img_est = torch.tensor(img_est)
+
                     # unpadding
                     img_est = img_est[
-                        ..., : img_lr_shape_ori[-2], : img_lr_shape_ori[-1]
+                        ...,
+                        : img_lr_shape_ori[-2] * params["scale_factor"],
+                        : img_lr_shape_ori[-1] * params["scale_factor"],
                     ]
                 else:
-                    img_est = model(img_lr, time_embed, text_embed)
+                    input_shape = img_lr.shape
+                    # padding for care model, which is a unet model requires
+                    # specific image size
+                    if model_name == "care":
+                        if input_shape[-1] % 4 > 0:
+                            pad_size = 4 - input_shape[-1] % 4
+                            img_lr = torch.nn.functional.pad(
+                                img_lr, pad=(0, pad_size, 0, pad_size), mode="reflect"
+                            )
+                    # ----------------------------------------------------------
+                    if model_name == "unifmir":
+                        img_est = model(img_lr, task)
+                    else:
+                        img_est = model(img_lr)
+                    # ----------------------------------------------------------
+                    if model_name == "care":
+                        if input_shape[-1] % 4 > 0:
+                            img_est = img_est[
+                                :, :, : input_shape[-2], : input_shape[-1]
+                            ]
+            # clip
+            # img_est = torch.clip(img_est, min=0.0)
+            img_est = img_est.float().cpu().detach().numpy()
 
-        # clip
-        # img_est = torch.clip(img_est, min=0.0)
-        img_est = img_est.float().cpu().detach().numpy()
+            # ------------------------------------------------------------------
+            if ds["path_hr"] != "Unknown":
+                dr = 2.5
+                clip = lambda x: np.clip(x, 0.0, dr)
 
-        # ----------------------------------------------------------------------
-        if ds["path_hr"] != "Unknown":
-            # load high-resolution image (reference)
-            img_hr = utils_data.read_image(os.path.join(ds["path_hr"], sample_filename))
-            img_hr = utils_data.interp_sf(img_hr, sf=ds["sf_hr"])[0]
-            img_hr = output_normallizer(img_hr)
+                img_hr = utils_data.read_image(os.path.join(ds["path_hr"], filename))
+                if params["scale_factor"] == 1:
+                    img_hr = utils_data.interp_sf(img_hr, sf=sf_hr)
+                img_hr = output_normalizer(img_hr)[0]
 
-            # calculate metrics
-            imgs_est = utils_eva.linear_transform(img_true=img_hr, img_test=img_est)
+                imgs_est = utils_eva.linear_transform(
+                    img_true=clip(img_hr), img_test=img_est
+                )
 
-            psnr = utils_eva.PSNR(img_true=img_hr, img_test=imgs_est[0, 0])
-            ssim = utils_eva.SSIM(img_true=img_hr, img_test=imgs_est[0, 0])
-            print(f"PSNR: {psnr:.4f}, SSIM: {ssim:.4f}")
-        else:
-            print("There is no reference data.")
+                dict_eva = {
+                    "img_true": clip(img_hr),
+                    "img_test": clip(img_est)[0, 0],
+                    "data_range": dr,
+                }
 
-        # ----------------------------------------------------------------------
-        # save results
-        io.imsave(
-            os.path.join(path_results, sample_filename),
-            arr=img_est[0],
-            check_contrast=False,
-        )
+                ssim = utils_eva.SSIM(**dict_eva)
+                psnr = utils_eva.PSNR(**dict_eva)
+                print(f"PSNR: {psnr:.4f}, SSIM: {ssim:.4f}")
+            else:
+                print("There is no reference data.")
+
+            # ------------------------------------------------------------------
+            # save results
+            io.imsave(
+                os.path.join(path_results, filename),
+                arr=img_est[0],
+                check_contrast=False,
+            )

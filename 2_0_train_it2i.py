@@ -1,6 +1,6 @@
 """
-MODEL TRAINING
-- (2D image, text) to (image,)
+Model training.
+- (2D image, text) to (2D image,)
 """
 
 import torch, os, tqdm, json, pandas, datetime
@@ -29,7 +29,6 @@ params = {
     "pin_memory": True,
     "cudnn-auto-tunner": True,
     "complie": True,
-    "complie_mode": "default",
     # mixed-precision ----------------------------------------------------------
     "enable_amp": True,
     "enable_gradscaler": True,
@@ -39,8 +38,16 @@ params = {
     "in_channels": 1,
     "out_channels": 1,
     "channels": 320,
-    "n_res_blocks": 2,
-    "attention_levels": [1, 2, 3],
+    # -----------------
+    # "n_res_blocks": 1,
+    # "attention_levels": [1, 2, 3],
+    # -----------------
+    "n_res_blocks": 1,
+    "attention_levels": [0, 1, 2, 3],
+    # -----------------
+    # "n_res_blocks": 2,
+    # "attention_levels": [1, 2, 3],
+    # -----------------
     "channel_multipliers": [1, 2, 4, 4],
     "n_heads": 8,
     "tf_layers": 1,
@@ -50,60 +57,56 @@ params = {
     "scale_factor": 4,
     # loss function ------------------------------------------------------------
     # "loss": "mse",
-    # "loss": "msew",
     "loss": "mae",
     # learning rate ------------------------------------------------------------
     "lr": 0.00001,
-    "batch_size": 4,
-    # "num_epochs": 8,
+    "batch_size": 16,
     "num_epochs": 20,
-    # "num_epochs": 100,
     "warm_up": 0,
     "lr_decay_every_iter": 10000 * 10,
     "lr_decay_rate": 0.5,
     "lr_min": 0.0000001,
     # validation ---------------------------------------------------------------
     "enable_validation": True,
-    # "frac_val": 0.01,
     "frac_val": 0.001,
     "validate_every_iter": 5000,
     # dataset ------------------------------------------------------------------
-    "path_dataset_excel": "dataset_train_transformer.xlsx",
+    # "path_dataset_excel": "dataset_train_transformer.xlsx",
+    "path_dataset_excel": "dataset_train_transformer-v2.xlsx",
     "sheet_name": "64x64",
+    "augmentation": 3,
+    "use_clean_data": True,
+    # "data_clip": (0.0, 2.5),
+    "data_clip": None,
     "datasets_id": [],
-    # "datasets_id": ["biosr-cpp", "biosr-er", "biosr-actin", "biosr-mt"],
-    # 'datasets_id' : ["biosr-cpp"],
-    # 'datasets_id' : ["biosr-er"],
-    # 'datasets_id' : ["biosr-actin"],
-    # 'datasets_id' : ["biosr-mt"],
     "task": [],
     # "task": ["sr"],
     # "task": ["dn"],
     # "task": ["dcv"],
     # "task": ["iso"],
-    # "path_dataset_text": "text\dataset_text",
-    "path_dataset_text": "text\dataset_text_TSpixel_77",
-    # "path_dataset_text": "text\dataset_text_TSmicro_77",
-    # "path_dataset_text": "text\dataset_text_TS_77",
-    # "use_clean_data": True,
-    "use_clean_data": False,
+    # "path_dataset_text": "text\\v1\\dataset_text",
+    # "path_dataset_text": "text\\v2\dataset_text_ALL_256",
+    "path_dataset_text": "text\\v2\dataset_text_ALL_160",
+    # "path_dataset_text": "text\\v2\dataset_text_TSpixel_77",
+    # "path_dataset_text": "text\\v2\dataset_text_TSmicro_77",
+    # "path_dataset_text": "text\\v2\dataset_text_TS_77",
+    # "path_dataset_text": "text\\v2\dataset_text_T_77",
     # checkpoints --------------------------------------------------------------
     # "suffix": "_biosr_sr",
     # "suffix": "_dn_crossx",
     # "suffix": "_dcv_crossx",
     # "suffix": "_iso_crossx",
-    # "suffix": "_all",
-    # "suffix": "_all_crossx",
-    # "suffix": "_all_clean_crossx",
-    # "suffix": "_all_TSpixel",
-    # "suffix": "_all_newnorm",
-    # "suffix": "_all_newnorm_TSmicro",
-    "suffix": "_all_newnorm_TSpixel",
-    # "suffix": "_all_newnorm_TS",
-    # "suffix": "_all_newnorm_crossx",
+    # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-crossx",
+    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    # "suffix": "_all_newnorm_ALL-v2-res1-att0123-T77",
+    # "suffix": "_all_newnorm_TSmicro-v2",
+    # "suffix": "_all_newnorm_TSpixel-v2",
+    # "suffix": "_all_newnorm_TS-v2",
+    # "suffix": "_all_newnorm_crossx-v2",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
+    "print_loss": False,
     # saved model --------------------------------------------------------------
     "saved_checkpoint": None,
 }
@@ -145,6 +148,13 @@ data_frame = pandas.read_excel(
     params["path_dataset_excel"], sheet_name=params["sheet_name"]
 )
 
+# add augmented data
+if params["augmentation"] > 0:
+    data_frame_aug = pandas.read_excel(
+        params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-aug"
+    )
+    data_frame = pandas.concat([data_frame] + [data_frame_aug] * params["augmentation"])
+
 if params["task"]:
     data_frame = data_frame[data_frame["task"].isin(params["task"])]
 
@@ -178,10 +188,12 @@ dataset_all = utils_data.Dataset_iit(
     scale_factor_hr=dataset_scale_factor_hr,
     output_type="ii-text",
     use_clean_data=params["use_clean_data"],
+    rotflip=False,
+    clip=params["data_clip"],
 )
 
 # create training and validation dataset
-dataloader_train, dataloader_validation = None, None
+dataloader_train, dataloader_val = None, None
 if params["enable_validation"]:
     # split whole dataset into training and validation dataset
     dataset_train, dataset_validation = random_split(
@@ -190,17 +202,17 @@ if params["enable_validation"]:
         generator=torch.Generator().manual_seed(7),
     )
 
-    dataloader_validation = DataLoader(
+    dataloader_val = DataLoader(
         dataset=dataset_validation,
         batch_size=params["batch_size"],
         shuffle=False,
         num_workers=params["num_workers"],
         pin_memory=params["pin_memory"],
     )
-    num_batches_validation = len(dataloader_validation)
+    num_batch_val = len(dataloader_val)
 else:
     dataset_train = dataset_all
-    num_batches_validation = 0
+    num_batch_val = 0
 
 dataloader_train = DataLoader(
     dataset=dataset_train,
@@ -217,7 +229,7 @@ img_lr_shape = dataset_train[0]["lr"].shape
 img_hr_shape = dataset_train[0]["hr"].shape
 text_shape = dataset_train[0]["text"].shape
 
-print(f"- Num of Batches (train| valid): {num_batches_train}|{num_batches_validation}")
+print(f"- Num of Batches (train| valid): {num_batches_train}|{num_batch_val}")
 print(
     f"- Input shape: ({img_lr_shape}, {text_shape})",
 )
@@ -242,13 +254,12 @@ if params["model_name"] == "unet_sd_c":
         scale_factor=params["scale_factor"],
     )
 
-with torch.autocast(
-    device_type="cuda", dtype=torch.float16, enabled=params["enable_amp"]
-):
+with torch.autocast("cuda", torch.float16, enabled=params["enable_amp"]):
+    dtype = torch.float16 if params["enable_amp"] else torch.float32
     summary(
         model=model,
         input_size=((1,) + img_lr_shape, (1,), (1, text_shape[0], 768)),
-        dtypes=(torch.float16, torch.float16, torch.float16),
+        dtypes=(dtype,) * 3,
         device=params["device"],
     )
 
@@ -304,6 +315,9 @@ print(f"Batch size: {params['batch_size']} | Num of Batches: {num_batches_train}
 print(f"save model to {path_save_model}")
 
 scaler = torch.GradScaler("cuda", enabled=params["enable_gradscaler"])
+# create zero time embedding
+time_embed = torch.zeros(size=(params["batch_size"],)).to(device)
+time_embed_val = torch.zeros(size=(params["batch_size"],)).to(device)
 
 try:
     for i_epoch in range(params["num_epochs"]):
@@ -311,7 +325,7 @@ try:
             total=num_batches_train,
             desc=f"Epoch {i_epoch + 1}|{params['num_epochs']}",
             leave=True,
-            ncols=120,
+            ncols=100,
         )
 
         # ----------------------------------------------------------------------
@@ -322,24 +336,17 @@ try:
             # if i_iter < start_iter:
             #     continue
 
-            imgs_lr, imgs_hr, text_single = (
-                data["lr"].to(device),
-                data["hr"].to(device),
-                data["text"].to(device),
-            )
-
-            # create zero time embedding
-            time_embed = torch.zeros(size=(params["batch_size"],)).to(device)
+            imgs_lr, imgs_hr = data["lr"].to(device), data["hr"].to(device)
 
             # text embeddings
             if (params["d_cond"] == 0) or (params["d_cond"] is None):
                 text_embed = None
             else:
-                text_embed = text_single
+                text_embed = data["text"].to(device)
 
-            with torch.autocast(
-                device_type="cuda", dtype=torch.float16, enabled=params["enable_amp"]
-            ):
+            with torch.autocast("cuda", torch.float16, enabled=params["enable_amp"]):
+
+                # predict
                 imgs_est = model(imgs_lr, time_embed, text_embed)
 
                 if params["loss"] == "mse":
@@ -349,8 +356,16 @@ try:
                 if params["loss"] == "msew":
                     loss = utils_loss.MSE_w(img_est=imgs_est, img_gt=imgs_hr, scale=0.1)
 
-                if torch.isnan(loss):
-                    print(" NaN!")
+            if torch.isnan(loss):
+                print("-" * 50)
+                print("\nLoss is NaN!")
+                print(f"- input max/min: {imgs_lr.max()} {imgs_hr.min()}")
+                print(f"- output max/min: {imgs_est.max()} {imgs_est.min()}")
+                print(f"- estimation max/min: {imgs_est.max()} {imgs_est.min()}")
+                print("-" * 50)
+                pbar.close()
+                log_writer.close()
+                exit()
 
             optimizer.zero_grad()
             scaler.scale(loss).backward()
@@ -358,28 +373,15 @@ try:
             scaler.update()
             # ------------------------------------------------------------------
             # evaluation
-            if params["dim"] == 3:
-                imgs_est = utils_eva.linear_transform(
-                    img_true=imgs_hr, img_test=imgs_est, axis=(2, 3, 4)
-                )
+            if params["print_loss"]:
 
-            if params["dim"] == 2:
-                imgs_est = utils_eva.linear_transform(
-                    img_true=imgs_hr, img_test=imgs_est, axis=(2, 3)
-                )
+                imgs_est = utils_eva.linear_transform(imgs_hr, imgs_est, axis=(2, 3))
+                ssim = utils_eva.SSIM_tb(img_true=imgs_hr, img_test=imgs_est)
+                psnr = utils_eva.PSNR_tb(img_true=imgs_hr, img_test=imgs_est)
 
-            ssim = utils_eva.SSIM_tb(
-                img_true=imgs_hr, img_test=imgs_est, data_range=None, version_wang=False
-            )
-            psnr = utils_eva.PSNR_tb(
-                img_true=imgs_hr, img_test=imgs_est, data_range=None
-            )
-
-            pbar.set_postfix(
-                Metrics="Loss: {:>.6f}, PSNR: {:>.6f}, SSIM: {:>.6f}".format(
-                    loss.cpu().detach().numpy(), psnr, ssim
+                pbar.set_postfix(
+                    loss=f"{loss.cpu().detach().numpy():>.4f}, PSNR: {psnr:>.4f}, SSIM: {ssim:>.4f}"
                 )
-            )
 
             # ------------------------------------------------------------------
             # update learning rate
@@ -393,8 +395,9 @@ try:
                         "Learning rate", optimizer.param_groups[-1]["lr"], i_iter
                     )
                     log_writer.add_scalar(params["loss"], loss, i_iter)
-                    log_writer.add_scalar("PSNR", psnr, i_iter)
-                    log_writer.add_scalar("SSIM", ssim, i_iter)
+                    if params["print_loss"]:
+                        log_writer.add_scalar("PSNR", psnr, i_iter)
+                        log_writer.add_scalar("SSIM", ssim, i_iter)
 
             if i_iter % params["save_every_iter"] == 0:
                 print("\nsave model (epoch: {}, iter: {})".format(i_epoch, i_iter))
@@ -411,89 +414,71 @@ try:
             if (i_iter % params["validate_every_iter"] == 0) and (
                 params["enable_validation"] == True
             ):
-                pbar_val = tqdm.tqdm(
-                    desc="validation",
-                    total=num_batches_validation,
-                    leave=True,
-                    ncols=120,
-                )
-                # convert model to evaluation model
-                model.eval()
+                pbar_val = tqdm.tqdm(desc="VALIDATION", total=num_batch_val, ncols=100)
+                model.eval()  # convert model to evaluation model
+
                 # --------------------------------------------------------------
-                running_val_ssim, running_val_psnr = 0, 0
-                for i_batch_val, data_val in enumerate(dataloader_validation):
+                running_val_ssim, running_val_psnr, running_val_mse = 0, 0, 0
+                with torch.autocast(
+                    "cuda", torch.float16, enabled=params["enable_amp"]
+                ):
+                    with torch.no_grad():
+                        for i_batch_val, data_val in enumerate(dataloader_val):
+                            imgs_lr_val, imgs_hr_val, text_embed_val = (
+                                data_val["lr"].to(device),
+                                data_val["hr"].to(device),
+                                data_val["text"].to(device),
+                            )
 
-                    imgs_lr_val, imgs_hr_val, text_single_val = (
-                        data_val["lr"].to(device),
-                        data_val["hr"].to(device),
-                        data_val["text"].to(device),
-                    )
-
-                    time_embed_val = torch.zeros(size=(params["batch_size"],)).to(
-                        device
-                    )
-                    text_embed_val = text_single_val
-                    with torch.autocast(
-                        device_type="cuda",
-                        dtype=torch.float16,
-                        enabled=params["enable_amp"],
-                    ):
-                        with torch.no_grad():
                             imgs_est_val = model(
                                 imgs_lr_val, time_embed_val, text_embed_val
                             )
 
-                    # evaluation
-                    # linear transform
-                    if params["dim"] == 2:
-                        imgs_est_val = utils_eva.linear_transform(
-                            img_true=imgs_hr_val, img_test=imgs_est_val, axis=(2, 3)
-                        )
-                    if params["dim"] == 3:
-                        imgs_est_val = utils_eva.linear_transform(
-                            img_true=imgs_hr_val, img_test=imgs_est_val, axis=(2, 3, 4)
-                        )
+                            # evaluation
+                            # linear transform
+                            imgs_est_val = utils_eva.linear_transform(
+                                img_true=imgs_hr_val, img_test=imgs_est_val, axis=(2, 3)
+                            )
 
-                    ssim_val = utils_eva.SSIM_tb(
-                        img_true=imgs_hr_val,
-                        img_test=imgs_est_val,
-                        data_range=None,
-                        version_wang=False,
-                    )
-                    psnr_val = utils_eva.PSNR_tb(
-                        img_true=imgs_hr_val, img_test=imgs_est_val, data_range=None
-                    )
+                            mse_val = utils_eva.MSE(imgs_hr_val, imgs_est_val)
+                            ssim_val = utils_eva.SSIM_tb(imgs_hr_val, imgs_est_val)
+                            psnr_val = utils_eva.PSNR_tb(imgs_hr_val, imgs_est_val)
 
-                    if not np.isinf(psnr_val):
-                        running_val_psnr += psnr_val
-                        running_val_ssim += ssim_val
+                            if not np.isinf(psnr_val):
+                                running_val_psnr += psnr_val
+                                running_val_ssim += ssim_val
+                                running_val_mse += mse_val
 
-                    pbar_val.set_postfix(
-                        Metrics="PSNR: {:>.6f}, SSIM: {:>.6f}".format(
-                            running_val_psnr / (i_batch_val + 1),
-                            running_val_ssim / (i_batch_val + 1),
-                        )
-                    )
-                    pbar_val.update(1)
+                            pbar_val.set_postfix(
+                                PSNR="{:>.4f}, SSIM={:>.4f}, MSE={:>.4f}".format(
+                                    running_val_psnr / (i_batch_val + 1),
+                                    running_val_ssim / (i_batch_val + 1),
+                                    running_val_mse / (i_batch_val + 1),
+                                )
+                            )
+                            pbar_val.update(1)
 
-                del imgs_lr_val, imgs_hr_val, text_single_val, time_embed_val
+                del imgs_lr_val, imgs_hr_val, text_embed_val
 
                 if log_writer is not None:
                     log_writer.add_scalar(
-                        "psnr_val", running_val_psnr / num_batches_validation, i_iter
+                        "psnr_val", running_val_psnr / num_batch_val, i_iter
                     )
                     log_writer.add_scalar(
-                        "ssim_val", running_val_ssim / num_batches_validation, i_iter
+                        "ssim_val", running_val_ssim / num_batch_val, i_iter
                     )
+                    log_writer.add_scalar(
+                        "mse_val", running_val_mse / num_batch_val, i_iter
+                    )
+                pbar_val.close()
                 # convert model to train mode
                 model.train(True)
-                pbar_val.close()
         pbar.close()
 
     # --------------------------------------------------------------------------
     # save and finish
     # --------------------------------------------------------------------------
-    print("\nsave model (epoch: {}, iter: {})".format(i_epoch, i_iter))
+    print(f"\nsave model (epoch: {i_epoch}, iter: {i_iter})")
 
     # saving general checkpoint
     model_dict = {"model_state_dict": getattr(model, "_orig_mod", model).state_dict()}
@@ -507,8 +492,8 @@ try:
     print("Training done.")
 
 except KeyboardInterrupt:
-    print("\ntraining stop, saving model ...")
-    print("\nsave model (epoch: {}, iter: {})".format(i_epoch, i_iter))
+    print("\nTraining stop, saving model ...")
+    print(f"\nSave model (epoch: {i_epoch}, iter: {i_iter})")
 
     # saving general checkpoint
     model_dict = {"model_state_dict": getattr(model, "_orig_mod", model).state_dict()}

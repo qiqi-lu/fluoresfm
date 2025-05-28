@@ -189,7 +189,7 @@ class CrossAttention(nn.Module):
             # Set the scale for scaled dot-product attention.
             # self.flash.softmax_scale = self.scale
             self.flash_softmax_scale = self.scale
-            print("### Use Flash Attention")
+            # print("### Use Flash Attention")
 
         # Set to `None` if it's not installed
         except ImportError:

@@ -736,7 +736,7 @@ class UniModel(nn.Module):
         patch_norm=True,
         use_checkpoint=False,
         num_feat=32,
-        srscale=2,
+        srscale=1,
     ):
         super(UniModel, self).__init__()
         # self.img_range = 1
@@ -749,13 +749,37 @@ class UniModel(nn.Module):
             self.conv_firstsr = nn.Conv2d(in_channels, embed_dim, 3, 1, 1)
             self.upsamplesr = Upsample(srscale, num_feat)
 
-        # 2 denoise / deconvoltuion
+            self.conv_before_upsample_sr = nn.Sequential(
+                nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
+            )
+            self.conv_last_sr = nn.Conv2d(num_feat, 1, 3, 1, 1)
+
+        # 2 denoise
         if self.task == 2 or self.task == 0:
             self.conv_firstdT = nn.Conv2d(in_channels, embed_dim, 3, 1, 1)
+
+            self.conv_before_upsample_dn = nn.Sequential(
+                nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
+            )
+            self.conv_last_dn = nn.Conv2d(num_feat, 1, 3, 1, 1)
 
         # 3 iso
         if self.task == 3 or self.task == 0:
             self.conv_firstiso = nn.Conv2d(in_channels, embed_dim, 3, 1, 1)
+
+            self.conv_before_upsample_iso = nn.Sequential(
+                nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
+            )
+            self.conv_last_iso = nn.Conv2d(num_feat, 1, 3, 1, 1)
+
+        # 4 deconvolution
+        if self.task == 4 or self.task == 0:
+            self.conv_firstdcv = nn.Conv2d(in_channels, embed_dim, 3, 1, 1)
+
+            self.conv_before_upsample_dcv = nn.Sequential(
+                nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
+            )
+            self.conv_last_dcv = nn.Conv2d(num_feat, 1, 3, 1, 1)
 
         # 4 Projection
         # args.n_resblocks = 64
@@ -820,11 +844,11 @@ class UniModel(nn.Module):
         self.norm = norm_layer(embed_dim)
         self.conv_after_body = nn.Conv2d(embed_dim, embed_dim, 3, 1, 1)
 
-        self.conv_before_upsample0 = nn.Sequential(
-            nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
-        )
-        self.upsample = Upsample(1, num_feat)
-        self.conv_last0 = nn.Conv2d(num_feat, 1, 3, 1, 1)
+        # self.conv_before_upsample0 = nn.Sequential(
+        #     nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True)
+        # )
+        # self.upsample = Upsample(1, num_feat)
+        # self.conv_last0 = nn.Conv2d(num_feat, 1, 3, 1, 1)
 
         self.apply(self._init_weights)
 
@@ -864,6 +888,10 @@ class UniModel(nn.Module):
             # self.mean = self.mean.type_as(x)
             # x = (x - self.mean) * self.img_range
             x = self.conv_firstiso(x)
+        elif self.task == 4:
+            x = self.check_image_size(x)
+            x = self.conv_firstdcv(x)
+
         # elif self.task == 4:
         #     x2d, closs = self.project(x)
         #     x2d = self.check_image_size(x2d)
@@ -881,21 +909,26 @@ class UniModel(nn.Module):
         xfe = self.conv_after_body(self.forward_features(x))
 
         # ~~~~~~~~~~~~ Tail ~~~~~~~~~~~~~~~ #
-        if self.task == 1:
+        if self.task == 1:  # sr
             x = xfe + x
-            x = self.conv_before_upsample0(x)
+            x = self.conv_before_upsample_sr(x)
             x = self.upsamplesr(x)
-            x = self.conv_last0(x)
-        elif self.task == 2:
+            x = self.conv_last_sr(x)
+        elif self.task == 2:  # dn
             x = xfe + x
-            x = self.conv_before_upsample0(x)
-            x = self.upsample(x)
-            x = self.conv_last0(x)
-        elif self.task == 3:
+            x = self.conv_before_upsample_dn(x)
+            # x = self.upsample(x)
+            x = self.conv_last_dn(x)
+        elif self.task == 3:  # iso
             x = xfe + x
-            x = self.conv_before_upsample0(x)
-            x = self.upsample(x)
-            x = self.conv_last0(x)
+            x = self.conv_before_upsample_iso(x)
+            # x = self.upsample(x)
+            x = self.conv_last_iso(x)
+        elif self.task == 4:  # dcv
+            x = xfe + x
+            x = self.conv_before_upsample_dcv(x)
+            x = self.conv_last_dcv(x)
+
         # elif self.task == 4:
         #     x = xfe
         #     x = self.conv_before_upsample0(x)
@@ -923,12 +956,13 @@ class UniModel(nn.Module):
 
 
 if __name__ == "__main__":
+    # sr: 1, denoise: 2, iso: 3, dcv: 4.
     in_channels = 1
     x = torch.zeros(size=(2, in_channels, 64, 64))
     model = UniModel(
         in_channels=in_channels,
         out_channels=1,
-        tsk=1,
+        tsk=0,
         img_size=(64, 64),
         patch_size=1,
         embed_dim=180 // 2,
@@ -945,8 +979,8 @@ if __name__ == "__main__":
         patch_norm=True,
         use_checkpoint=False,
         num_feat=32,
-        srscale=2,
+        srscale=1,
     )
-    # out = model(x)
-    # print(out.shape)
-    torchinfo.summary(model=model, input_size=(2, in_channels, 64, 64))
+    out = model(x, 4)
+    print(out.shape)
+    # torchinfo.summary(model=model, input_size=(2, in_channels, 64, 64))

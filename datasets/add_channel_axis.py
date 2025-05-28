@@ -4,23 +4,22 @@ Add additional channel axis as the first axis.
 
 import skimage.io as io
 import numpy as np
-from utils_data import read_txt
 import os, tqdm
 
-# path_txt = "SIMMicrotubule\\transformed\\test_2d_proj.txt"
-# path_image = "SIMMicrotubule\\transformed\\test\\channel_0\\SIM_2d_proj"
-
-path_txt = "BIG-CElegans\\transformed\\test.txt"
-path_image = "BIG-CElegans\\transformed\\test\FITC\WF"
+path_image = "DeepBacs\\transformed\Seg_Saureus\\test\FM\\masks"
 
 # ------------------------------------------------------------------------------
 print("-" * 100)
-files = read_txt(path_txt)
-print(len(files))
-
+# get the list of files in the path_image, and filter out the non-tif files
 print(path_image)
-pbar = tqdm.tqdm(total=len(files), desc="add axis", ncols=100)
-for name in files:
+list_image = os.listdir(path_image)
+list_image = [
+    x for x in list_image if x.endswith(".tif")
+]  # filter out the non-tif files
+print(len(list_image))
+
+pbar = tqdm.tqdm(total=len(list_image), desc="ADD AXIS", ncols=100)
+for name in list_image:
     img = io.imread(os.path.join(path_image, name))
     img = img.astype(np.float32)
     if len(img.shape) == 2:

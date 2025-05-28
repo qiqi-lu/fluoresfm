@@ -1,12 +1,10 @@
 import numpy as np
 import skimage.io as io
-from utils_data import read_txt
 import os, tqdm
 
-path_txt = "VMSIM\\transformed\Fig5\\test.txt"
-path_root = "VMSIM\\transformed\Fig5\\test\mito\SIM"
+path_root = "E:\qiqilu\datasets\RCAN3D\\transformed\C2S_MT\\test\channel_0\confocal"
 
-filenames = read_txt(path_txt)
+filenames = os.listdir(path_root)
 pbar = tqdm.tqdm(desc="POS", total=len(filenames), ncols=80)
 for file in filenames:
     img = io.imread(os.path.join(path_root, file))

@@ -1,14 +1,77 @@
+"""
+Functions used for data processing.
+"""
+
+import torch, json, os, pydicom, random, sys, scipy
+
+sys.path.insert(1, "E:\qiqilu\Project\\2024 Foundation model\code")
+sys.path.insert(1, "/mnt/e/qiqilu/Project/2024 Foundation model/code")
+from models.PSFmodels import BWModel
+
 import numpy as np
 import skimage.io as io
 from math import ceil
-import torch, json, os, pydicom, random, sys, tqdm
 import methods.convolution as conv
 import utils.evaluation as eva
 import utils.data as utils_data
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
-sys.path.insert(1, "E:\qiqilu\Project\\2024 Foundation model\code")
-from models.PSFmodels import BWModel
+
+class RotFlip(object):
+    """
+    Rotation and flip.
+    Input a image and a random number, and do a specific operation on the image according to the random number.
+    """
+
+    def __init__(self):
+        pass
+
+    def __call__(self, img, random_num):
+        """
+        ### Inputs:
+        - `img` : numpy array, image. [B, C, H, W].
+        - `random_num` : int, random number within [0, 6].
+        ### Returns:
+        - `img` : numpy array, augmented image. [B, C, H, W].
+        """
+        if random_num == 1:
+            img = torch.rot90(img, k=1, dims=[1, 2])
+        elif random_num == 2:
+            img = torch.rot90(img, k=2, dims=[1, 2])
+        elif random_num == 3:
+            img = torch.rot90(img, k=3, dims=[1, 2])
+        elif random_num == 4:
+            img = torch.flip(img, dims=[1])
+        elif random_num == 5:
+            img = torch.flip(img, dims=[2])
+        elif random_num == 6:
+            img = torch.flip(img, dims=[1, 2])
+        else:
+            pass
+        return img
+
+
+def convert_to_8bit(img, data_range=None):
+    """
+    Convert image to 8-bit.
+
+    ### Parameters:
+    - `img` : numpy array, image.
+    - `data_range` : tuple, (vmin, vmax), the range of the image. If None, the range is calculated from the image.
+
+    ### Returns:
+    - `img` : numpy array, image.
+    """
+    img = tensor_to_array(img)
+    if data_range is None:
+        vmin = img.min()
+        vmax = img.max()
+    else:
+        vmin, vmax = data_range
+    img = np.clip(img, vmin, vmax)
+    img = (img - vmin) / (vmax - vmin) * 255.0
+    img = img.astype(np.uint8)
+    return img
 
 
 def print_dict(dict):
@@ -1280,12 +1343,21 @@ class Dataset_iit(Dataset):
         task=None,
         output_type="ii-text",
         use_clean_data=False,
+        rotflip=False,
+        clip=None,
         **kwargs,
     ):
         super().__init__()
         self.dim = dim
         self.transform = transform
         self.output_type = output_type
+        self.rotflip = rotflip
+        self.clip = clip
+
+        if self.rotflip:
+            self.Rot = utils_data.RotFlip()
+            self.random_generator = torch.Generator()
+            self.random_generator.manual_seed(7)
 
         # string to list of string
         if not isinstance(path_dataset_lr, list):
@@ -1364,8 +1436,14 @@ class Dataset_iit(Dataset):
                 print(f"- Dataset:\n- LR: {path_lr}\n- HR: {path_hr}")
                 print(f"- Number of samples: {len(sample_names)}")
 
-        print(f"- total number of samples: {len(self.path_sample_lr)}")
+        print(f"- total number of samples: {self.__len__()}")
         print("-" * 90)
+
+        if self.rotflip:
+            num_sample = self.__len__()
+            self.random_num = torch.randint(
+                low=0, high=6, size=(num_sample,), generator=self.random_generator
+            )
 
     def __len__(self):
         return len(self.path_sample_lr)
@@ -1404,11 +1482,11 @@ class Dataset_iit(Dataset):
             idx = idx.tolist()
 
         # low-resolution image
-        img_lr = read_image(img_path=self.path_sample_lr[idx], expend_channel=False)
+        img_lr = read_image(img_path=self.path_sample_lr[idx])
         img_lr = torch.tensor(img_lr)
 
         # high-resolution image
-        img_hr = read_image(img_path=self.path_sample_hr[idx], expend_channel=False)
+        img_hr = read_image(img_path=self.path_sample_hr[idx])
         img_hr = torch.tensor(img_hr)
 
         # text
@@ -1430,6 +1508,15 @@ class Dataset_iit(Dataset):
 
         if self.dim == 3:
             img_lr, img_hr = self.to3d(img_lr), self.to3d(img_hr)
+
+        # augmentation
+        if self.rotflip:
+            img_lr = self.Rot(img=img_lr, random_num=self.random_num[idx])
+            img_hr = self.Rot(img=img_hr, random_num=self.random_num[idx])
+
+        if self.clip is not None:
+            img_lr = torch.clamp(img_lr, min=self.clip[0], max=self.clip[1])
+            img_hr = torch.clamp(img_hr, min=self.clip[0], max=self.clip[1])
 
         # output
         if self.output_type == "ii-text":
@@ -1461,6 +1548,7 @@ def interp_sf(x, sf):
     ### Returns:
     - `x_inter` : numpy array, interpolated image. [C, H, W]
     """
+    assert len(x.shape) == 3, "The image shape should be [C, H, W]."
     x = torch.unsqueeze(torch.tensor(x), dim=0)
     if sf > 0:
         x_inter = torch.nn.functional.interpolate(x, scale_factor=sf, mode="nearest")
@@ -1469,7 +1557,7 @@ def interp_sf(x, sf):
     return x_inter[0].numpy()
 
 
-def read_image(img_path: str, expend_channel: bool = False):
+def read_image(img_path: str, expend_channel: bool = False) -> np.ndarray:
     """
     Read image and convert to a numpy array. Supported data formats: `.dcm`, and `.tif`.
 
@@ -1598,6 +1686,69 @@ class NormalizePercentile(object):
             amp = 1
         image = (image - vmin) / amp
 
+        return image
+
+
+class NormalizePercentile_patch(object):
+    """
+    Normalize each patch in a batch, and save the normalization parameters for each patch.
+    ### Parameters:
+    - `p_low` : float, lower percentile.
+    - `p_high` : float, upper percentile.
+    """
+
+    def __init__(self, p_low=0.0, p_high=1.0):
+        self.p_low = p_low
+        self.p_high = p_high
+        self.vmin = None
+        self.vmax = None
+        self.amp = None
+
+    def __call__(self, image):
+        """
+        ### Inputs:
+        - `image` : torch tensor, image to be normalized. [B, C, H, W]
+        ### Returns:
+        - `image` : torch tensor, normalized image. [B, C, H, W]
+        """
+        assert len(image.shape) == 4, "Error: 'image' should be a 4D tensor."
+        if isinstance(image, np.ndarray):
+            self.vmin = np.percentile(
+                a=image, q=self.p_low * 100, axis=(1, 2, 3), keepdims=True
+            )
+            self.vmax = np.percentile(
+                a=image, q=self.p_high * 100, axis=(1, 2, 3), keepdims=True
+            )
+            self.amp = self.vmax - self.vmin
+            self.amp = np.where(self.amp == 0, 1, self.amp)
+
+        if isinstance(image, torch.Tensor):
+            num_batch = image.shape[0]
+            image_flatten = image.view(num_batch, -1)
+            self.vmin = torch.quantile(
+                input=image_flatten, q=self.p_low, dim=1, keepdim=True
+            ).view(num_batch, 1, 1, 1)
+            self.vmax = torch.quantile(
+                input=image_flatten, q=self.p_high, dim=1, keepdim=True
+            ).view(num_batch, 1, 1, 1)
+            self.amp = self.vmax - self.vmin
+            self.amp = torch.where(self.amp == 0, 1, self.amp)
+
+        image_norm = (image - self.vmin) / self.amp
+        return image_norm
+
+    def backward(self, image_norm):
+        """
+        ### Inputs:
+        - `image_norm` : torch tensor, normalized image. [B, C, H, W]
+        ### Returns:
+        - `image` : torch tensor, denormalized image. [B, C, H, W]
+        """
+        assert len(image_norm.shape) == 4, "Error: 'image_norm' should be a 4D tensor."
+        assert self.vmin is not None, "Error: 'vmin' is required."
+        assert self.vmax is not None, "Error: 'vmax' is required."
+        assert self.amp is not None, "Error: 'amp' is required."
+        image = image_norm * self.amp + self.vmin
         return image
 
 
@@ -1745,14 +1896,23 @@ def fold_scale(
 ):
     """
     Stitch square patches.
+
+    ### Parameters:
+    - `patches` : torch tensor, patches to be stitched. [N, 1, C, patchsize, patchsize].
+    - `original_image_shape` : tuple, shape of the original image. (1, C, Ny, Nx).
+    - `overlap` : int, overlap between patches. Default is 0.
+    - `crop_center` : bool, whether to crop the center of the patch to stitch.
+    - `enable_scale` : bool, whether to enable scaling.
+
+    ### Returns:
+    - `img_fold` : torch tensor, stitched image. [1, C, Ny, Nx].
     """
-    # patches = patches.to(device="cpu")
     patch_size = patches.shape[-1]
     step = patch_size - overlap
     batch_size, num_channel = original_image_shape[0:2]
 
     if len(original_image_shape) == 4:
-        Ny, Nx = original_image_shape[-2], original_image_shape[-1]  # image shape
+        Ny, Nx = original_image_shape[-2:]  # image shape
 
         # number of patch along each dim
         num_patch_y = ceil((Ny - patch_size) / step) + 1
@@ -1810,9 +1970,21 @@ def fold_scale(
         patch_mask_rb = patch_zero
         patch_mask_rb[..., edge:, edge:] = 1.0
 
+        # # calculate the mean of each patch
+        # patch_mean = torch.mean(patches, dim=(1, 2, 3, 4))
+        # # sort the mean and get the index of them
+        # patch_mean_sort, sort_index = torch.sort(patch_mean, descending=True)
+        # start_y = sort_index[0] // num_patch_x
+        # start_x = sort_index[0] % num_patch_x
+        # index_x = list(range(start_x, num_patch_x)) + list(range(start_x - 1, -1, -1))
+        # index_y = list(range(start_y, num_patch_y)) + list(range(start_y - 1, -1, -1))
+
+        index_y = range(num_patch_y)
+        index_x = range(num_patch_x)
+
         # pbar = tqdm.tqdm(desc="unfold", total=num_patch_y, ncols=80)
-        for i in range(num_patch_y):
-            for j in range(num_patch_x):
+        for i in index_y:
+            for j in index_x:
                 patch_pad *= 0.0
                 patch = patches[i * num_patch_x + j]
                 patch_crop = patch
@@ -1851,20 +2023,223 @@ def fold_scale(
                     (img_pad > 0.0) & (patch_pad > 0.0), 1.0, 0.0
                 )
                 # scale --------------------------------------------------------
-                if enable_scale:
-                    sum_a = torch.sum(img_pad * overlap_mask)
-                    sum_b = torch.sum(patch_pad * overlap_mask)
-                    if sum_b > 0.00001:
-                        scale = sum_a / sum_b
-                    else:
-                        scale = torch.tensor(1.0, device=patches.device)
-                else:
-                    scale = torch.tensor(1.0, device=patches.device)
-                # --------------------------------------------------------------
+                scale = torch.tensor(1.0, device=patches.device)
+                if enable_scale and ((i + j) > 0):
+                    # sum_a = torch.sum(img_pad * overlap_mask)
+                    # sum_b = torch.sum(patch_pad * overlap_mask)
+
+                    # if sum_b > 0.00001:
+                    #     scale = sum_a / sum_b
+
+                    xx = img_pad * overlap_mask
+                    yy = patch_pad * overlap_mask
+                    if torch.sum(xx * xx) > 0.00001:
+                        scale = torch.sum(xx * yy) / torch.sum(xx * xx)
+
+                # ------------------------------------------------------------
                 overlap_region = overlap_mask * (-0.5) + 1.0
                 img_pad += patch_pad * scale
                 img_pad *= overlap_region
+
+                # # ------------------------------------------------------------
+                # if enable_scale and ((i + j) > 0):
+                #     img_pad_ol = img_pad * overlap_mask
+                #     patch_pad_ol = patch_pad * overlap_mask
+                #     # get the value larger than 0 into a vector
+                #     img_pad_ol = img_pad_ol[img_pad_ol > 0.0]
+                #     patch_pad_ol = patch_pad_ol[patch_pad_ol > 0.0]
+                #     a, b = linear_transform_ab(img_pad_ol, patch_pad_ol)
+
+                #     # convert to 01
+                #     patch_pad_01 = torch.where(patch_pad > 0.0, 1.0, 0.0)
+                #     patch_pad_scale = (a + b * patch_pad) * patch_pad_01
+                # else:
+                #     patch_pad_scale = patch_pad
+                # # ------------------------------------------------------------
+                # overlap_region = overlap_mask * (-0.5) + 1.0
+                # img_pad += patch_pad_scale
+                # img_pad *= overlap_region
+                # # ------------------------------------------------------------
+
             # pbar.update(1)
         # pbar.close()
         img_fold = img_pad[..., :Ny, :Nx]
     return img_fold
+
+
+def linear_transform_ab(img_true, img_test):
+    """
+    Get the a and b for linear transform.
+    `img_test_transform = a + b * img_test`
+
+    ### Parameters:
+    - `img_true` : ground truth image. [Ny, Nx] or N.
+    - `img_test` : test image. [Ny, Nx] or N.
+    ### Returns:
+    - `a` : float, a.
+    - `b` : float, b.
+    """
+    # calculate mean and std
+    if type(img_true) == torch.Tensor:
+        mean = lambda x: torch.mean(x)
+        square = lambda x: torch.square(x)
+    if type(img_true) == np.ndarray:
+        mean = lambda x: np.mean(x)
+        square = lambda x: np.square(x)
+
+    mean_true = mean(img_true)
+    mean_test = mean(img_test)
+    # calculate slope and intercept
+    b = mean((img_test - mean_test) * (img_true - mean_true)) / mean(
+        square(img_test - mean_test) + 0.00001
+    )
+    a = mean_true - b * mean_test
+    return a, b
+
+
+def fold_linear_ramp(patches, original_image_shape, overlap: int = 0):
+    """
+    Stitch square patches.
+
+    ### Parameters:
+    - `patches` : patches to be stitched. [N, 1, C, patchsize, patchsize].
+    - `original_image_shape` : tuple, shape of the original image. (1, C, Ny, Nx).
+    - `overlap` : int, overlap between patches. Default is 0.
+
+    ### Returns:
+    - `img_fold` : torch tensor, stitched image. [1, C, Ny, Nx].
+    """
+    patches = tensor_to_array(patches)
+    patch_size = patches.shape[-1]
+    step = patch_size - overlap
+    bs, nc = original_image_shape[0:2]
+
+    assert len(original_image_shape) == 4, "Only support 4D image."
+
+    Ny, Nx = original_image_shape[-2:]  # image shape
+
+    # number of patch along each dim
+    num_patch_y = ceil((Ny - patch_size) / step) + 1
+    num_patch_x = ceil((Nx - patch_size) / step) + 1
+    num_pacth = num_patch_y * num_patch_x
+
+    # reshape patches
+    patches = np.reshape(patches, (num_pacth, bs, nc, patch_size, patch_size))
+
+    # calculate the image shape after padding
+    img_pad_shape = (bs, nc, num_patch_y * step + overlap, num_patch_x * step + overlap)
+    img_pad = np.zeros(img_pad_shape)  # place holder
+    patch_pad = np.zeros_like(img_pad)
+
+    patch_mask_lu = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (0, overlap + 1), (0, overlap + 1)),
+        "linear_ramp",
+    )[..., 0:-1, 0:-1]
+
+    patch_mask_mu = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - 2 * overlap)),
+        ((0, 0), (0, 0), (0, overlap + 1), (overlap + 1, overlap + 1)),
+        "linear_ramp",
+    )[..., 0:-1, 1:-1]
+
+    patch_mask_ru = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (0, overlap + 1), (overlap + 1, 0)),
+        "linear_ramp",
+    )[..., 0:-1, 1:]
+
+    patch_mask_lm = np.pad(
+        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (0, overlap + 1)),
+        "linear_ramp",
+    )[..., 1:-1, 0:-1]
+
+    patch_mask_mm = np.pad(
+        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - 2 * overlap)),
+        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (overlap + 1, overlap + 1)),
+        "linear_ramp",
+    )[..., 1:-1, 1:-1]
+
+    patch_mask_rm = np.pad(
+        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (overlap + 1, 0)),
+        "linear_ramp",
+    )[..., 1:-1, 1:]
+
+    patch_mask_lb = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (overlap + 1, 0), (0, overlap + 1)),
+        "linear_ramp",
+    )[..., 1:, 0:-1]
+
+    patch_mask_mb = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - 2 * overlap)),
+        ((0, 0), (0, 0), (overlap + 1, 0), (overlap + 1, overlap + 1)),
+        "linear_ramp",
+    )[..., 1:, 1:-1]
+
+    patch_mask_rb = np.pad(
+        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
+        ((0, 0), (0, 0), (overlap + 1, 0), (overlap + 1, 0)),
+        "linear_ramp",
+    )[..., 1:, 1:]
+
+    for i in range(num_patch_y):
+        for j in range(num_patch_x):
+            patch = patches[i * num_patch_x + j]
+            patch_crop = patch
+            # crop center region -------------------------------------------
+            if overlap > 0:
+                if i == 0:
+                    if j == 0:
+                        patch_crop *= patch_mask_lu
+                    elif j == (num_patch_x - 1):
+                        patch_crop *= patch_mask_ru
+                    else:
+                        patch_crop *= patch_mask_mu
+                elif i == (num_patch_y - 1):
+                    if j == 0:
+                        patch_crop *= patch_mask_lb
+                    elif j == (num_patch_x - 1):
+                        patch_crop *= patch_mask_rb
+                    else:
+                        patch_crop *= patch_mask_mb
+                else:
+                    if j == 0:
+                        patch_crop *= patch_mask_lm
+                    elif j == (num_patch_x - 1):
+                        patch_crop *= patch_mask_rm
+                    else:
+                        patch_crop *= patch_mask_mm
+            # --------------------------------------------------------------
+            patch_pad[
+                :,
+                :,
+                i * step : i * step + patch_size,
+                j * step : j * step + patch_size,
+            ] += patch_crop
+    # sum
+    img_fold = patch_pad[..., :Ny, :Nx]
+    return img_fold
+
+
+if __name__ == "__main__":
+    # test RotFlip class
+    # rot = RotFlip()
+    # img = torch.randn(1, 4, 4)
+    # img_rot = rot(img, 7)
+    # print(img[0])
+    # print(img_rot[0])
+
+    # test normalizepercentile_patch
+    norm = NormalizePercentile_patch(0.03, 0.995)
+    img = torch.randn(4, 1, 64, 64)
+    img_norm = norm(img)
+    img_norm_reverse = norm.backward(img_norm)
+
+    print(img_norm.shape)
+    print(norm.vmin.flatten(), norm.vmax.flatten(), norm.amp.flatten())
+    print(img.flatten().max())
+    print(img_norm.flatten().max())
+    print(img_norm_reverse.flatten().max())

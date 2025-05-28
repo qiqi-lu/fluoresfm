@@ -185,7 +185,7 @@ if __name__ == "__main__":
     x = torch.ones(size=input_size)
     bs, ch, h, w = x.shape
     model = DFCAN(
-        in_channels=in_channels, scale_factor=2, num_features=64, num_groups=4
+        in_channels=in_channels, scale_factor=8, num_features=64, num_groups=4
     )
     o = model(x)
     torchinfo.summary(model=model, input_size=input_size)
