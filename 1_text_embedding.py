@@ -5,21 +5,29 @@ Convert text information to embedding.
 Embedding each line in the `txt` file to a numpy array, and saved as `npy` file.
 """
 
-from models.clip_embedder import CLIPTextEmbedder
+# from models.clip_embedder import CLIPTextEmbedder
 from models.biomedclip_embedder import BiomedCLIPTextEmbedder
 import torch, os, tqdm
 import numpy as np
 
-# text_type = ("ALL", 256)
-# text_type = ("ALL", 160)
+# ------------------------------------------------------------------------------
+finetune = True
+# ------------------------------------------------------------------------------
+
+text_type = ("ALL", 160)
 # text_type = ("TSpixel", 77)
 # text_type = ("TSmicro", 77)
 # text_type = ("TS", 77)
-text_type = ("T", 77)
+# text_type = ("T", 77)
 
 # ------------------------------------------------------------------------------
 device = torch.device("cuda:0")
-path_dataset_txt = os.path.join("text", "v2", f"dataset_text_{text_type[0]}.txt")
+path_text = os.path.join("text", "v2")
+
+if finetune == True:
+    path_text += "-finetune"
+
+path_dataset_txt = os.path.join(path_text, f"dataset_text_{text_type[0]}.txt")
 context_length = text_type[1]
 path_save_to = path_dataset_txt.split(".")[0] + "_" + str(context_length)
 os.makedirs(path_save_to, exist_ok=True)

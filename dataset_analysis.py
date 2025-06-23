@@ -66,16 +66,15 @@ dataset_names_all = {
             "w2s-c2-sr-6",
             "w2s-c2-sr-7",
             "srcaco2-h2b-sr-2",
-            # "srcaco2-h2b-sr-4",
-            # "srcaco2-h2b-sr-8",
             "srcaco2-survivin-sr-2",
-            # "srcaco2-survivin-sr-4",
-            # "srcaco2-survivin-sr-8",
             "srcaco2-tubulin-sr-2",
-            # "srcaco2-tubulin-sr-4",
-            # "srcaco2-tubulin-sr-8",
-            "vmsim5-mito-sr",
-            "vmsim5-mito-dcv",
+            # "care-drosophila-iso", # remove. not have ground truth
+            # "care-retina0-iso", # remove. not have ground truth
+            # "care-retina1-iso", # remove. not have ground truth
+            "care-liver-iso",
+            "vmsim5-mito-sr-crop",
+            "rcan3d-c2s-mt-sr",
+            "rcan3d-c2s-npc-sr",
         ],
         "dn": [
             "biosr-cpp-dn-1",
@@ -91,14 +90,6 @@ dataset_names_all = {
             "biosr-er-dn-3",
             "biosr-er-dn-4",
             "biosr-er-dn-5",
-            "biosr-mt-dn-1",
-            "biosr-mt-dn-2",
-            "biosr-mt-dn-3",
-            "biosr-mt-dn-4",
-            "biosr-mt-dn-5",
-            "biosr-mt-dn-6",
-            "biosr-mt-dn-7",
-            "biosr-mt-dn-8",
             "biosr-actin-dn-1",
             "biosr-actin-dn-2",
             "biosr-actin-dn-3",
@@ -110,6 +101,14 @@ dataset_names_all = {
             "biosr-actin-dn-9",
             "biosr-actin-dn-10",
             "biosr-actin-dn-11",
+            "biosr-mt-dn-1",
+            "biosr-mt-dn-2",
+            "biosr-mt-dn-3",
+            "biosr-mt-dn-4",
+            "biosr-mt-dn-5",
+            "biosr-mt-dn-6",
+            "biosr-mt-dn-7",
+            "biosr-mt-dn-8",
             "biosr-actinnl-dn-1",
             "biosr-actinnl-dn-2",
             "biosr-actinnl-dn-3",
@@ -260,15 +259,6 @@ dataset_names_all = {
             "biosr-er-dcv-4",
             "biosr-er-dcv-5",
             "biosr-er-dcv-6",
-            "biosr-mt-dcv-1",
-            "biosr-mt-dcv-2",
-            "biosr-mt-dcv-3",
-            "biosr-mt-dcv-4",
-            "biosr-mt-dcv-5",
-            "biosr-mt-dcv-6",
-            "biosr-mt-dcv-7",
-            "biosr-mt-dcv-8",
-            "biosr-mt-dcv-9",
             "biosr-actin-dcv-1",
             "biosr-actin-dcv-2",
             "biosr-actin-dcv-3",
@@ -281,6 +271,15 @@ dataset_names_all = {
             "biosr-actin-dcv-10",
             "biosr-actin-dcv-11",
             "biosr-actin-dcv-12",
+            "biosr-mt-dcv-1",
+            "biosr-mt-dcv-2",
+            "biosr-mt-dcv-3",
+            "biosr-mt-dcv-4",
+            "biosr-mt-dcv-5",
+            "biosr-mt-dcv-6",
+            "biosr-mt-dcv-7",
+            "biosr-mt-dcv-8",
+            "biosr-mt-dcv-9",
             "biosr-actinnl-dcv-1",
             "biosr-actinnl-dcv-2",
             "biosr-actinnl-dcv-3",
@@ -290,9 +289,9 @@ dataset_names_all = {
             "biosr-actinnl-dcv-7",
             "biosr-actinnl-dcv-8",
             "biosr-actinnl-dcv-9",
-            # "care-synthe-granules-dcv",
-            # "care-synthe-tubulin-dcv",
-            # "care-synthe-tubulin-gfp-dcv",
+            # "care-synthe-granules-dcv", # remove. not have ground truth
+            # "care-synthe-tubulin-dcv", # remove. not have ground truth
+            # "care-synthe-tubulin-gfp-dcv", # remove. not have ground truth
             "deepbacs-sim-ecoli-dcv",
             "deepbacs-sim-saureus-dcv",
             "w2s-c0-dcv-1",
@@ -318,39 +317,32 @@ dataset_names_all = {
             "w2s-c2-dcv-7",
             "rcan3d-c2s-mt-dcv",
             "rcan3d-c2s-npc-dcv",
-        ],
-        "iso": [
-            # "care-drosophila-iso",
-            # "care-retina0-iso",
-            # "care-retina1-iso",
-            "care-liver-iso",
+            "vmsim5-mito-dcv-crop",
         ],
     },
     "external_dataset": {
         "sr": [
-            "vmsim3-mito-sr",
-            "vmsim3-er-sr",
+            "vmsim3-mito-sr-crop",
             "biotisr-ccp-sr-1",
             "biotisr-ccp-sr-2",
             "biotisr-ccp-sr-3",
             "biotisr-factin-sr-1",
             "biotisr-factin-sr-2",
             "biotisr-factin-sr-3",
-            "biotisr-factin-nonlinear-sr-1",
-            "biotisr-factin-nonlinear-sr-2",
-            "biotisr-factin-nonlinear-sr-3",
+            # "biotisr-factin-nonlinear-sr-1", # x3
+            # "biotisr-factin-nonlinear-sr-2", # x3
+            # "biotisr-factin-nonlinear-sr-3", # x3
             "biotisr-lysosome-sr-1",
             "biotisr-lysosome-sr-2",
             "biotisr-lysosome-sr-3",
             "biotisr-mt-sr-1",
             "biotisr-mt-sr-2",
             "biotisr-mt-sr-3",
-            "biotisr-mito-sr-1",
-            "biotisr-mito-sr-2",
-            "biotisr-mito-sr-3",
+            # "biotisr-mito-sr-1", # live
+            # "biotisr-mito-sr-2", # live
+            # "biotisr-mito-sr-3",  # live
         ],
         "dn": [
-            "bpae-dn",
             "rcan3d-dn-actin-dn",
             "rcan3d-dn-er-dn",
             "rcan3d-dn-lysosome-dn",
@@ -361,8 +353,8 @@ dataset_names_all = {
             "biotisr-ccp-dn-2",
             "biotisr-factin-dn-1",
             "biotisr-factin-dn-2",
-            "biotisr-factin-nonlinear-dn-1",
-            "biotisr-factin-nonlinear-dn-2",
+            # "biotisr-factin-nonlinear-dn-1",
+            # "biotisr-factin-nonlinear-dn-2",
             "biotisr-lysosome-dn-1",
             "biotisr-lysosome-dn-2",
             "biotisr-mt-dn-1",
@@ -372,12 +364,9 @@ dataset_names_all = {
         ],
         "dcv": [
             "sim-actin-3d-dcv",
-            "sim-actin-2d-patch-dcv",
             "sim-microtubule-3d-dcv",
             "sim-microtubule-2d-patch-dcv",
-            "bpae-dcv",
-            "vmsim3-mito-dcv",
-            "vmsim3-er-dcv",
+            "vmsim3-mito-dcv-crop",
             "vmsim488-bead-patch-dcv",
             "vmsim568-bead-patch-dcv",
             "vmsim647-bead-patch-dcv",
@@ -396,15 +385,20 @@ dataset_names_all = {
             "biotisr-mt-dcv-1",
             "biotisr-mt-dcv-2",
             "biotisr-mt-dcv-3",
-            "biotisr-mito-dcv-1",
-            "biotisr-mito-dcv-2",
-            "biotisr-mito-dcv-3",
+            # "biotisr-mito-dcv-1",  # live
+            # "biotisr-mito-dcv-2",  # live
+            # "biotisr-mito-dcv-3",  # live
         ],
     },
 }
 
+# ------------------------------------------------------------------------------
+#                           datasets shown in radar
+# ------------------------------------------------------------------------------
 dataset_names_radar = {
     "internal_dataset": [
+        # these datasets are selected from the whole internal datasets manually.
+        # total 100 sub-datasets.
         "biosr-cpp-sr-1",
         "biosr-cpp-sr-6",
         "biosr-er-sr-1",
@@ -415,8 +409,8 @@ dataset_names_radar = {
         "biosr-actin-sr-12",
         "deepbacs-sim-ecoli-sr",
         "deepbacs-sim-saureus-sr",
-        # "w2s-c0-sr-1",
-        # "w2s-c0-sr-7",
+        "w2s-c0-sr-1",
+        "w2s-c0-sr-7",
         "w2s-c1-sr-1",
         "w2s-c1-sr-7",
         "w2s-c2-sr-1",
@@ -445,17 +439,17 @@ dataset_names_radar = {
         "rcan3d-c2s-mt-dcv",
         "rcan3d-c2s-npc-dcv",
         "biosr-cpp-dn-1",
-        "biosr-cpp-dn-8",
+        # "biosr-cpp-dn-8",
         "biosr-er-dn-1",
-        "biosr-er-dn-5",
+        # "biosr-er-dn-5",
         "biosr-mt-dn-1",
-        "biosr-mt-dn-8",
+        # "biosr-mt-dn-8",
         "biosr-actin-dn-1",
-        "biosr-actin-dn-11",
+        # "biosr-actin-dn-11",
         "biosr-actinnl-dn-1",
-        "biosr-actinnl-dn-8",
-        # "biosr+-ccp-dn-1",
-        # "biosr+-ccp-dn-8",
+        # "biosr-actinnl-dn-8",
+        "biosr+-ccp-dn-1",
+        "biosr+-ccp-dn-8",
         "biosr+-er-dn-1",
         "biosr+-er-dn-6",
         "biosr+-actin-dn-1",
@@ -509,40 +503,40 @@ dataset_names_radar = {
         "fmd-wf-bpae-g-avg16",
         "fmd-wf-bpae-r-avg2",
         "fmd-wf-bpae-r-avg16",
-        # "rcan3d-dn-golgi-dn",
+        "rcan3d-dn-golgi-dn",
     ],
     "external_dataset": [
-        # "vmsim3-mito-sr",
-        # "vmsim3-er-sr",
-        # "vmsim5-mito-sr",
+        # "vmsim3-mito-sr", # remove, black boundary
+        # "vmsim3-er-sr",  # the ground truth and the raw image is unmatched
+        "vmsim3-mito-sr-crop",
         "biotisr-ccp-sr-1",
         "biotisr-ccp-sr-2",
         "biotisr-ccp-sr-3",
         "biotisr-factin-sr-1",
         "biotisr-factin-sr-2",
         "biotisr-factin-sr-3",
-        # "biotisr-factin-nonlinear-sr-1",
-        # "biotisr-factin-nonlinear-sr-2",
-        # "biotisr-factin-nonlinear-sr-3",
+        # "biotisr-factin-nonlinear-sr-1", # x3
+        # "biotisr-factin-nonlinear-sr-2", # x3
+        # "biotisr-factin-nonlinear-sr-3", # x3
         "biotisr-lysosome-sr-1",
         "biotisr-lysosome-sr-2",
         "biotisr-lysosome-sr-3",
-        # "biotisr-mt-sr-1",
-        # "biotisr-mt-sr-2",
-        # "biotisr-mt-sr-3",
-        # "biotisr-mito-sr-1",
-        # "biotisr-mito-sr-2",
-        # "biotisr-mito-sr-3",
+        "biotisr-mt-sr-1",
+        "biotisr-mt-sr-2",
+        "biotisr-mt-sr-3",
+        # "biotisr-mito-sr-1", # live
+        # "biotisr-mito-sr-2", # live
+        # "biotisr-mito-sr-3", # live
         # ----------------------------------------------------------------------
-        # "sim-actin-3d-dcv",
-        # "sim-actin-2d-patch-dcv",
+        # "bpae-dcv",  # remove, bad ground truth
+        # "vmsim3-mito-dcv", # remove, black boundary
+        # "vmsim3-er-dcv", # remove, the ground truth and the raw image is unmatched
+        # "sim-actin-2d-patch-dcv", # remove, projection
+        "sim-actin-3d-dcv",
         "sim-microtubule-3d-dcv",
         "sim-microtubule-2d-patch-dcv",
-        # "bpae-dcv",
-        # "vmsim3-mito-dcv",
-        # "vmsim3-er-dcv",
-        # "vmsim5-mito-dcv",
-        # "vmsim488-bead-patch-dcv",
+        "vmsim3-mito-dcv-crop",
+        "vmsim488-bead-patch-dcv",
         "vmsim568-bead-patch-dcv",
         "vmsim647-bead-patch-dcv",
         "biotisr-ccp-dcv-1",
@@ -564,7 +558,11 @@ dataset_names_radar = {
         # "biotisr-mito-dcv-2",
         # "biotisr-mito-dcv-3",
         # --------------------------------------------------------------------------
-        # "bpae-dn",
+        # "bpae-dn", # remove, bad ground truth
+        # "cellpose3-2photon-dn-1", # remove, out od distribution
+        # "cellpose3-2photon-dn-4", # remove, out od distribution
+        # "cellpose3-2photon-dn-16", # remove, out od distribution
+        # "cellpose3-2photon-dn-64", # remove, out od distribution
         "rcan3d-dn-actin-dn",
         "rcan3d-dn-er-dn",
         "rcan3d-dn-lysosome-dn",
@@ -575,8 +573,8 @@ dataset_names_radar = {
         "biotisr-ccp-dn-2",
         "biotisr-factin-dn-1",
         "biotisr-factin-dn-2",
-        "biotisr-factin-nonlinear-dn-1",
-        "biotisr-factin-nonlinear-dn-2",
+        # "biotisr-factin-nonlinear-dn-1", # remove, bad result
+        # "biotisr-factin-nonlinear-dn-2", # remove, bad result
         "biotisr-lysosome-dn-1",
         "biotisr-lysosome-dn-2",
         "biotisr-mt-dn-1",
@@ -585,14 +583,29 @@ dataset_names_radar = {
         "biotisr-mito-dn-2",
     ],
 }
+# ------------------------------------------------------------------------------
+#                     datasets for live cell presentation
+# ------------------------------------------------------------------------------
+datasets_livecell = [
+    "biotisr-lysosome-dcv-3",
+    "biotisr-mito-sr-1",
+    "biotisr-mito-sr-2",
+    "biotisr-mito-sr-3",
+    "biotisr-mito-dcv-1",
+    "biotisr-mito-dcv-2",
+    "biotisr-mito-dcv-3",
+]
 
-dataset_names_seg = [
-    "cellpose3-2photon-dn-1",
-    "cellpose3-2photon-dn-4",
-    "cellpose3-2photon-dn-16",
-    "cellpose3-2photon-dn-64",
-    "colon-tissue-dn-high",
-    "colon-tissue-dn-low",
+# ------------------------------------------------------------------------------
+#                     datasets for segmentation
+# ------------------------------------------------------------------------------
+datasets_seg_show = [
+    # "cellpose3-2photon-dn-1",
+    # "cellpose3-2photon-dn-4",
+    # "cellpose3-2photon-dn-16",
+    # "cellpose3-2photon-dn-64",
+    # "colon-tissue-dn-high",
+    # "colon-tissue-dn-low",
     "hl60-high-noise-c00",
     "hl60-high-noise-c25",
     "hl60-high-noise-c50",
@@ -602,4 +615,251 @@ dataset_names_seg = [
     "hl60-low-noise-c50",
     "hl60-low-noise-c75",
     "scaffold-a549-dn",
+    # "granuseg-dn-high",
+    # "granuseg-dn-low",
+    "colon-tissue-dcv-high",
+    # "colon-tissue-dcv-low",
+    "hl60-high-noise-c00-dcv",
+    "hl60-high-noise-c25-dcv",
+    "hl60-high-noise-c50-dcv",
+    "hl60-high-noise-c75-dcv",
+    "hl60-low-noise-c00-dcv",
+    "hl60-low-noise-c25-dcv",
+    "hl60-low-noise-c50-dcv",
+    "hl60-low-noise-c75-dcv",
+    # "granuseg-dcv-high",
+    # "granuseg-dcv-low",
+    # "deepbacs-seg-saureus-dcv",
+    # "deepbacs-seg-bsubtiles-dn",
+    # "omnipose-bact-fluor-a22",
+    # "omnipose-bact-fluor-bthai-cyto",
+    # "omnipose-bact-fluor-bthai-membrane",
+    # "omnipose-bact-fluor-cex",
+    # "omnipose-bact-fluor-vibrio",
+    # "omnipose-bact-fluor-wiggins",
+    # "omnisegger-cyto-lysC",
+    # "omnisegger-mem-ygaW",
+    # "omnisegger-mem-over",
+    # "omnisegger-mem-under",
+    # "stardist",
+    # "stardist-25",
+    # "stardist-50",
+    # "stardist-100",
+    # "cellpose3-ccdb6843-dn",
+    "care-planaria-dn-1",
+    "care-planaria-dn-2",
+    # "care-planaria-dn-3",
+    "care-tribolium-dn-1",
+    "care-tribolium-dn-2",
+    "care-tribolium-dn-3",
+    "fmd-confocal-bpae-b-avg2",
+    # "fmd-confocal-bpae-b-avg4",
+    # "fmd-confocal-bpae-b-avg8",
+    # "fmd-confocal-bpae-b-avg16",
+    "fmd-twophoton-bpae-b-avg2",
+    # "fmd-twophoton-bpae-b-avg4",
+    # "fmd-twophoton-bpae-b-avg8",
+    # "fmd-twophoton-bpae-b-avg16",
+    "fmd-wf-bpae-b-avg2",
+    # "fmd-wf-bpae-b-avg4",
+    # "fmd-wf-bpae-b-avg8",
+    # "fmd-wf-bpae-b-avg16",
+    "deepbacs-ecoli-dn",
+    # "deepbacs-ecoli2-dn",
+    "deepbacs-sim-ecoli-dcv",
+    "deepbacs-sim-saureus-dcv",
+    "care-liver-iso",
+    "srcaco2-h2b-sr-2",
+    "srcaco2-h2b-dn-8",
+    "srcaco2-h2b-dn-4",
+    "srcaco2-h2b-dn-2",
+    # --------------------------------------------------------------------------
+    "biotisr-ccp-dcv-1",
+    "biotisr-ccp-dcv-2",
+    "biotisr-ccp-dcv-3",
+    "biotisr-factin-dcv-1",
+    "biotisr-factin-dcv-2",
+    "biotisr-factin-dcv-3",
+    "biotisr-factin-nonlinear-dcv-1",
+    "biotisr-factin-nonlinear-dcv-2",
+    "biotisr-factin-nonlinear-dcv-3",
+    "biotisr-lysosome-dcv-1",
+    "biotisr-lysosome-dcv-2",
+    "biotisr-lysosome-dcv-3",
+    "biotisr-mt-dcv-1",
+    "biotisr-mt-dcv-2",
+    "biotisr-mt-dcv-3",
+    "biotisr-mito-dcv-1",
+    "biotisr-mito-dcv-2",
+    "biotisr-mito-dcv-3",
+    "biotisr-ccp-dn-1",
+    "biotisr-ccp-dn-2",
+    "biotisr-factin-dn-1",
+    "biotisr-factin-dn-2",
+    "biotisr-factin-nonlinear-dn-1",
+    "biotisr-factin-nonlinear-dn-2",
+    "biotisr-lysosome-dn-1",
+    "biotisr-lysosome-dn-2",
+    "biotisr-mt-dn-1",
+    "biotisr-mt-dn-2",
+    "biotisr-mito-dn-1",
+    "biotisr-mito-dn-2",
+    "rcan3d-dn-er-dn",
+    "rcan3d-dn-golgi-dn",
+    "rcan3d-dn-tomm20mito-dn",
+    "rcan3d-dn-actin-dn",
+    "rcan3d-dn-lysosome-dn",
+    "rcan3d-dn-mixtrixmito-dn",
+    "rcan3d-dn-mt-dn",
+    # "biosr-er-sr-1",
+    # "biosr-er-sr-2",
+    # "biosr-er-sr-3",
+    # "biosr-er-sr-4",
+    # "biosr-er-sr-5",
+    # "biosr-er-sr-6",
+    "biosr-er-dcv-1",
+    "biosr-er-dcv-2",
+    "biosr-er-dcv-3",
+    "biosr-er-dcv-4",
+    "biosr-er-dcv-5",
+    "biosr-er-dcv-6",
+    # "biosr-er-dn-1",
+    # "biosr-er-dn-2",
+    # "biosr-er-dn-3",
+    # "biosr-er-dn-4",
+    # "biosr-er-dn-5",
 ]
+
+# ------------------------------------------------------------------------------
+#                     datasets for finetune experiemnts
+# ------------------------------------------------------------------------------
+datasets_finetune = {
+    # "cellpose3-2photon": [
+    #     "cellpose3-2photon-dn-1",
+    #     "cellpose3-2photon-dn-4",
+    #     "cellpose3-2photon-dn-16",
+    # ], # bad
+    "biotisr-mt": [
+        "biotisr-mt-sr-1",
+        "biotisr-mt-sr-2",
+        "biotisr-mt-sr-3",
+    ],
+    # "biotisr-mito": [
+    #     "biotisr-mito-sr-1",
+    #     "biotisr-mito-sr-2",
+    #     "biotisr-mito-sr-3",
+    # ],
+    # "biotisr-actin-nl": [
+    #     "biotisr-factin-nonlinear-sr-1",
+    #     "biotisr-factin-nonlinear-sr-2",
+    #     "biotisr-factin-nonlinear-sr-3",
+    # ],
+    "biotisr-ccp": [
+        "biotisr-ccp-sr-1",
+        "biotisr-ccp-sr-2",
+        "biotisr-ccp-sr-3",
+    ],
+    # "biotisr-ccp-2": [
+    #     "biotisr-ccp-sr-1-2",
+    #     "biotisr-ccp-sr-2-2",
+    #     "biotisr-ccp-sr-3-2",
+    # ],
+    "biotisr-actin": [
+        "biotisr-factin-sr-1",
+        "biotisr-factin-sr-2",
+        "biotisr-factin-sr-3",
+    ],
+    "biotisr-lysosome": [
+        "biotisr-lysosome-sr-1",
+        "biotisr-lysosome-sr-2",
+        "biotisr-lysosome-sr-3",
+    ],
+}
+
+# ------------------------------------------------------------------------------
+#               the datasets that need background subtraction
+# ------------------------------------------------------------------------------
+datasets_need_bkg_sub = [
+    "w2s-c0-sr-1",
+    "w2s-c0-sr-2",
+    "w2s-c0-sr-3",
+    "w2s-c0-sr-4",
+    "w2s-c0-sr-5",
+    "w2s-c0-sr-6",
+    "w2s-c0-sr-7",
+    "w2s-c1-sr-1",
+    "w2s-c1-sr-2",
+    "w2s-c1-sr-3",
+    "w2s-c1-sr-4",
+    "w2s-c1-sr-5",
+    "w2s-c1-sr-6",
+    "w2s-c1-sr-7",
+    "w2s-c2-sr-1",
+    "w2s-c2-sr-2",
+    "w2s-c2-sr-3",
+    "w2s-c2-sr-4",
+    "w2s-c2-sr-5",
+    "w2s-c2-sr-6",
+    "w2s-c2-sr-7",
+    "w2s-c0-dcv-1",
+    "w2s-c0-dcv-2",
+    "w2s-c0-dcv-3",
+    "w2s-c0-dcv-4",
+    "w2s-c0-dcv-5",
+    "w2s-c0-dcv-6",
+    "w2s-c0-dcv-7",
+    "w2s-c1-dcv-1",
+    "w2s-c1-dcv-2",
+    "w2s-c1-dcv-3",
+    "w2s-c1-dcv-4",
+    "w2s-c1-dcv-5",
+    "w2s-c1-dcv-6",
+    "w2s-c1-dcv-7",
+    "w2s-c2-dcv-1",
+    "w2s-c2-dcv-2",
+    "w2s-c2-dcv-3",
+    "w2s-c2-dcv-4",
+    "w2s-c2-dcv-5",
+    "w2s-c2-dcv-6",
+    "w2s-c2-dcv-7",
+]
+
+
+# ------------------------------------------------------------------------------
+#                     Show Infomation
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    num_in_sr = len(dataset_names_all["internal_dataset"]["sr"])
+    num_in_dcv = len(dataset_names_all["internal_dataset"]["dcv"])
+    num_in_dn = len(dataset_names_all["internal_dataset"]["dn"])
+    num_ex_sr = len(dataset_names_all["external_dataset"]["sr"])
+    num_ex_dcv = len(dataset_names_all["external_dataset"]["dcv"])
+    num_ex_dn = len(dataset_names_all["external_dataset"]["dn"])
+    num_radar_show_in = len(dataset_names_radar["internal_dataset"])
+    num_radar_show_ex = len(dataset_names_radar["external_dataset"])
+    num_seg = len(datasets_seg_show)
+    num_livecell = len(datasets_livecell)
+    num_finetune = sum([len(datasets_finetune[key]) for key in datasets_finetune])
+
+    print("-" * 80)
+    print("Number of datasets in internal dataset:")
+    print(f"  - SR: {num_in_sr}")
+    print(f"  - DCV: {num_in_dcv}")
+    print(f"  - DN: {num_in_dn}")
+    print(f"  - Total: {num_in_sr + num_in_dcv + num_in_dn}")
+    print("Number of datasets in external dataset:")
+    print(f"  - SR: {num_ex_sr}")
+    print(f"  - DCV: {num_ex_dcv}")
+    print(f"  - DN: {num_ex_dn}")
+    print(f"  - Total: {num_ex_sr + num_ex_dcv + num_ex_dn}")
+    print("Number of datasets in radar plot:")
+    print(f"  - Internal: {num_radar_show_in}")
+    print(f"  - External: {num_radar_show_ex}")
+    print(f"  - Total: {num_radar_show_in + num_radar_show_ex}")
+    print("Number of datasets in segmentation:")
+    print(f"  - Total: {num_seg}")
+    print("Number of datasets in livecell:")
+    print(f"  - Total: {num_livecell}")
+    print("Number of datasets in finetune:")
+    print(f"  - Total: {num_finetune}")
+    print("-" * 80)

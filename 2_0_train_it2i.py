@@ -22,7 +22,7 @@ import utils.loss_functions as utils_loss
 # ------------------------------------------------------------------------------
 params = {
     # device
-    "device": "cuda:0",
+    "device": "cuda:1",
     "random_seed": 7,
     "data_shuffle": True,
     "num_workers": 3,
@@ -71,54 +71,109 @@ params = {
     "frac_val": 0.001,
     "validate_every_iter": 5000,
     # dataset ------------------------------------------------------------------
-    # "path_dataset_excel": "dataset_train_transformer.xlsx",
     "path_dataset_excel": "dataset_train_transformer-v2.xlsx",
     "sheet_name": "64x64",
     "augmentation": 3,
     "use_clean_data": True,
     # "data_clip": (0.0, 2.5),
     "data_clip": None,
-    "datasets_id": [],
+    # "datasets_id": [],
+    "datasets_id": [
+        # "biotisr-mt-sr-1",
+        # "biotisr-mt-sr-2",
+        # "biotisr-mt-sr-3",
+        # "biotisr-mt-sr-1-2",
+        # "biotisr-mt-sr-2-2",
+        # "biotisr-mt-sr-3-2",
+        # "biotisr-mito-sr-1",
+        # "biotisr-mito-sr-2",
+        # "biotisr-mito-sr-3",
+        "biotisr-mito-sr-1-2",
+        # "biotisr-mito-sr-2-2",
+        # "biotisr-mito-sr-3-2",
+        # "biotisr-factin-nonlinear-sr-1",
+        # "biotisr-factin-nonlinear-sr-2",
+        # "biotisr-factin-nonlinear-sr-3",
+        # "biotisr-ccp-sr-1",
+        # "biotisr-ccp-sr-1-2",
+        # "biotisr-ccp-sr-2",
+        # "biotisr-ccp-sr-2-2",
+        # "biotisr-ccp-sr-3",
+        # "biotisr-ccp-sr-3-2",
+        # "biotisr-factin-sr-1",
+        # "biotisr-factin-sr-2",
+        # "biotisr-factin-sr-3",
+        # "biotisr-lysosome-sr-1",
+        # "biotisr-lysosome-sr-2",
+        # "biotisr-lysosome-sr-3",
+        # "biotisr-lysosome-sr-1-2",
+        # "biotisr-lysosome-sr-2-2",
+        # "biotisr-lysosome-sr-3-2",
+    ],
     "task": [],
     # "task": ["sr"],
     # "task": ["dn"],
     # "task": ["dcv"],
     # "task": ["iso"],
-    # "path_dataset_text": "text\\v1\\dataset_text",
-    # "path_dataset_text": "text\\v2\dataset_text_ALL_256",
-    "path_dataset_text": "text\\v2\dataset_text_ALL_160",
-    # "path_dataset_text": "text\\v2\dataset_text_TSpixel_77",
-    # "path_dataset_text": "text\\v2\dataset_text_TSmicro_77",
-    # "path_dataset_text": "text\\v2\dataset_text_TS_77",
-    # "path_dataset_text": "text\\v2\dataset_text_T_77",
+    "path_text": "text\\v2",
+    # "embaedding_type": "",
+    # "embaedding_type": "_ALL_256",
+    "embaedding_type": "_ALL_160",
+    # "embaedding_type": "_TSpixel_77",
+    # "embaedding_type": "_TSmicro_77",
+    # "embaedding_type": "_TS_77",
+    # "embaedding_type": "_T_77",
     # checkpoints --------------------------------------------------------------
-    # "suffix": "_biosr_sr",
-    # "suffix": "_dn_crossx",
-    # "suffix": "_dcv_crossx",
-    # "suffix": "_iso_crossx",
     # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-crossx",
     "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
     # "suffix": "_all_newnorm_ALL-v2-res1-att0123-T77",
-    # "suffix": "_all_newnorm_TSmicro-v2",
-    # "suffix": "_all_newnorm_TSpixel-v2",
-    # "suffix": "_all_newnorm_TS-v2",
-    # "suffix": "_all_newnorm_crossx-v2",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
     "print_loss": False,
     # saved model --------------------------------------------------------------
-    "saved_checkpoint": None,
+    "finetune": True,
+    "finetune-strategy": "in-out",
+    # "finetune-strategy": "in",
+    # "finetune-strategy": "out",
+    # "saved_checkpoint": None,
+    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
 }
 
 # ------------------------------------------------------------------------------
 device = torch.device(params["device"])
 torch.manual_seed(params["random_seed"])
 
-if os.name == "posix":
-    params["path_checkpoints"] = utils_data.win2linux(params["path_checkpoints"])
-    if params["saved_checkpoint"] is not None:
-        params["saved_checkpoint"] = utils_data.win2linux(params["saved_checkpoint"])
+if params["finetune"] == True:
+    params["path_text"] = params["path_text"] + "-finetune"
+    params["path_checkpoints"] = os.path.join(params["path_checkpoints"], "finetune")
+    params["suffix"] = (
+        params["suffix"]
+        + "-ft-"
+        + params["finetune-strategy"]
+        + "-"
+        + params["datasets_id"][0]
+    )
+    params.update(
+        {
+            "save_every_iter": 1000,
+            "plot_every_iter": 100,
+            "frac_val": 0.05,
+            "lr": 0.00001,
+            # "num_epochs": 2000,
+            "num_epochs": 1000,
+            "lr_decay_every_iter": 10000,
+            "validate_every_iter": 500,
+            "use_clean_data": False,
+        }
+    )
+
+path_dataset_text = os.path.join(
+    params["path_text"], "dataset_text" + params["embaedding_type"]
+)
+
+params["path_checkpoints"] = utils_data.win2linux(params["path_checkpoints"])
+params["saved_checkpoint"] = utils_data.win2linux(params["saved_checkpoint"])
 
 # checkpoints save path
 path_save_model = os.path.join(
@@ -131,7 +186,7 @@ path_save_model = os.path.join(
         params["suffix"],
     ),
 )
-utils_data.make_path(path_save_model)
+os.makedirs(path_save_model, exist_ok=True)
 
 # save parameters
 with open(
@@ -144,16 +199,23 @@ utils_data.print_dict(params)
 # ------------------------------------------------------------------------------
 # dataset
 # ------------------------------------------------------------------------------
-data_frame = pandas.read_excel(
-    params["path_dataset_excel"], sheet_name=params["sheet_name"]
-)
-
-# add augmented data
-if params["augmentation"] > 0:
-    data_frame_aug = pandas.read_excel(
-        params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-aug"
+if params["finetune"] == False:
+    data_frame = pandas.read_excel(
+        params["path_dataset_excel"], sheet_name=params["sheet_name"]
     )
-    data_frame = pandas.concat([data_frame] + [data_frame_aug] * params["augmentation"])
+    # add augmented data
+    if params["augmentation"] > 0:
+        data_frame_aug = pandas.read_excel(
+            params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-aug"
+        )
+        data_frame = pandas.concat(
+            [data_frame] + [data_frame_aug] * params["augmentation"]
+        )
+else:
+    data_frame = pandas.read_excel(
+        params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-finetune"
+    )
+
 
 if params["task"]:
     data_frame = data_frame[data_frame["task"].isin(params["task"])]
@@ -182,7 +244,7 @@ dataset_all = utils_data.Dataset_iit(
     path_dataset_lr=path_dataset_lr,
     path_dataset_hr=path_dataset_hr,
     dataset_index=dataset_index,
-    path_dataset_text_embedding=params["path_dataset_text"],
+    path_dataset_text_embedding=path_dataset_text,
     transform=transform,
     scale_factor_lr=dataset_scale_factor_lr,
     scale_factor_hr=dataset_scale_factor_hr,
@@ -290,12 +352,24 @@ if params["saved_checkpoint"] is not None:
 else:
     start_iter = 0
 
+if params["finetune"] == True:
+    start_iter = 0
+    model_parameters = model.finetune(strategy=params["finetune-strategy"])
+    # print the name of parameters that are not frozen
+    print(f"- Finetune model parameters:")
+    for name, param in model_parameters:
+        print(f"  - ({name, param.shape})")
+else:
+    model_parameters = model.named_parameters()
+
+print("Number of trainable parameters:")
+print(sum(p[1].numel() for p in model_parameters if p[1].requires_grad))
 
 # ------------------------------------------------------------------------------
 # optimization
 # ------------------------------------------------------------------------------
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=params["lr"])
-optimizer = torch.optim.AdamW(params=model.parameters(), lr=params["lr"])
+# optimizer = torch.optim.Adam(params=model_parameters, lr=params["lr"])
+optimizer = torch.optim.AdamW(params=model_parameters, lr=params["lr"])
 log_writer = SummaryWriter(os.path.join(path_save_model, "log"))
 
 LR_schedule = utils_optim.StepLR_iter(

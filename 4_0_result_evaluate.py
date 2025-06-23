@@ -6,9 +6,10 @@ Each row is a dataset, each column is a methods, each sheet is a metric.
 
 import os, pandas, traceback
 import numpy as np
-from skimage.measure import profile_line
 import utils.data as utils_data
 import utils.evaluation as eva
+from utils.data import rolling_ball_approximation, interp_sf
+from dataset_analysis import datasets_need_bkg_sub
 
 # ------------------------------------------------------------------------------
 # parameters
@@ -77,7 +78,7 @@ params = {
         # "srcaco2-h2b-sr-2",
         # "srcaco2-survivin-sr-2",
         # "srcaco2-tubulin-sr-2",
-        # # ----------------------------------------------------------------------
+        # # # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
         # "biosr-cpp-dn-2",
         # "biosr-cpp-dn-3",
@@ -185,14 +186,14 @@ params = {
         # "w2s-c2-dn-4",
         # "w2s-c2-dn-5",
         # "w2s-c2-dn-6",
-        "srcaco2-h2b-dn-8",
-        "srcaco2-h2b-dn-4",
+        # "srcaco2-h2b-dn-8",
+        # "srcaco2-h2b-dn-4",
         # "srcaco2-h2b-dn-2",
-        "srcaco2-survivin-dn-8",
-        "srcaco2-survivin-dn-4",
+        # "srcaco2-survivin-dn-8",
+        # "srcaco2-survivin-dn-4",
         # "srcaco2-survivin-dn-2",
-        "srcaco2-tubulin-dn-8",
-        "srcaco2-tubulin-dn-4",
+        # "srcaco2-tubulin-dn-8",
+        # "srcaco2-tubulin-dn-4",
         # "srcaco2-tubulin-dn-2",
         # "fmd-confocal-bpae-b-avg2",
         # "fmd-confocal-bpae-b-avg4",
@@ -326,8 +327,10 @@ params = {
         # "sim-microtubule-2d-patch-dcv",
         # "bpae-dcv",
         # "vmsim3-mito-dcv",
+        # "vmsim3-mito-dcv-crop",
         # "vmsim3-er-dcv",
         # "vmsim5-mito-dcv",
+        # "vmsim5-mito-dcv-crop",
         # "vmsim488-bead-patch-dcv",
         # "vmsim568-bead-patch-dcv",
         # "vmsim647-bead-patch-dcv",
@@ -374,70 +377,50 @@ params = {
         # "biotisr-mito-dn-2",
         # # ----------------------------------------------------------------------
         # "vmsim3-mito-sr",
+        # "vmsim3-mito-sr-crop",
         # "vmsim3-er-sr",
         # "vmsim5-mito-sr",
-        # "biotisr-ccp-sr-1",
-        # "biotisr-ccp-sr-2",
-        # "biotisr-ccp-sr-3",
-        # "biotisr-factin-sr-1",
-        # "biotisr-factin-sr-2",
-        # "biotisr-factin-sr-3",
-        # "biotisr-factin-nonlinear-sr-1",
-        # "biotisr-factin-nonlinear-sr-2",
-        # "biotisr-factin-nonlinear-sr-3",
-        # "biotisr-lysosome-sr-1",
-        # "biotisr-lysosome-sr-2",
-        # "biotisr-lysosome-sr-3",
+        # "vmsim5-mito-sr-crop",
+        # "rcan3d-c2s-mt-sr",
+        # "rcan3d-c2s-npc-sr",
+        # # ----------------------------- finetune -------------------------------
         # "biotisr-mt-sr-1",
         # "biotisr-mt-sr-2",
         # "biotisr-mt-sr-3",
         # "biotisr-mito-sr-1",
         # "biotisr-mito-sr-2",
         # "biotisr-mito-sr-3",
-        # "rcan3d-c2s-mt-sr",
-        # "rcan3d-c2s-npc-sr",
+        # "biotisr-factin-nonlinear-sr-1",
+        # "biotisr-factin-nonlinear-sr-2",
+        # "biotisr-factin-nonlinear-sr-3",
+        # "biotisr-ccp-sr-1",
+        # "biotisr-ccp-sr-2",
+        # "biotisr-ccp-sr-3",
+        # "biotisr-factin-sr-1",
+        # "biotisr-factin-sr-2",
+        # "biotisr-factin-sr-3",
+        # "biotisr-lysosome-sr-1",
+        # "biotisr-lysosome-sr-2",
+        # "biotisr-lysosome-sr-3",
+        # "cellpose3-2photon-dn-1",
+        # "cellpose3-2photon-dn-4",
+        # "cellpose3-2photon-dn-16",
+        # "cellpose3-2photon-dn-64",
     ],
     "num_sample": 8,
     # "num_sample": None,
     "path_dataset_test": "dataset_test-v2.xlsx",
     "path_results": "results\\predictions",
     "methods": (
-        # ("CARE:CCP", "care_biosr_sr_cpp"),
-        # ("CARE:ER", "care_biosr_sr_er"),
-        # ("CARE:MT", "care_biosr_sr_mt"),
-        # ("CARE:F-actin", "care_biosr_sr_actin"),
-        # ("CARE:Mix", "care_sr"),
-        # ----------------------------------------------------------------------
-        # ("CARE:dcv", "care_dcv"),
-        # ("DFCAN:dcv", "dfcan_dcv"),
-        # ("UNet-uc:dcv", "unet_sd_c_dcv_crossx"),
-        # ("UNet-c:dcv", "unet_sd_c_dcv"),
-        # ----------------------------------------------------------------------
-        # ("CARE:dn", "care_dn"),
-        # ("DFCAN:dn", "dfcan_dn"),
-        # ("UNet-uc:dn", "unet_sd_c_dn_crossx"),
-        # ("UNet-c:dn", "unet_sd_c_dn"),
-        # ----------------------------------------------------------------------
-        # ("CARE:sr", "care_sr"),
-        # ("DFCAN:sr-2", "dfcan_sr_2"),
-        # ("UNet-uc:sr", "unet_sd_c_sr_crossx"),
-        # ("UNet-c:sr", "unet_sd_c_sr"),
-        # ----------------------------------------------------------------------
-        # ("CARE:iso", "care_iso"),
-        # ("DFCAN:iso", "dfcan_iso"),
-        # ("UNet-uc:iso", "unet_sd_c_iso_crossx"),
-        # ("UNet-c:iso", "unet_sd_c_iso"),
-        # ----------------------------------------------------------------------
+        # ------------------ data distribution bias effect ---------------------
+        # ("CARE:CCP", "care_biosr_sr_cpp-v2-newnorm"),
+        # ("CARE:ER", "care_biosr_sr_er-v2-newnorm"),
+        # ("CARE:MT", "care_biosr_sr_mt-v2-newnorm"),
+        # ("CARE:F-actin", "care_biosr_sr_actin-v2-newnorm"),
+        # ("CARE:Mix", "care_biosr_sr_mix-v2-newnorm"),
+        # ------------------- comparison methods -------------------------------
         ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
-        # ("UNet-uc:all", "unet_sd_c_all_cross"),
-        # ("UNet-c:all", "unet_sd_c_all"),
-        # ("UNet-uc:all-newnorm", "unet_sd_c_all_crossx_newnorm"),
-        # ("UNet-c:all-newnorm", "unet_sd_c_all_newnorm"),
-        # ("UNet-c:all-TSpixel", "unet_sd_c_all_TSpixel"),
-        # ("UNet-c:all-newnorm-TS", "unet_sd_c_all_newnorm_TS"),
-        # ("UNet-c:all-newnorm-TSpixel", "unet_sd_c_all_TSpixel"),
-        # ("UNet-c:all-newnorm_TSmicro", "unet_sd_c_all_newnorm_TSmicro"),
-        # ("UNet-c:all-newnorm-ALL-v2", "unet_sd_c_all_newnorm-ALL-v2"),
+        # --------------------- batch size effect ------------------------------
         # (
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs4",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs4",
@@ -446,22 +429,23 @@ params = {
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs8",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8",
         # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
-        # ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
+        ),
+        # # -------------------- train with different text -----------------------
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
+        ),
         # (
         #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
         #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
@@ -469,6 +453,228 @@ params = {
         # (
         #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
         #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
+        # ),
+        # # -------------------- test with different text ------------------------
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
+        ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+        # ),
+        # --------------------------- finetune ---------------------------------
+        # (
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-4",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-4",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-16",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-16",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-2",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-3",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-2",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-3",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-2",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-3",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-2",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-3",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-2",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-3",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-1",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-1",
+        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-2",
+        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-2",
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-3",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-3",
+        #     # ------------------------------------------------------------------
+        # ),
+        # (
+        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
+        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
+        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
+        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
+        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
+        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-3",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-3",
+        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-3",
+        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-3",
+        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
+        #     # "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        #     # "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
+        #     # "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        #     "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
+        #     "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        #     # ------------------------------------------------------------------
+        # ),
+        # (
+        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
+        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
+        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
+        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
+        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
+        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-3",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-3",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-3",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-3",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        #     # "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
+        #     # "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        #     "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
+        #     "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        #     # ------------------------------------------------------------------
+        # ),
+        # (
+        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
+        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
+        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
+        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
+        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-3",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-3",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-3",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-3",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        #     # ------------------------------------------------------------------
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
+        #     # "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        #     "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
+        #     "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        #     # ------------------------------------------------------------------
         # ),
     ),
     "percentiles": (0.03, 0.995),
@@ -479,23 +685,44 @@ normalizer = utils_data.NormalizePercentile(
 )
 
 # ------------------------------------------------------------------------------
-# convert win path to linux path
-if os.name == "posix":
-    params["path_results"] = utils_data.win2linux(params["path_results"])
-
+params["path_results"] = utils_data.win2linux(params["path_results"])
 titles = [i[0] for i in params["methods"]]  # table title
 methods = [i[1] for i in params["methods"]]
 
 # ------------------------------------------------------------------------------
 data_frame = pandas.read_excel(params["path_dataset_test"])
+datasets_not_processed = []  # the datasets that are not processed by the script.
+dict_clip = {"a_min": 0.0, "a_max": 2.5}
+data_range = dict_clip["a_max"] - dict_clip["a_min"]
+
+
+def bkg_subtraction(image):
+    radius, sf = 25, 16
+    image_rb, bg = rolling_ball_approximation(image, radius=radius, sf=sf)
+    image_rb = np.clip(image_rb, 0, None)
+    return image_rb
+
 
 for id_dataset in params["dataset_names"]:
     print("-" * 80)
     print("Datasset:", id_dataset)
 
+    if id_dataset in datasets_need_bkg_sub:
+        sub_bkg = True
+        print("Background subtraction is applied.")
+    else:
+        sub_bkg = False
+
     # get the information of current dataset
     ds = data_frame[data_frame["id"] == id_dataset].iloc[0]
     path_results = os.path.join(params["path_results"], ds["id"])
+    path_metrics_file = os.path.join(path_results, f"metrics-v2.xlsx")
+
+    # --------------------------------------------------------------------------
+    # collect all the datasets that are not processed successfully.
+    if not os.path.exists(path_results):
+        datasets_not_processed.append(id_dataset)
+        continue
 
     # check if the dataset has ground truth
     if ds["path_hr"] == "Unknown":
@@ -515,8 +742,9 @@ for id_dataset in params["dataset_names"]:
         num_sample_analysis = len(sample_filenames)
     print(f"Number of test samples: {num_sample_analysis}/{len(sample_filenames)}")
 
-    # check the existence of metrics file
-    path_metrics_file = os.path.join(path_results, f"metrics.xlsx")
+    # --------------------------------------------------------------------------
+    # load results
+    # --------------------------------------------------------------------------
     try:
         df_psnr = pandas.read_excel(path_metrics_file, sheet_name="PSNR", index_col=0)
     except:
@@ -545,84 +773,101 @@ for id_dataset in params["dataset_names"]:
         df_msssim = pandas.DataFrame()
 
     # --------------------------------------------------------------------------
-    # load results
-    # --------------------------------------------------------------------------
-    with pandas.ExcelWriter(path_metrics_file, engine="xlsxwriter") as writer:
-        try:
-            imgs_gt, imgs_est, metrics = [], [], []
-            for i_sample in range(num_sample_analysis):
-                sample_name = sample_filenames[i_sample]
-                print(f"load results of {sample_name} ...")
-                img_est_multi_meth = []  # collect estimated images
+    writer = pandas.ExcelWriter(path_metrics_file, engine="xlsxwriter")
+    try:
+        metrics_dataset = []
+        for i_sample in range(num_sample_analysis):
+            sample_name = sample_filenames[i_sample]
+            img_est_multi_meth = []  # collect estimated images
 
-                # ------------------------------------------------------------------
-                # get ground truth image and apply normalization
-                img_gt = utils_data.read_image(os.path.join(ds["path_hr"], sample_name))
-                img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"])[0]
-                img_gt = normalizer(img_gt)
-                img_gt = np.clip(img_gt, 0, 2.5)
-                imgs_gt.append(img_gt)
+            print(f"load results of {sample_name} ...")
+            img_gt = utils_data.read_image(os.path.join(ds["path_hr"], sample_name))
+            img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"])[0]
+            img_gt = normalizer(img_gt)
+            img_gt = np.clip(img_gt, **dict_clip)
 
-                # ------------------------------------------------------------------
-                # get raw image and apply normalization
-                img_raw = utils_data.read_image(
-                    os.path.join(ds["path_lr"], sample_name)
+            # ------------------------------------------------------------------
+            # get raw image and apply normalization
+            img_raw = utils_data.read_image(os.path.join(ds["path_lr"], sample_name))
+            img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"])[0]
+            # img_raw = eva.linear_transform(img_true=img_gt, img_test=img_raw)
+            img_raw = normalizer(img_raw)
+            img_raw = np.clip(img_raw, **dict_clip)
+            img_est_multi_meth.append(img_raw)
+
+            # ------------------------------------------------------------------
+            # get estimated images form different methods
+            for meth in methods:
+                img_tmp = utils_data.read_image(
+                    os.path.join(path_results, meth, sample_name)
                 )
-                img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"])[0]
-                img_raw = eva.linear_transform(img_true=img_gt, img_test=img_raw)
-                img_raw = np.clip(img_raw, 0, 2.5)
 
-                img_est_multi_meth.append(img_raw)
+                if sub_bkg:
+                    img_tmp = bkg_subtraction(img_tmp)
 
-                # ------------------------------------------------------------------
-                # get estimated images form different methods
-                for meth in methods:
-                    img_tmp = utils_data.read_image(
-                        os.path.join(path_results, meth, sample_name)
-                    )
-                    img_tmp = eva.linear_transform(img_true=img_gt, img_test=img_tmp)[0]
-                    img_tmp = np.clip(img_tmp, 0, 2.5)
-                    img_est_multi_meth.append(img_tmp)
+                # img_tmp = eva.linear_transform(img_true=img_gt, img_test=img_tmp)[0]
+                img_tmp = normalizer(img_tmp[0])
+                img_tmp = np.clip(img_tmp, **dict_clip)
+                img_est_multi_meth.append(img_tmp)
 
-                imgs_est.append(img_est_multi_meth)
-
-                # ------------------------------------------------------------------
-                # evaluate all the images
-                metrics_multi_meth = []
-                data_range = 2.5
-                for img in img_est_multi_meth:
-                    m = []
-                    dict_tmp = {"img_true": img_gt, "img_test": img}
-                    psnr = eva.PSNR(data_range=data_range, **dict_tmp)
-                    ssim = eva.SSIM(data_range=data_range, **dict_tmp)
-                    zncc = eva.ZNCC(**dict_tmp)
-                    nrmse = eva.NRMSE(**dict_tmp)
+            # ------------------------------------------------------------------
+            # evaluate all the images
+            metrics_method = []
+            for img in img_est_multi_meth:
+                metrics_metric = []
+                dict_tmp = {"img_true": img_gt, "img_test": img}
+                psnr = eva.PSNR(data_range=data_range, **dict_tmp)
+                ssim = eva.SSIM(data_range=data_range, **dict_tmp)
+                zncc = eva.ZNCC(**dict_tmp)
+                nrmse = eva.NRMSE(**dict_tmp)
+                try:
+                    msssim = eva.MSSSIM(data_range=data_range, **dict_tmp)
+                except:
                     try:
-                        msssim = eva.MSSSIM(data_range=data_range, **dict_tmp)
-                    except:
+                        msssim = eva.MSSSIM(
+                            img_true=interp_sf(x=img_gt[None], sf=2)[0],
+                            img_test=interp_sf(x=img[None], sf=2)[0],
+                            data_range=data_range,
+                        )
+                    except Exception as e:
+                        traceback.print_exc()
                         msssim = 0
-                    m.extend([psnr, ssim, zncc, nrmse, msssim])
-                    metrics_multi_meth.append(m)  # (num_meth, 3)
-                metrics.append(metrics_multi_meth)  # (num_sample, num_meth, 3)
+                metrics_metric.extend([psnr, ssim, zncc, nrmse, msssim])
+                metrics_method.append(metrics_metric)  # (num_meth, num_metric)
+            metrics_dataset.append(metrics_method)  # (num_sample, num_meth, num_metric)
 
-            metrics = np.array(metrics)  # (num_sample, num_meth, 3)
+        # (num_sample, num_meth, num_metric)
+        metrics_dataset = np.array(metrics_dataset)
 
-            # --------------------------------------------------------------------------
-            all_titles = ["raw"] + titles
-            for i_df, df in enumerate([df_psnr, df_ssim, df_zncc, df_nrmse, df_msssim]):
-                for i_title, title in enumerate(all_titles):
-                    # if current method is not in the dataframe, add it at the last column
-                    if title not in list(df.columns):
-                        df.insert(df.shape[-1], title, value="")
-                    # insert the metrics of current method into the dataframe
-                    df[title] = metrics[:, i_title, i_df]
+        # --------------------------------------------------------------------------
+        all_titles = ["raw"] + titles
+        for i_df, df in enumerate([df_psnr, df_ssim, df_zncc, df_nrmse, df_msssim]):
+            for i_title, title in enumerate(all_titles):
+                # if current method is not in the dataframe, add it at the last column
+                if title not in list(df.columns):
+                    df.insert(df.shape[-1], title, value="")
+                # insert the metrics of current method into the dataframe
+                df[title] = metrics_dataset[:, i_title, i_df]
 
-            # --------------------------------------------------------------------------
-            # save all the metrics value into a excel file
-            df_psnr.to_excel(writer, sheet_name="PSNR", index_label="id")
-            df_ssim.to_excel(writer, sheet_name="SSIM", index_label="id")
-            df_zncc.to_excel(writer, sheet_name="ZNCC", index_label="id")
-            df_nrmse.to_excel(writer, sheet_name="NRMSE", index_label="id")
-            df_msssim.to_excel(writer, sheet_name="MSSSIM", index_label="id")
-        except Exception as e:
-            traceback.print_exc()
+        # --------------------------------------------------------------------------
+        # save all the metrics value into a excel file
+        df_psnr.to_excel(writer, sheet_name="PSNR", index_label="id")
+        df_ssim.to_excel(writer, sheet_name="SSIM", index_label="id")
+        df_zncc.to_excel(writer, sheet_name="ZNCC", index_label="id")
+        df_nrmse.to_excel(writer, sheet_name="NRMSE", index_label="id")
+        df_msssim.to_excel(writer, sheet_name="MSSSIM", index_label="id")
+        writer.close()
+    except Exception as e:
+        df_psnr.to_excel(writer, sheet_name="PSNR", index_label="id")
+        df_ssim.to_excel(writer, sheet_name="SSIM", index_label="id")
+        df_zncc.to_excel(writer, sheet_name="ZNCC", index_label="id")
+        df_nrmse.to_excel(writer, sheet_name="NRMSE", index_label="id")
+        df_msssim.to_excel(writer, sheet_name="MSSSIM", index_label="id")
+        writer.close()
+        traceback.print_exc()
+
+print("-" * 80)
+if datasets_not_processed:
+    print("The following datasets are not processed:")
+    for dataset in datasets_not_processed:
+        print(dataset)

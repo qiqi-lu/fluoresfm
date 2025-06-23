@@ -743,6 +743,7 @@ class UniModel(nn.Module):
         # self.mean = torch.zeros(1, 1, 1, 1)
         self.window_size = window_size
         self.task = tsk
+        assert tsk in [0, 1, 2, 3, 4], "task must be 0, 1, 2, 3, or 4"
 
         # 1 SR
         if self.task == 1 or self.task == 0:
@@ -868,6 +869,45 @@ class UniModel(nn.Module):
         x = nn.functional.pad(x, (0, mod_pad_w, 0, mod_pad_h), "reflect")
         return x
 
+    def finetune(self):
+        """
+        (customed function)
+        Freeze the middle layers of the model for finetuning.
+        """
+        print("Fine-tuning the model ...")
+        for params in self.parameters():
+            params.requires_grad = False
+        # unfreeze the head and tail for finetune
+        layers_unfreeze = []
+
+        if self.task == 1 or self.task == 0:
+            layers_unfreeze.extend(
+                [
+                    self.conv_firstsr,
+                    self.upsamplesr,
+                    self.conv_before_upsample_sr,
+                    self.conv_last_sr,
+                ]
+            )
+        if self.task == 2 or self.task == 0:
+            layers_unfreeze.extend(
+                [self.conv_firstdT, self.conv_before_upsample_dn, self.conv_last_dn]
+            )
+        if self.task == 3 or self.task == 0:
+            layers_unfreeze.extend(
+                [self.conv_firstiso, self.conv_before_upsample_iso, self.conv_last_iso]
+            )
+        if self.task == 4 or self.task == 0:
+            layers_unfreeze.extend(
+                [self.conv_firstdcv, self.conv_before_upsample_dcv, self.conv_last_dcv]
+            )
+
+        for layer in layers_unfreeze:
+            for params in layer.parameters():
+                params.requires_grad = True
+
+        return [p for p in self.named_parameters() if p[1].requires_grad]
+
     def forward(self, x, tsk=0):
         if tsk > 0:
             self.task = tsk
@@ -891,6 +931,8 @@ class UniModel(nn.Module):
         elif self.task == 4:
             x = self.check_image_size(x)
             x = self.conv_firstdcv(x)
+        else:
+            raise ValueError(f"Task '{self.task}' not supported")
 
         # elif self.task == 4:
         #     x2d, closs = self.project(x)

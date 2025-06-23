@@ -5,26 +5,39 @@ Generate the text information used for training.
 
 import pandas, os, tqdm
 
-# path_dataset_xlx = "dataset_train_transformer.xlsx"
+# ------------------------------------------------------------------------------
+finetune = True
+# ------------------------------------------------------------------------------
+
 path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 
-# text_type = "ALL"  # all the information
+text_type = "ALL"  # all the information
 # text_type = "TSpixel"  # only task, structure, and input/output pixel size
 # text_type = "TSmicro"  # only task, structure, and input/output microscope
 # text_type = "TS"  # only task, structure
-text_type = "T"  # only task
+# text_type = "T"  # only task
 
 # ------------------------------------------------------------------------------
-path_save_to = os.path.join("text", "v2", f"dataset_text_{text_type}.txt")
+path_text = os.path.join("text", "v2")
+if finetune:
+    path_text = path_text + "-finetune"
+
+os.makedirs(path_text, exist_ok=True)
+path_save_to = os.path.join(path_text, f"dataset_text_{text_type}.txt")
+
 print("Path dataset info:", path_dataset_xlx)
 print("Path save to:", path_save_to)
 
 # ------------------------------------------------------------------------------
 # get dataset information
 print("-" * 50)
-datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64")
-num_patches = list(datasets_frame["number of patches"])
-num_datset = len(num_patches)
+if finetune:
+    print("Finetune")
+    datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64-finetune")
+else:
+    datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64")
+
+num_datset = len(datasets_frame)
 print("Number of dataset:", num_datset)
 
 text_parts = [

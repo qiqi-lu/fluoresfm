@@ -33,8 +33,8 @@ params = {
     "enable_gradscaler": False,
     # model parameters ---------------------------------------------------------
     "dim": 2,
-    # "model_name": "care",
-    "model_name": "dfcan",
+    "model_name": "care",
+    # "model_name": "dfcan",
     # "model_name": "unifmir",
     # loss function ------------------------------------------------------------
     # "loss": "mse",
@@ -58,7 +58,7 @@ params = {
     "augmentation": 3,
     "use_clean_data": True,
     "data_clip": None,
-    "datasets_id": [],
+    # "datasets_id": [],
     # "datasets_id": [
     #     "biosr-cpp",
     #     "biosr-er",
@@ -70,21 +70,60 @@ params = {
     # "datasets_id": ["biosr-actin"],
     # "datasets_id": ["biosr-mt"],
     # "datasets_id": ["biosr-actinnl"],
-    # "task": [],
+    "datasets_id": [
+        # "biotisr-mt-sr-1"
+        # "biotisr-mt-sr-2"
+        # "biotisr-mt-sr-3"
+        # "biotisr-mito-sr-1"
+        # "biotisr-mito-sr-2"
+        # "biotisr-mito-sr-3"
+        # "biotisr-factin-nonlinear-sr-1"
+        # "biotisr-factin-nonlinear-sr-2"
+        # "biotisr-factin-nonlinear-sr-3",
+        # "biotisr-ccp-sr-1",
+        "biotisr-ccp-sr-1-2",
+        # "biotisr-ccp-sr-1-4",
+        # "biotisr-ccp-sr-1-8",
+        # "biotisr-ccp-sr-2",
+        # "biotisr-ccp-sr-2-2",
+        # "biotisr-ccp-sr-2-4",
+        # "biotisr-ccp-sr-2-8",
+        # "biotisr-ccp-sr-3",
+        # "biotisr-ccp-sr-3-2",
+        # "biotisr-ccp-sr-3-4",
+        # "biotisr-ccp-sr-3-8",
+        # "biotisr-factin-sr-1",
+        # "biotisr-factin-sr-2",
+        # "biotisr-factin-sr-3",
+        # "biotisr-lysosome-sr-1",
+        # "biotisr-lysosome-sr-1-2",
+        # "biotisr-lysosome-sr-1-4",
+        # "biotisr-lysosome-sr-1-8",
+        # "biotisr-lysosome-sr-2",
+        # "biotisr-lysosome-sr-2-2",
+        # "biotisr-lysosome-sr-2-4",
+        # "biotisr-lysosome-sr-2-8",
+        # "biotisr-lysosome-sr-3",
+        # "biotisr-lysosome-sr-3-2",
+        # "biotisr-lysosome-sr-3-4",
+        # "biotisr-lysosome-sr-3-8",
+    ],
+    "task": [],
     # "task": ["sr"],
     # "task": ["dcv"],
-    "task": ["dn"],
+    # "task": ["dn"],
     # "task": ["iso"],
     "scale_factor": 1,
     # checkpoints --------------------------------------------------------------
-    "suffix": "_newnorm-v2-dn",
+    "suffix": "_newnorm-v2",
+    # "suffix": "_newnorm-v2-dn",
     # "suffix": "_newnorm-v2-all",
-    # "suffix": "_sr",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
     "print_loss": False,
     # saved model --------------------------------------------------------
+    "finetune": True,
     "saved_checkpoint": None,
 }
 
@@ -92,10 +131,29 @@ params = {
 device = torch.device(params["device"])
 torch.manual_seed(params["random_seed"])
 
-if os.name == "posix":
-    params["path_checkpoints"] = utils_data.win2linux(params["path_checkpoints"])
-    if params["saved_checkpoint"] is not None:
-        params["saved_checkpoint"] = utils_data.win2linux(params["saved_checkpoint"])
+if params["finetune"]:
+    params["suffix"] = params["suffix"] + "-ft-" + params["datasets_id"][0]
+    params["path_checkpoints"] = os.path.join(params["path_checkpoints"], "finetune")
+    params.update(
+        {
+            "save_every_iter": 500,
+            "plot_every_iter": 100,
+            "frac_val": 0.05,
+            "lr": 0.0001,
+            "num_epochs": 1000,
+            "lr_decay_every_iter": 10000,
+            "validate_every_iter": 500,
+            "use_clean_data": False,
+        }
+    )
+    if params["model_name"] == "unifmir":
+        params["saved_checkpoint"] = (
+            "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_1_iter_4300000.pt"
+        )
+        params["num_epochs"] = 150
+
+params["path_checkpoints"] = utils_data.win2linux(params["path_checkpoints"])
+params["saved_checkpoint"] = utils_data.win2linux(params["saved_checkpoint"])
 
 # special settings for UniFMIR model
 if params["model_name"] == "unifmir":
@@ -137,16 +195,22 @@ utils_data.print_dict(params)
 # ------------------------------------------------------------------------------
 # dataset
 # ------------------------------------------------------------------------------
-data_frame = pandas.read_excel(
-    params["path_dataset_excel"], sheet_name=params["sheet_name"]
-)
-
-# add augmented data
-if params["augmentation"] > 0:
-    data_frame_aug = pandas.read_excel(
-        params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-aug"
+if params["finetune"] == False:
+    data_frame = pandas.read_excel(
+        params["path_dataset_excel"], sheet_name=params["sheet_name"]
     )
-    data_frame = pandas.concat([data_frame] + [data_frame_aug] * params["augmentation"])
+    # add augmented data
+    if params["augmentation"] > 0:
+        data_frame_aug = pandas.read_excel(
+            params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-aug"
+        )
+        data_frame = pandas.concat(
+            [data_frame] + [data_frame_aug] * params["augmentation"]
+        )
+else:
+    data_frame = pandas.read_excel(
+        params["path_dataset_excel"], sheet_name=params["sheet_name"] + "-finetune"
+    )
 
 if params["task"]:
     data_frame = data_frame[data_frame["task"].isin(params["task"])]
@@ -289,7 +353,7 @@ model.to(device=device)
 try:
     summary(model=model, input_size=(1,) + img_lr_shape)
 except:
-    print("Fial to show the summary of model.")
+    print("Fail to show the summary of model.")
 
 # complie
 if params["complie"]:
@@ -314,10 +378,32 @@ else:
     start_iter = 0
 
 # ------------------------------------------------------------------------------
+if params["finetune"]:
+    if params["model_name"] == "unifmir":
+        start_iter = 0
+        model_parameters = model.finetune()
+        print("- Finetune model parameters:")
+        for name, param in model_parameters:
+            print("  ", name, param.shape)
+    else:
+        print(
+            "[INFO] Other models will be trained from scratch, except for the [unifmir] model."
+        )
+        model_parameters = list(model.named_parameters())
+else:
+    model_parameters = list(model.named_parameters())
+
+torch.set_float32_matmul_precision("high")
+
+print("-" * 80)
+print("Number of trainable parameters: ")
+print(sum(p[1].numel() for p in model_parameters if p[1].requires_grad))
+print("-" * 80)
+
+# ------------------------------------------------------------------------------
 # optimization
 # ------------------------------------------------------------------------------
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=params["lr"])
-optimizer = torch.optim.AdamW(params=model.parameters(), lr=params["lr"])
+optimizer = torch.optim.AdamW(params=model_parameters, lr=params["lr"])
 log_writer = SummaryWriter(os.path.join(path_save_model, "log"))
 
 LR_schedule = utils_optim.StepLR_iter(

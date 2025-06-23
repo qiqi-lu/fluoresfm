@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
+from skimage import measure
 
 
 def cal_radar_range(data, percent=(0.1, 0.95), precision=0.5):
@@ -155,3 +157,18 @@ def add_significant_bars(ax, x1, x2, y, p_value, dict_line={}, dict_asterisks={}
     ax.plot([x1, x2], [y, y], **dict_l)
     # ax.text((x1 + x2) / 2, y * 1.001, asterisks, **dict_a)
     ax.text(x1, y * 0.98, asterisks, **dict_a)
+
+
+def get_outlines(mask):
+    """Get the outlines of each labels"""
+    outlines = []
+    for label in np.unique(mask):
+        if label == 0:
+            continue
+        binary_mask = (mask == label).astype(np.uint8)
+        # Find contours
+        contours = measure.find_contours(binary_mask, 0.5)
+        for contour in contours:
+            contour = np.array(contour).astype(np.int32)
+            outlines.append(contour)
+    return outlines

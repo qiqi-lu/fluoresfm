@@ -54,7 +54,7 @@ class UNetModel(nn.Module):
         tf_layers: int = 1,
         d_cond: int = 768,  # 0 or None when without condition
         pixel_shuffle: bool = False,
-        scale_factor: int = 4
+        scale_factor: int = 4,
     ):
         """
         :param in_channels: is the number of channels in the input feature map
@@ -231,6 +231,31 @@ class UNetModel(nn.Module):
         if self.pixel_shuffle:
             o = self.unpatching(o)
         return o
+
+    def finetune(self, strategy="in-out"):
+        """
+        (customed function)
+        Unfreeze the model at the input or output or both, and freeze the rest.
+        For fine-tuning.
+        """
+        print(f"Fine-tuning the model at the [{strategy}].")
+        for params in self.parameters():
+            params.requires_grad = False  # freeze all parameters
+        if strategy == "in-out":
+            for params in self.input_blocks[0].parameters():
+                params.requires_grad = True
+            for params in self.out.parameters():
+                params.requires_grad = True
+        elif strategy == "in":
+            for params in self.input_blocks[0].parameters():
+                params.requires_grad = True
+        elif strategy == "out":
+            for params in self.out.parameters():
+                params.requires_grad = True
+        else:
+            raise ValueError(f"position should be in-out, in or out, not [{strategy}].")
+
+        return [p for p in self.named_parameters() if p[1].requires_grad]
 
 
 class TimestepEmbedSequential(nn.Sequential):

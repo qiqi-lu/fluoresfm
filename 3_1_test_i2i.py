@@ -1,5 +1,5 @@
 import numpy as np
-import torch, os, json, pandas, math, tqdm
+import torch, os, pandas, math, tqdm, datetime
 import skimage.io as io
 from models.unet import UNet
 from models.care import CARE
@@ -16,91 +16,178 @@ import utils.optim as utils_optim
 checkpoints = [
     # [
     #     "care",
-    #     "_sr",
-    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_sr\epoch_1_iter_1035000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_sr_actin",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_actin\epoch_10_iter_250000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_sr_cpp",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_cpp\epoch_13_iter_250000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_sr_er",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_er\epoch_15_iter_250000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_sr_mt",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr_mt\epoch_17_iter_250000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_sr",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_sr\epoch_8_iter_600000.pt",
-    # ],
-    # # --------------------------------------------------------------------------
-    # [
-    #     "care",
-    #     "_dcv",
-    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_dcv\epoch_19_iter_1255000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_biosr_dcv",
-    #     "checkpoints\conditional\care_mse_bs_4_lr_0.0001_biosr_dcv\epoch_19_iter_390000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_dn",
-    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_dn\epoch_1_iter_710000.pt",
-    # ],
-    # [
-    #     "care",
-    #     "_iso",
-    #     "checkpoints\conditional\care_mae_bs_4_lr_0.0001_iso\epoch_11_iter_1170000.pt",
-    # ],
-    # # --------------------------------------------------------------------------
-    # [
-    #     "dfcan",
-    #     "_biosr_sr_2",
-    #     "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_biosr_sr_2\epoch_7_iter_600000.pt",
+    #     "_newnorm-v2-all",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
     # ],
     # [
     #     "dfcan",
-    #     "_sr_2",
-    #     "checkpoints\conditional\dfcan_mse_bs_4_lr_0.0001_sr_2\epoch_1_iter_675000.pt",
+    #     "_newnorm-v2-all",
+    #     "checkpoints\conditional\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
+    # ],
+    # -------------------------- distribution bias -----------------------------
+    # [
+    #     "care",
+    #     "_biosr_sr_actin-v2-newnorm",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-actin\epoch_113_iter_700000.pt",
     # ],
     # [
-    #     "dfcan",
-    #     "_dcv",
-    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dcv\epoch_16_iter_1015000.pt",
+    #     "care",
+    #     "_biosr_sr_cpp-v2-newnorm",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-cpp\epoch_203_iter_700000.pt",
     # ],
     # [
-    #     "dfcan",
-    #     "_dn",
-    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_dn\epoch_0_iter_410000.pt",
+    #     "care",
+    #     "_biosr_sr_er-v2-newnorm",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-er\epoch_168_iter_700000.pt",
     # ],
     # [
-    #     "dfcan",
-    #     "_iso",
-    #     "checkpoints\conditional\dfcan_mae_bs_4_lr_0.0001_iso\epoch_9_iter_890000.pt",
+    #     "care",
+    #     "_biosr_sr_mt-v2-newnorm",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-mt\epoch_196_iter_700000.pt",
+    # ],
+    # [
+    #     "care",
+    #     "_biosr_sr_mix-v2-newnorm",
+    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-mix\epoch_40_iter_700000.pt",
     # ],
     # --------------------------------------------------------------------------
     # [
     #     "unifmir",
-    #     "_all",
-    #     "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_all\epoch_0_iter_2550000.pt",
+    #     "_all-newnorm-v2",
+    #     "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_1_iter_4300000.pt",
     # ],
+    # -------------------------------- fintune ---------------------------------
+    [
+        "care",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
+        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
+    ],
+    [
+        "dfcan",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
+        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
+    ],
     [
         "unifmir",
-        "_all-newnorm-v2",
-        "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_0_iter_1000000.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_150_iter_36600.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_150_iter_82200.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_150_iter_82200.pt",
+        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_150_iter_82200.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_150_iter_82200.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_150_iter_82200.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_150_iter_82200.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_150_iter_36600.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_150_iter_36600.pt",
+        # ----------------------------------------------------------------------
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_150_iter_36600.pt",
+        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_150_iter_36600.pt",
+        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+        "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_150_iter_36600.pt",
     ],
 ]
 
@@ -169,14 +256,14 @@ params = {
         # "w2s-c2-sr-5",
         # "w2s-c2-sr-6",
         # "w2s-c2-sr-7",
-        # "srcaco2-h2b-sr-8",
-        # "srcaco2-h2b-sr-4",
+        # # "srcaco2-h2b-sr-8",
+        # # "srcaco2-h2b-sr-4",
         # "srcaco2-h2b-sr-2",
-        # "srcaco2-survivin-sr-8",
-        # "srcaco2-survivin-sr-4",
+        # # "srcaco2-survivin-sr-8",
+        # # "srcaco2-survivin-sr-4",
         # "srcaco2-survivin-sr-2",
-        # "srcaco2-tubulin-sr-8",
-        # "srcaco2-tubulin-sr-4",
+        # # "srcaco2-tubulin-sr-8",
+        # # "srcaco2-tubulin-sr-4",
         # "srcaco2-tubulin-sr-2",
         # # ----------------------------------------------------------------------
         # "biosr-cpp-dn-1",
@@ -422,11 +509,15 @@ params = {
         # "care-liver-iso",
         # # # ------------------------------------------------------------------
         # "vmsim3-mito-sr",
+        # "vmsim3-mito-sr-crop",
         # "vmsim3-er-sr",
         # "vmsim5-mito-sr",
+        # "vmsim5-mito-sr-crop",
         # "vmsim3-mito-dcv",
+        # "vmsim3-mito-dcv-crop",
         # "vmsim3-er-dcv",
         # "vmsim5-mito-dcv",
+        # "vmsim5-mito-dcv-crop",
         # "vmsim488-bead-patch-dcv",
         # "vmsim568-bead-patch-dcv",
         # "vmsim647-bead-patch-dcv",
@@ -437,9 +528,9 @@ params = {
         # "bpae-dcv",
         # "bpae-dn",
         # "rcan3d-c2s-mt-dcv",
-        "rcan3d-c2s-mt-sr",
+        # "rcan3d-c2s-mt-sr",
         # "rcan3d-c2s-npc-dcv",
-        "rcan3d-c2s-npc-sr",
+        # "rcan3d-c2s-npc-sr",
         # "rcan3d-dn-actin-dn",
         # "rcan3d-dn-er-dn",
         # "rcan3d-dn-golgi-dn",
@@ -453,18 +544,18 @@ params = {
         # "biotisr-factin-sr-1",
         # "biotisr-factin-sr-2",
         # "biotisr-factin-sr-3",
-        # "biotisr-factin-nonlinear-sr-1",
-        # "biotisr-factin-nonlinear-sr-2",
-        # "biotisr-factin-nonlinear-sr-3",
         # "biotisr-lysosome-sr-1",
         # "biotisr-lysosome-sr-2",
-        # "biotisr-lysosome-sr-3",
+        "biotisr-lysosome-sr-3",
         # "biotisr-mt-sr-1",
         # "biotisr-mt-sr-2",
         # "biotisr-mt-sr-3",
         # "biotisr-mito-sr-1",
         # "biotisr-mito-sr-2",
         # "biotisr-mito-sr-3",
+        # "biotisr-factin-nonlinear-sr-1",
+        # "biotisr-factin-nonlinear-sr-2",
+        # "biotisr-factin-nonlinear-sr-3",
         # "biotisr-ccp-dcv-1",
         # "biotisr-ccp-dcv-2",
         # "biotisr-ccp-dcv-3",
@@ -495,11 +586,58 @@ params = {
         # "biotisr-mt-dn-2",
         # "biotisr-mito-dn-1",
         # "biotisr-mito-dn-2",
+        # # ----------------------------------------------------------------------
+        # "cellpose3-2photon-dn-1",
+        # "cellpose3-2photon-dn-4",
+        # "cellpose3-2photon-dn-16",
+        # "cellpose3-2photon-dn-64",
+        # # ----------------------------------------------------------------------
+        # "colon-tissue-dn-high",
+        # "colon-tissue-dn-low",
+        # "hl60-high-noise-c00",
+        # "hl60-high-noise-c25",
+        # "hl60-high-noise-c50",
+        # "hl60-high-noise-c75",
+        # "hl60-low-noise-c00",
+        # "hl60-low-noise-c25",
+        # "hl60-low-noise-c50",
+        # "hl60-low-noise-c75",
+        # "scaffold-a549-dn",
+        # "granuseg-dn-high",
+        # "granuseg-dn-low",
+        # "colon-tissue-dcv-high",
+        # "colon-tissue-dcv-low",
+        # "hl60-high-noise-c00-dcv",
+        # "hl60-high-noise-c25-dcv",
+        # "hl60-high-noise-c50-dcv",
+        # "hl60-high-noise-c75-dcv",
+        # "hl60-low-noise-c00-dcv",
+        # "hl60-low-noise-c25-dcv",
+        # "hl60-low-noise-c50-dcv",
+        # "hl60-low-noise-c75-dcv",
+        # "granuseg-dcv-high",
+        # "granuseg-dcv-low",
+        # "deepbacs-seg-saureus-dcv",
+        # "deepbacs-seg-bsubtiles-dn",
+        # "omnipose-bact-fluor-a22",
+        # "omnipose-bact-fluor-bthai-cyto",
+        # "omnipose-bact-fluor-bthai-membrane",
+        # "omnipose-bact-fluor-cex",
+        # "omnipose-bact-fluor-vibrio",
+        # "omnipose-bact-fluor-wiggins",
+        # "omnisegger-cyto-lysC",
+        # "omnisegger-mem-ygaW",
+        # "omnisegger-mem-over",
+        # "omnisegger-mem-under",
+        # "stardist",
+        # "stardist-25",
+        # "stardist-50",
+        # "stardist-100",
+        # "cellpose3-ccdb6843-dn",
     ],
     "scale_factor": 1,
     "num_sample": 8,
-    # "num_sample": None,
-    "percentiles": (0.0, 0.9999),
+    "percentiles": (0.03, 0.995),
     "patch_image": True,
     "patch_size": 256,
     # output -------------------------------------------------------------------
@@ -507,33 +645,25 @@ params = {
 }
 
 # ------------------------------------------------------------------------------
-params.update(
-    {
-        "overlap": params["patch_size"] // 4,
-        "batch_size": int(64 / params["patch_size"] * 32),
-    }
-)
-
-if os.name == "posix":
-    params["path_output"] = utils_data.win2linux(params["path_output"])
-
-# ------------------------------------------------------------------------------
-print("load dataset information ...")
+params["path_output"] = utils_data.win2linux(params["path_output"])
 utils_data.print_dict(params)
 
+print("load dataset information ...")
 datasets_frame = pandas.read_excel(params["path_dataset_test"])
 device = torch.device(params["device"])
 output_normalizer = utils_data.NormalizePercentile(0.03, 0.995)
-bs = params["batch_size"]
+input_normalizer = utils_data.NormalizePercentile(
+    params["percentiles"][0], params["percentiles"][1]
+)
 num_checkpoints = len(checkpoints)
+num_datasets = len(params["id_dataset"])
 
-# ------------------------------------------------------------------------------
 print("-" * 50)
 print("Number of checkpoints:", num_checkpoints)
-print("number of datasets:", len(params["id_dataset"]))
+print("number of datasets:", num_datasets)
 
 # ------------------------------------------------------------------------------
-# PREDICT
+#                                      PREDICT
 # ------------------------------------------------------------------------------
 for checkpoint in checkpoints:
     print("-" * 50)
@@ -541,29 +671,32 @@ for checkpoint in checkpoints:
     model_name, model_suffix, model_path = checkpoint
 
     if model_name == "dfcan" and ("_sr" in model_suffix):
-        params.update(
-            {
-                "scale_factor": 2,
-                "patch_size": 32,
-                "overlap": 24,
-            }
-        )
-
-    if os.name == "posix":
-        model_path = utils_data.win2linux(model_path)
-
-    # normalization
-    if "norm" in model_suffix:
-        params["percentiles"] = (0.03, 0.995)
+        params["scale_factor"] = 2
+        params["patch_size"] = 32
     else:
-        params["percentiles"] = (0.0, 0.9999)
+        params["scale_factor"] = 1
+        params["patch_size"] = 256
 
-    input_normalizer = utils_data.NormalizePercentile(
-        params["percentiles"][0], params["percentiles"][1]
+    if model_name == "dfcan" and params["scale_factor"] == 1:
+        params["patch_size"] = 64
+    else:
+        params["patch_size"] = 256
+
+    params.update(
+        {
+            "overlap": params["patch_size"] // 4,
+            "batch_size": int(64 / params["patch_size"] * 32),
+        }
     )
 
-    if "clip" in model_suffix:
-        params.update({"data_clip": (0.0, 2.5)})
+    bs = params["batch_size"]
+    model_path = utils_data.win2linux(model_path)
+
+    stitcher = utils_data.Patch_stitcher(
+        patch_size=params["patch_size"],
+        overlap=params["overlap"],
+        padding_mode="reflect",
+    )
 
     # ------------------------------------------------------------------------------
     # model
@@ -654,8 +787,7 @@ for checkpoint in checkpoints:
 
         path_index = utils_data.win2linux(ds["path_index"])
         path_lr = utils_data.win2linux(ds["path_lr"])
-        sf_lr = ds["sf_lr"]
-        sf_hr = ds["sf_hr"]
+        sf_lr, sf_hr = ds["sf_lr"], ds["sf_hr"]
 
         # check task
         task = 1
@@ -699,6 +831,7 @@ for checkpoint in checkpoints:
             if (
                 ds["id"] in ["deepbacs-sim-ecoli-sr", "deepbacs-sim-saureus-sr"]
                 and model_name == "dfcan"
+                and "_sr" in model_suffix
             ):
                 img_lr = utils_data.interp_sf(img_lr, sf=-2)
 
@@ -723,15 +856,10 @@ for checkpoint in checkpoints:
                         )
 
                     # patching image
-                    img_lr_patches = utils_data.unfold(
-                        img=img_lr,
-                        patch_size=params["patch_size"],
-                        overlap=params["overlap"],
-                        padding_mode="reflect",
-                    )
-                    num_iter = math.ceil(img_lr_patches.shape[0] / bs)
+                    img_lr_patches = stitcher.unfold(img=img_lr)
 
                     # --------------------------------------------------------------
+                    num_iter = math.ceil(img_lr_patches.shape[0] / bs)
                     pbar = tqdm.tqdm(desc="PREDICT", total=num_iter, ncols=100)
                     img_est_patches = []
                     for i_iter in range(num_iter):
@@ -756,21 +884,18 @@ for checkpoint in checkpoints:
                         img_lr.shape[3] * params["scale_factor"],
                     )
 
-                    overlap = params["overlap"] * params["scale_factor"]
+                    if params["scale_factor"] != 1:
+                        overlap = params["overlap"] * params["scale_factor"]
+                        patch_size = params["patch_size"] * params["scale_factor"]
+                        stitcher = stitcher.set_params(
+                            overlap=overlap, patch_size=patch_size
+                        )
 
                     # ----------------------------------------------------------
-                    # img_est = utils_data.fold_scale(
-                    #     patches=img_est_patches,
-                    #     original_image_shape=original_image_shape,
-                    #     overlap=overlap,
-                    #     crop_center=True,
-                    #     enable_scale=True,
-                    # )
-
-                    img_est = utils_data.fold_linear_ramp(
+                    # fold the patches
+                    img_est = stitcher.fold_linear_ramp(
                         patches=img_est_patches,
                         original_image_shape=original_image_shape,
-                        overlap=overlap,
                     )
                     img_est = torch.tensor(img_est)
 
@@ -801,35 +926,37 @@ for checkpoint in checkpoints:
                             img_est = img_est[
                                 :, :, : input_shape[-2], : input_shape[-1]
                             ]
-            # clip
-            # img_est = torch.clip(img_est, min=0.0)
             img_est = img_est.float().cpu().detach().numpy()
 
             # ------------------------------------------------------------------
-            if ds["path_hr"] != "Unknown":
-                dr = 2.5
-                clip = lambda x: np.clip(x, 0.0, dr)
+            if num_datasets < 3:
+                if ds["path_hr"] != "Unknown":
+                    dr = 2.5
+                    clip = lambda x: np.clip(x, 0.0, dr)
 
-                img_hr = utils_data.read_image(os.path.join(ds["path_hr"], filename))
-                if params["scale_factor"] == 1:
-                    img_hr = utils_data.interp_sf(img_hr, sf=sf_hr)
-                img_hr = output_normalizer(img_hr)[0]
+                    img_hr = utils_data.read_image(
+                        os.path.join(ds["path_hr"], filename)
+                    )
+                    if params["scale_factor"] == 1:
+                        img_hr = utils_data.interp_sf(img_hr, sf=sf_hr)[0]
+                    else:
+                        img_hr = img_hr[0]
 
-                imgs_est = utils_eva.linear_transform(
-                    img_true=clip(img_hr), img_test=img_est
-                )
+                    # imgs_est = utils_eva.linear_transform(
+                    #     img_true=clip(img_hr), img_test=img_est
+                    # )
 
-                dict_eva = {
-                    "img_true": clip(img_hr),
-                    "img_test": clip(img_est)[0, 0],
-                    "data_range": dr,
-                }
+                    dict_eva = {
+                        "img_true": clip(output_normalizer(img_hr)),
+                        "img_test": clip(output_normalizer(img_est))[0, 0],
+                        "data_range": dr,
+                    }
 
-                ssim = utils_eva.SSIM(**dict_eva)
-                psnr = utils_eva.PSNR(**dict_eva)
-                print(f"PSNR: {psnr:.4f}, SSIM: {ssim:.4f}")
-            else:
-                print("There is no reference data.")
+                    ssim = utils_eva.SSIM(**dict_eva)
+                    psnr = utils_eva.PSNR(**dict_eva)
+                    print(f"PSNR: {psnr:.4f}, SSIM: {ssim:.4f}")
+                else:
+                    print("There is no reference data.")
 
             # ------------------------------------------------------------------
             # save results
@@ -838,3 +965,9 @@ for checkpoint in checkpoints:
                 arr=img_est[0],
                 check_contrast=False,
             )
+    del model
+
+print("-" * 80)
+print("Done.")
+print("Current time: ", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+print("-" * 80)

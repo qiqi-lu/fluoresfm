@@ -10,11 +10,46 @@ from models.PSFmodels import BWModel
 
 import numpy as np
 import skimage.io as io
+from skimage import restoration
 from math import ceil
 import methods.convolution as conv
 import utils.evaluation as eva
 import utils.data as utils_data
 from torch.utils.data import Dataset
+
+
+def rolling_ball_approximation(image, radius, sf=4):
+    """
+    Background subtraction using rolling ball algorithm.\n
+    This algorithm's complexity is polynomial in the radius, with degree equal
+    to the image dimensionality (a 2D image is N^2, a 3D image is N^3, etc.),
+    so it can take a long time as the radius grows beyond 30.
+    So this function downsample the image and then uoscaling the background
+    to reduce the size of the processed image.
+
+    ### Parameters:
+    - `image` : numpy array, image.
+    - `radius` : int, radius of the rolling ball.
+    - `sf` : int, downsample factor. Default is 4.
+    ### Returns:
+    - `image` : numpy array, background subtracted image.
+    """
+    if type(image) == torch.Tensor:
+        image = image.numpy()
+    image = np.array(image)
+    if len(image.shape) == 2:
+        image = image[None]
+    image = image.astype(np.float32)
+    # downsample the input image of x4
+    image_down = interp_sf(image, sf=-sf)
+    # apply rolling ball algorithm to the downsampled image
+    bg_down = restoration.rolling_ball(image_down[0], radius=radius)
+    # upscaling the background to the original size
+    bg = interp_sf(bg_down[None], sf=sf, mode="bicubic")
+    # subtract the background from the original image
+    # bg = np.clip(bg, 0, None)
+    image_roll = image - bg
+    return image_roll, bg
 
 
 class RotFlip(object):
@@ -1319,11 +1354,16 @@ class Dataset_it2i(Dataset):
 
 
 def win2linux(win_path):
-    linux_path = win_path.replace("\\", "/")
-    if len(linux_path) > 1 and linux_path[1] == ":":
-        drive_letter = linux_path[0].lower()
-        linux_path = "/mnt/" + drive_letter + linux_path[2:]
-    return linux_path
+    if win_path == None:
+        return None
+    elif os.name == "posix":
+        linux_path = win_path.replace("\\", "/")
+        if len(linux_path) > 1 and linux_path[1] == ":":
+            drive_letter = linux_path[0].lower()
+            linux_path = "/mnt/" + drive_letter + linux_path[2:]
+        return linux_path
+    else:
+        return win_path
 
 
 class Dataset_iit(Dataset):
@@ -1535,7 +1575,7 @@ def interpx(x, shape):
     return x_inter.numpy()[0, 0]
 
 
-def interp_sf(x, sf):
+def interp_sf(x, sf, mode="nearest"):
     """
     Interpolate the image based on the scale factor.
     When `sf` > 1, the image is unsampled.
@@ -1551,7 +1591,7 @@ def interp_sf(x, sf):
     assert len(x.shape) == 3, "The image shape should be [C, H, W]."
     x = torch.unsqueeze(torch.tensor(x), dim=0)
     if sf > 0:
-        x_inter = torch.nn.functional.interpolate(x, scale_factor=sf, mode="nearest")
+        x_inter = torch.nn.functional.interpolate(x, scale_factor=sf, mode=mode)
     if sf < 0:
         x_inter = torch.nn.functional.avg_pool2d(x, kernel_size=-sf, stride=-sf)
     return x_inter[0].numpy()
@@ -1781,54 +1821,6 @@ def normalization(image, p_low, p_high, clip=False):
         image = np.clip(image, 0, 1)
 
     return image
-
-
-def unfold(
-    img: torch.Tensor, patch_size: int = 64, overlap: int = 0, padding_mode="constant"
-):
-    img_shape = img.shape
-    dim = len(img_shape)
-    if dim == 4:
-        Ny, Nx = img_shape[-2], img_shape[-1]
-        step = patch_size - overlap
-        # number of patch along each dim
-        num_patch_x = ceil((Nx - patch_size) / step) + 1
-        num_patch_y = ceil((Ny - patch_size) / step) + 1
-
-        # the size of image after padding
-        Nx_pad = num_patch_x * step + overlap
-        Ny_pad = num_patch_y * step + overlap
-        # padding image
-        img_pad = torch.nn.functional.pad(
-            img, pad=(0, Nx_pad - Nx, 0, Ny_pad - Ny), mode=padding_mode
-        )
-        # patching
-        patches = torch.zeros(
-            size=(
-                num_patch_x * num_patch_y,
-                img_shape[1],
-                patch_size,
-                patch_size,
-            ),
-            device=img_pad.device,
-            dtype=img_pad.dtype,
-        )
-        for i in range(num_patch_y):
-            for j in range(num_patch_x):
-                # extract patches
-                patches[i * num_patch_x + j] = img_pad[
-                    0,
-                    :,
-                    i * step : i * step + patch_size,
-                    j * step : j * step + patch_size,
-                ]
-    else:
-        raise ValueError("Only support 2D (batch, channel, height, width) image.")
-    print(
-        f"unfold image {img_shape} to patches {patches.shape}",
-        f"({num_patch_y},{num_patch_x})",
-    )
-    return patches
 
 
 def fold(patches: torch.Tensor, original_image_shape, overlap: int = 0):
@@ -2097,131 +2089,267 @@ def linear_transform_ab(img_true, img_test):
     return a, b
 
 
-def fold_linear_ramp(patches, original_image_shape, overlap: int = 0):
-    """
-    Stitch square patches.
+class Patch_stitcher(object):
+    def __init__(self, patch_size: int = 64, overlap: int = 0, padding_mode="constant"):
+        self.ps = patch_size
+        self.ol = overlap
+        self.padding_mode = padding_mode
+        self.generate_mask()
+        print("StitchPatch initialized.")
+        print(f"patch size: {self.ps}, overlap: {self.ol}")
 
-    ### Parameters:
-    - `patches` : patches to be stitched. [N, 1, C, patchsize, patchsize].
-    - `original_image_shape` : tuple, shape of the original image. (1, C, Ny, Nx).
-    - `overlap` : int, overlap between patches. Default is 0.
+    def set_params(self, patch_size: int, overlap: int):
+        if patch_size != self.ps or overlap != self.ol:
+            self.ps = patch_size
+            self.ol = overlap
+            self.generate_mask()
+            print("StitchPatch parameters updated.")
+            print(f"patch size: {self.ps}, overlap: {self.ol}")
 
-    ### Returns:
-    - `img_fold` : torch tensor, stitched image. [1, C, Ny, Nx].
-    """
-    patches = tensor_to_array(patches)
-    patch_size = patches.shape[-1]
-    step = patch_size - overlap
-    bs, nc = original_image_shape[0:2]
+    def unfold(self, img: torch.Tensor):
+        img_shape = img.shape
+        dim = len(img_shape)
+        if dim == 4:
+            Ny, Nx = img_shape[-2], img_shape[-1]
+            step = self.ps - self.ol
+            # number of patch along each dim
+            num_patch_x = ceil((Nx - self.ps) / step) + 1
+            num_patch_y = ceil((Ny - self.ps) / step) + 1
 
-    assert len(original_image_shape) == 4, "Only support 4D image."
+            # the size of image after padding
+            Nx_pad = num_patch_x * step + self.ol
+            Ny_pad = num_patch_y * step + self.ol
+            # padding image
+            img_pad = torch.nn.functional.pad(
+                img, pad=(0, Nx_pad - Nx, 0, Ny_pad - Ny), mode=self.padding_mode
+            )
+            # patching
+            patches = torch.zeros(
+                size=(num_patch_x * num_patch_y, img_shape[1], self.ps, self.ps),
+                device=img_pad.device,
+                dtype=img_pad.dtype,
+            )
+            for i in range(num_patch_y):
+                for j in range(num_patch_x):
+                    # extract patches
+                    patches[i * num_patch_x + j] = img_pad[
+                        0,
+                        :,
+                        i * step : i * step + self.ps,
+                        j * step : j * step + self.ps,
+                    ]
+        else:
+            raise ValueError("Only support 2D (batch, channel, height, width) image.")
+        print(
+            f"unfold image {img_shape} to patches {patches.shape}",
+            f"({num_patch_y},{num_patch_x})",
+        )
+        return patches
 
-    Ny, Nx = original_image_shape[-2:]  # image shape
+    def generate_mask(self):
+        self.patch_mask_lu = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (0, self.ol + 1), (0, self.ol + 1)),
+            "linear_ramp",
+        )[..., 0:-1, 0:-1]
 
-    # number of patch along each dim
-    num_patch_y = ceil((Ny - patch_size) / step) + 1
-    num_patch_x = ceil((Nx - patch_size) / step) + 1
-    num_pacth = num_patch_y * num_patch_x
+        self.patch_mask_mu = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - 2 * self.ol)),
+            ((0, 0), (0, 0), (0, self.ol + 1), (self.ol + 1, self.ol + 1)),
+            "linear_ramp",
+        )[..., 0:-1, 1:-1]
 
-    # reshape patches
-    patches = np.reshape(patches, (num_pacth, bs, nc, patch_size, patch_size))
+        self.patch_mask_ru = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (0, self.ol + 1), (self.ol + 1, 0)),
+            "linear_ramp",
+        )[..., 0:-1, 1:]
 
-    # calculate the image shape after padding
-    img_pad_shape = (bs, nc, num_patch_y * step + overlap, num_patch_x * step + overlap)
-    img_pad = np.zeros(img_pad_shape)  # place holder
-    patch_pad = np.zeros_like(img_pad)
+        self.patch_mask_lm = np.pad(
+            np.ones((1, 1, self.ps - 2 * self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, self.ol + 1), (0, self.ol + 1)),
+            "linear_ramp",
+        )[..., 1:-1, 0:-1]
 
-    patch_mask_lu = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (0, overlap + 1), (0, overlap + 1)),
-        "linear_ramp",
-    )[..., 0:-1, 0:-1]
+        self.patch_mask_mm = np.pad(
+            np.ones((1, 1, self.ps - 2 * self.ol, self.ps - 2 * self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, self.ol + 1), (self.ol + 1, self.ol + 1)),
+            "linear_ramp",
+        )[..., 1:-1, 1:-1]
 
-    patch_mask_mu = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - 2 * overlap)),
-        ((0, 0), (0, 0), (0, overlap + 1), (overlap + 1, overlap + 1)),
-        "linear_ramp",
-    )[..., 0:-1, 1:-1]
+        self.patch_mask_rm = np.pad(
+            np.ones((1, 1, self.ps - 2 * self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, self.ol + 1), (self.ol + 1, 0)),
+            "linear_ramp",
+        )[..., 1:-1, 1:]
 
-    patch_mask_ru = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (0, overlap + 1), (overlap + 1, 0)),
-        "linear_ramp",
-    )[..., 0:-1, 1:]
+        self.patch_mask_lb = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, 0), (0, self.ol + 1)),
+            "linear_ramp",
+        )[..., 1:, 0:-1]
 
-    patch_mask_lm = np.pad(
-        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (0, overlap + 1)),
-        "linear_ramp",
-    )[..., 1:-1, 0:-1]
+        self.patch_mask_mb = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - 2 * self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, 0), (self.ol + 1, self.ol + 1)),
+            "linear_ramp",
+        )[..., 1:, 1:-1]
 
-    patch_mask_mm = np.pad(
-        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - 2 * overlap)),
-        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (overlap + 1, overlap + 1)),
-        "linear_ramp",
-    )[..., 1:-1, 1:-1]
+        self.patch_mask_rb = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps - self.ol)),
+            ((0, 0), (0, 0), (self.ol + 1, 0), (self.ol + 1, 0)),
+            "linear_ramp",
+        )[..., 1:, 1:]
 
-    patch_mask_rm = np.pad(
-        np.ones((bs, nc, patch_size - 2 * overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (overlap + 1, overlap + 1), (overlap + 1, 0)),
-        "linear_ramp",
-    )[..., 1:-1, 1:]
+        # ----------------------------------------------------------------------
+        # one column patches
+        self.patch_mask_lu_01 = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps)),
+            ((0, 0), (0, 0), (0, self.ol + 1), (0, 0)),
+            "linear_ramp",
+        )[..., 0:-1, :]
+        self.patch_mask_lm_01 = np.pad(
+            np.ones((1, 1, self.ps - 2 * self.ol, self.ps)),
+            ((0, 0), (0, 0), (self.ol + 1, self.ol + 1), (0, 0)),
+            "linear_ramp",
+        )[..., 1:-1, :]
+        self.patch_mask_lb_01 = np.pad(
+            np.ones((1, 1, self.ps - self.ol, self.ps)),
+            ((0, 0), (0, 0), (self.ol + 1, 0), (0, 0)),
+            "linear_ramp",
+        )[..., 1:, :]
+        # ----------------------------------------------------------------------
+        # one row patches
+        self.patch_mask_lu_10 = np.pad(
+            np.ones((1, 1, self.ps, self.ps - self.ol)),
+            ((0, 0), (0, 0), (0, 0), (0, self.ol + 1)),
+            "linear_ramp",
+        )[..., 0:-1]
+        self.patch_mask_mu_10 = np.pad(
+            np.ones((1, 1, self.ps, self.ps - 2 * self.ol)),
+            ((0, 0), (0, 0), (0, 0), (self.ol + 1, self.ol + 1)),
+            "linear_ramp",
+        )[..., 1:-1]
+        self.patch_mask_ru_10 = np.pad(
+            np.ones((1, 1, self.ps, self.ps - self.ol)),
+            ((0, 0), (0, 0), (0, 0), (self.ol + 1, 0)),
+            "linear_ramp",
+        )[..., 1:]
+        # ----------------------------------------------------------------------
+        # only one patch
+        self.patch_mask_lu_11 = np.ones((1, 1, self.ps, self.ps))
 
-    patch_mask_lb = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (overlap + 1, 0), (0, overlap + 1)),
-        "linear_ramp",
-    )[..., 1:, 0:-1]
+    def fold_linear_ramp(self, patches, original_image_shape):
+        """
+        Stitch square patches.
 
-    patch_mask_mb = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - 2 * overlap)),
-        ((0, 0), (0, 0), (overlap + 1, 0), (overlap + 1, overlap + 1)),
-        "linear_ramp",
-    )[..., 1:, 1:-1]
+        ### Parameters:
+        - `patches` : patches to be stitched. [N, 1, C, patchsize, patchsize].
+        - `original_image_shape` : tuple, shape of the original image. (1, C, Ny, Nx).
+        - `overlap` : int, overlap between patches. Default is 0.
 
-    patch_mask_rb = np.pad(
-        np.ones((bs, nc, patch_size - overlap, patch_size - overlap)),
-        ((0, 0), (0, 0), (overlap + 1, 0), (overlap + 1, 0)),
-        "linear_ramp",
-    )[..., 1:, 1:]
+        ### Returns:
+        - `img_fold` : torch tensor, stitched image. [1, C, Ny, Nx].
+        """
+        patches = tensor_to_array(patches)
+        input_patch_size = patches.shape[-1]
 
-    for i in range(num_patch_y):
-        for j in range(num_patch_x):
-            patch = patches[i * num_patch_x + j]
-            patch_crop = patch
-            # crop center region -------------------------------------------
-            if overlap > 0:
-                if i == 0:
-                    if j == 0:
-                        patch_crop *= patch_mask_lu
-                    elif j == (num_patch_x - 1):
-                        patch_crop *= patch_mask_ru
+        if input_patch_size != self.ps:
+            print("[Warning] the patch size of input is not equal to the init setting.")
+            print("[Warning] recreate the masks.")
+            self.ps = input_patch_size
+            self.generate_mask()
+
+        step = self.ps - self.ol
+
+        assert (
+            len(original_image_shape) == 4
+        ), "Only support image with shape of [Nb, Nc, Ny, Nx]."
+        bs, nc, Ny, Nx = original_image_shape  # image shape
+
+        # number of patch along each dim
+        num_patch_y = ceil((Ny - self.ps) / step) + 1
+        num_patch_x = ceil((Nx - self.ps) / step) + 1
+        num_pacth = num_patch_y * num_patch_x
+
+        # reshape patches
+        patches = np.reshape(patches, (num_pacth, bs, nc, self.ps, self.ps))
+
+        # calculate the image shape after padding
+        img_pad_shape = (
+            bs,
+            nc,
+            num_patch_y * step + self.ol,
+            num_patch_x * step + self.ol,
+        )
+        img_pad = np.zeros(img_pad_shape)  # place holder
+        patch_pad = np.zeros_like(img_pad)
+
+        patch_mask_lu = self.patch_mask_lu
+        patch_mask_ru = self.patch_mask_ru
+        patch_mask_mu = self.patch_mask_mu
+
+        patch_mask_lb = self.patch_mask_lb
+        patch_mask_rb = self.patch_mask_rb
+        patch_mask_mb = self.patch_mask_mb
+
+        patch_mask_lm = self.patch_mask_lm
+        patch_mask_rm = self.patch_mask_rm
+        patch_mask_mm = self.patch_mask_mm
+        # ----------------------------------------------------------------------
+        # update masks for special cases
+        if num_patch_x == 1 and num_patch_y > 1:
+            patch_mask_lu = self.patch_mask_lu_01
+            patch_mask_lm = self.patch_mask_lm_01
+            patch_mask_lb = self.patch_mask_lb_01
+
+        if num_patch_y == 1 and num_patch_x > 1:
+            patch_mask_lu = self.patch_mask_lu_10
+            patch_mask_mu = self.patch_mask_mu_10
+            patch_mask_ru = self.patch_mask_ru_10
+
+        if num_patch_x == 1 and num_patch_y == 1:
+            patch_mask_lu = self.patch_mask_lu_11
+
+        # ----------------------------------------------------------------------
+        for i in range(num_patch_y):
+            for j in range(num_patch_x):
+                patch = patches[i * num_patch_x + j]
+                patch_crop = patch
+                # --------------------------------------------------------------
+                # weighting
+                if self.ol > 0:
+                    if i == 0:
+                        if j == 0:
+                            patch_crop *= patch_mask_lu
+                        elif j == (num_patch_x - 1):
+                            patch_crop *= patch_mask_ru
+                        else:
+                            patch_crop *= patch_mask_mu
+                    elif i == (num_patch_y - 1):
+                        if j == 0:
+                            patch_crop *= patch_mask_lb
+                        elif j == (num_patch_x - 1):
+                            patch_crop *= patch_mask_rb
+                        else:
+                            patch_crop *= patch_mask_mb
                     else:
-                        patch_crop *= patch_mask_mu
-                elif i == (num_patch_y - 1):
-                    if j == 0:
-                        patch_crop *= patch_mask_lb
-                    elif j == (num_patch_x - 1):
-                        patch_crop *= patch_mask_rb
-                    else:
-                        patch_crop *= patch_mask_mb
-                else:
-                    if j == 0:
-                        patch_crop *= patch_mask_lm
-                    elif j == (num_patch_x - 1):
-                        patch_crop *= patch_mask_rm
-                    else:
-                        patch_crop *= patch_mask_mm
-            # --------------------------------------------------------------
-            patch_pad[
-                :,
-                :,
-                i * step : i * step + patch_size,
-                j * step : j * step + patch_size,
-            ] += patch_crop
-    # sum
-    img_fold = patch_pad[..., :Ny, :Nx]
-    return img_fold
+                        if j == 0:
+                            patch_crop *= patch_mask_lm
+                        elif j == (num_patch_x - 1):
+                            patch_crop *= patch_mask_rm
+                        else:
+                            patch_crop *= patch_mask_mm
+                # --------------------------------------------------------------
+                patch_pad[
+                    :,
+                    :,
+                    i * step : i * step + self.ps,
+                    j * step : j * step + self.ps,
+                ] += patch_crop
+        # sum
+        img_fold = patch_pad[..., :Ny, :Nx]
+        return img_fold
 
 
 if __name__ == "__main__":
