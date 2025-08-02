@@ -1,24 +1,22 @@
 """
-- Read all the training patches.
-- Check the value in the high-quality patches.
-- Save the `clean` pacthes filenames into the training .txt file with a suffix `_clean`.
+Read all the training patches.
+Exclude the patches with only background noise based on the value in the high-quality patches
+Save the filename of the patch into the training txt file with a suffix `_clean`.
+
+Parameters:
+- condition_type:   Use `max` or `mean` as the filtering condition.
+- threshold:        The threshold value for the filtering condition.
+- specific_dataset: The specific dataset to be processed.
+                    If not specified, all the datasets will be processed.
 """
 
-import skimage.io as io
-import numpy as np
 import pandas, tqdm, os
+import skimage.io as io
 from utils.data import read_txt, win2linux
 
-# data_frame = pandas.read_excel("dataset_train_transformer-v2.xlsx", sheet_name="64x64")
-data_frame = pandas.read_excel(
-    "dataset_train_transformer-v2.xlsx", sheet_name="64x64-finetune"
-)
-
-condition_type, threshold = "max", 0.15  # finetune, ccps
-# condition_type, threshold = "max", 0.02
+condition_type, threshold = "max", 0.02  # all
 # condition_type, threshold = "mean", 0.06  # golgi
 
-# if not speficify the dataset, then process all the dataset #
 specific_dataset = [
     # "vmsim5-mito-dcv",
     # "vmsim5-mito-sr",
@@ -27,12 +25,13 @@ specific_dataset = [
     # "rcan3d-c2s-npc-dcv",
     # "rcan3d-c2s-npc-sr",
     # "rcan3d-dn-golgi-dn",
-    "biotisr-ccp-sr-1",
-    "biotisr-ccp-sr-1-2",
+    # "biotisr-ccp-sr-1",
+    # "biotisr-ccp-sr-1-2",
 ]
-# specific_dataset = []
 
 # ------------------------------------------------------------------------------
+data_frame = pandas.read_excel("dataset_train_transformer-v2.xlsx", sheet_name="64x64")
+
 print("Condition Type:", condition_type)
 print("Threshold:", threshold)
 
@@ -68,7 +67,7 @@ for i_dataset in range(num_dataset):
     file_names = read_txt(path_txt)
     num_patches = len(file_names)
 
-    pbar = tqdm.tqdm(desc="CLEAN", total=num_patches, ncols=80, leave=False)
+    pbar = tqdm.tqdm(desc=i_dataset, total=num_patches, ncols=80, leave=False)
     if os.path.exists(path_txt_clean):
         file = open(path_txt_clean, "w")
     else:

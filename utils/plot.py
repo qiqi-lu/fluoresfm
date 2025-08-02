@@ -1,15 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2
 from skimage import measure
 
 
 def cal_radar_range(data, percent=(0.1, 0.95), precision=0.5):
-    # x(m)|----|a-----------b|-----|y(n)
-    a = data.max(axis=-1)
+    """
+    To make the max at percent[1] and min at percent[0] of the axis, where
+    percision is used to adjust the limits slightly.
+
+    The limits a and y can be obtained by solving the equations:
+    `(b-y)/(x-y)=n`,
+    `(a-y)/(x-y)=m`.
+
+    Then,
+    `x = (a - b + b * m - a * n) / (m - n)`,
+    `y = (b * m - a * n) / (m - n)`.
+
+    ### Parameters:
+    - `data`: the vector of values.
+    - `percent`: the percent of the axis to be used.
+    - `precision`: the precision of the axis.
+
+    ### Returns:
+    - `x`: the upper limit.
+    - `y`: the lower limit.
+    """
     b = data.min(axis=-1)
-    m = percent[1]
+    a = data.max(axis=-1)
     n = percent[0]
+    m = percent[1]
 
     x = (a - b + b * m - a * n) / (m - n)
     y = (b * m - a * n) / (m - n)
@@ -70,6 +89,15 @@ def adjust_aspect_ratio(img, ratio=0.5):
 
 
 def colorbar(mappable):
+    """
+    Add a color bar with a height same as the image.
+
+    ### Parameters:
+    - `mappable`: matplotlib.colors.Colormap, the color map to use.
+
+    ### Returns:
+    - `cbar`: matplotlib.colorbar.Colorbar, the color bar.
+    """
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     import matplotlib.pyplot as plt
 
@@ -96,14 +124,15 @@ def add_scale_bar(
     """
     Add a scale bar to the given axes.
 
-    Parameters:
-    ax (matplotlib.axes.Axes): The axes to which the scale bar will be added.
-    image (np.ndarray): The 2D image array. The shape of the image array should be (H, W).
-    pixel_size (float): The size of each pixel in the image (um).
-    bar_length (float): The desired length of the scale bar (um).
-    bar_height (float, optional): The height of the scale bar as a fraction of the image height. Default is 0.02.
-    bar_color (str, optional): The color of the scale bar. Default is 'white'.
-    pos (tuple, optional): The position of the scale bar in the image (pixels). Default is (20, 20).
+    ### Parameters:
+    - `ax` (matplotlib.axes.Axes): The axes to which the scale bar will be added.
+    - `image` (np.ndarray): The 2D image array. The shape of the image array should be (H, W).
+    - `pixel_size` (float): The size of each pixel in the image (um).
+    - `bar_length` (float): The desired length of the scale bar (um).
+    - `bar_height` (float, optional): The height of the scale bar as a fraction
+            of the image height. Default is 0.02.
+    - `bar_color` (str, optional): The color of the scale bar. Default is 'white'.
+    - `pos` (tuple, optional): The position of the scale bar in the image (pixels). Default is (20, 20).
     """
     # Calculate the number of pixels corresponding to the bar length
     bar_pixels = bar_length / pixel_size
@@ -160,7 +189,16 @@ def add_significant_bars(ax, x1, x2, y, p_value, dict_line={}, dict_asterisks={}
 
 
 def get_outlines(mask):
-    """Get the outlines of each labels"""
+    """
+    Get the outlines of each masks.
+
+    ### Parameters:
+    - `mask`: numpy array, shape (H, W), the mask image.
+
+    ### Returns:
+    - `outlines`: list, the outlines of each masks. Each outline is a numpy
+        array, shape (N, 2), where N is the number of points in the outline.
+    """
     outlines = []
     for label in np.unique(mask):
         if label == 0:

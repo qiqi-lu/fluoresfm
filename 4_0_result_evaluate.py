@@ -1,7 +1,16 @@
 """
 Calculate the metrics of each image in each dataset.
 Saved into a excel file.
-Each row is a dataset, each column is a methods, each sheet is a metric.
+Each row is a sample, each column is a methods, each sheet is a metric.
+Ouput:
+    - results/predictions/{dataset_name}/metrics-v2.xlsx
+    -------------------------------------------------------
+    | id           | method-1 | method-2 | ... | method-n |
+    -------------------------------------------------------
+    | 0            |....      |....      |...  |....      |
+    | 1            |....      |....      |...  |....      |
+    | ...          |....      |....      |...  |....      |
+    -------------------------------------------------------
 """
 
 import os, pandas, traceback
@@ -401,7 +410,7 @@ params = {
         # "biotisr-factin-sr-3",
         # "biotisr-lysosome-sr-1",
         # "biotisr-lysosome-sr-2",
-        # "biotisr-lysosome-sr-3",
+        "biotisr-lysosome-sr-3",
         # "cellpose3-2photon-dn-1",
         # "cellpose3-2photon-dn-4",
         # "cellpose3-2photon-dn-16",
@@ -419,7 +428,7 @@ params = {
         # ("CARE:F-actin", "care_biosr_sr_actin-v2-newnorm"),
         # ("CARE:Mix", "care_biosr_sr_mix-v2-newnorm"),
         # ------------------- comparison methods -------------------------------
-        ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
+        # ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
         # --------------------- batch size effect ------------------------------
         # (
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs4",
@@ -429,23 +438,23 @@ params = {
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs8",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8",
         # ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
-        ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
+        # ),
         # # -------------------- train with different text -----------------------
-        (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
-        ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
+        # ),
         # (
         #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
         #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
@@ -455,14 +464,14 @@ params = {
         #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
         # ),
         # # -------------------- test with different text ------------------------
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
-        ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
+        # ),
         # (
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
@@ -470,211 +479,6 @@ params = {
         # (
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        # ),
-        # --------------------------- finetune ---------------------------------
-        # (
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-4",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-4",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-cellpose3-2photon-dn-16",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-cellpose3-2photon-dn-16",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-2",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mt-sr-3",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-2",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-mito-sr-3",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-2",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-nonlinear-sr-3",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-2",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-ccp-sr-3",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-2",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-factin-sr-3",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-1",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-1",
-        #     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-2",
-        #     # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-2",
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-ft-io-biotisr-lysosome-sr-3",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-3",
-        #     # ------------------------------------------------------------------
-        # ),
-        # (
-        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
-        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
-        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
-        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
-        #     # "CARE:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
-        #     # "care-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mt-sr-3",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-mito-sr-3",
-        #     # "care-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-ccp-sr-3",
-        #     # "care-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-factin-sr-3",
-        #     # "care-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
-        #     # "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        #     # "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
-        #     # "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        #     "CARE:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
-        #     "care-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        #     # ------------------------------------------------------------------
-        # ),
-        # (
-        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
-        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
-        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
-        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
-        #     # "DFCAN:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
-        #     # "dfcan-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mt-sr-3",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-mito-sr-3",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-ccp-sr-3",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-factin-sr-3",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        #     # "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
-        #     # "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        #     "DFCAN:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
-        #     "dfcan-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        #     # ------------------------------------------------------------------
-        # ),
-        # (
-        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-1",
-        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-4",
-        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-4",
-        #     # "UniFMIR:v2-newnorm-ft-io-cellpose3-2photon-dn-16",
-        #     # "unifmir-v2-newnorm-ft-inout-cellpose3-2photon-dn-16",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mt-sr-3",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-mito-sr-3",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-nonlinear-sr-3",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-ccp-sr-3",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-factin-sr-3",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        #     # ------------------------------------------------------------------
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-1",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        #     # "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-2",
-        #     # "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        #     "UniFMIR:v2-newnorm-ft-io-biotisr-lysosome-sr-3",
-        #     "unifmir-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        #     # ------------------------------------------------------------------
         # ),
     ),
     "percentiles": (0.03, 0.995),

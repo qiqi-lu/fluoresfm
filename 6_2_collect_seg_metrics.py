@@ -2,7 +2,7 @@
 Collect segmentation evaluation metrics.
 """
 
-import os, tqdm, pandas
+import os, pandas
 from scipy.stats import wilcoxon
 from dataset_analysis import datasets_seg_show
 
@@ -12,7 +12,7 @@ methods = ["raw", "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"]
 
 metrics_name = ["AP", "IoU"]
 path_results = os.path.join("results", "predictions")
-path_statictic = os.path.join("results", "statistic", "seg_dataset")
+path_statictic = os.path.join("results", "statistic", "segmentation")
 os.makedirs(path_statictic, exist_ok=True)
 
 num_datasets = len(id_datasets)

@@ -8,15 +8,13 @@ from utils.data import win2linux, read_txt
 import skimage.io as skio
 import skimage.measure as skm
 from utils.evaluation import average_precision, IoU
-import scipy
 
 
 path_test_xlsx = "dataset_test-v2.xlsx"
 datasets_info = [
-    # "cellpose3-2photon-dn-1",
-    # "cellpose3-2photon-dn-4",
-    # "cellpose3-2photon-dn-16",
-    # "cellpose3-2photon-dn-64",
+    "cellpose3-2photon-dn-1",
+    "cellpose3-2photon-dn-4",
+    "cellpose3-2photon-dn-16",
     # "colon-tissue-dn-high",
     # "colon-tissue-dn-low",
     # "hl60-high-noise-c00",
@@ -83,7 +81,7 @@ datasets_info = [
     # "srcaco2-h2b-dn-8",
     # "srcaco2-h2b-dn-4",
     # "srcaco2-h2b-dn-2",
-    # --------------------------------------------------------------------------
+    # # --------------------------------------------------------------------------
     # "biotisr-ccp-dcv-1",
     # "biotisr-ccp-dcv-2",
     # "biotisr-ccp-dcv-3",
@@ -121,23 +119,23 @@ datasets_info = [
     # "rcan3d-dn-lysosome-dn",
     # "rcan3d-dn-mixtrixmito-dn",
     # "rcan3d-dn-mt-dn",
-    "biosr-er-sr-1",
-    "biosr-er-sr-2",
-    "biosr-er-sr-3",
-    "biosr-er-sr-4",
-    "biosr-er-sr-5",
-    "biosr-er-sr-6",
-    "biosr-er-dcv-1",
-    "biosr-er-dcv-2",
-    "biosr-er-dcv-3",
-    "biosr-er-dcv-4",
-    "biosr-er-dcv-5",
-    "biosr-er-dcv-6",
-    "biosr-er-dn-1",
-    "biosr-er-dn-2",
-    "biosr-er-dn-3",
-    "biosr-er-dn-4",
-    "biosr-er-dn-5",
+    # "biosr-er-sr-1",
+    # "biosr-er-sr-2",
+    # "biosr-er-sr-3",
+    # "biosr-er-sr-4",
+    # "biosr-er-sr-5",
+    # "biosr-er-sr-6",
+    # "biosr-er-dcv-1",
+    # "biosr-er-dcv-2",
+    # "biosr-er-dcv-3",
+    # "biosr-er-dcv-4",
+    # "biosr-er-dcv-5",
+    # "biosr-er-dcv-6",
+    # "biosr-er-dn-1",
+    # "biosr-er-dn-2",
+    # "biosr-er-dn-3",
+    # "biosr-er-dn-4",
+    # "biosr-er-dn-5",
     # "stardist-25",
     # "stardist-50",
     # "stardist-100",

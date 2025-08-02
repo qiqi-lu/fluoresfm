@@ -2,6 +2,15 @@ import torch
 
 
 def mae_mse(x, y, scale=(0.5, 0.5)):
+    """
+    loss = scale[0] * mae + scale[1] * mse
+    ### Parameters:
+    - `x`: torch.Tensor, predicted or GT image.
+    - `y`: torch.Tensor, predicted or GT image.
+    - `scale`: tuple, scale of mae and mse.
+    ### Returns:
+    - `loss`: torch.Tensor, loss value.
+    """
     mae = torch.nn.L1Loss()(x, y)
     mse = torch.nn.MSELoss()(x, y)
     loss = scale[0] * mae + scale[1] * mse

@@ -3,10 +3,11 @@ Plot the training curve when finetune the model.
 The data is saved in the tensorbaod log file.
 """
 
-import os
+import os, pandas
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from utils.data import win2linux
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Path to your TensorBoard log file (or directory containing multiple events)
 path_logs = [
@@ -60,10 +61,20 @@ for i in range(len(methods_title)):
     )
 
 axes.set_xlabel("iterations")
-axes.set_ylabel("MSE (validation)")
+axes.set_ylabel("MSE (val)")
 axes.set_title("Finetune curve")
 axes.legend()
 
 # Save the figure
 fig.savefig(os.path.join(path_figure, "training_curve.png"))
 fig.savefig(os.path.join(path_figure, "training_curve.svg"))
+
+# save source data
+data_save = []
+for i in range(len(methods_title)):
+    data_save.append(values_all[i][:min_step])
+data_save = np.array(data_save)
+data_save = data_save.T
+df = pandas.DataFrame(data_save, columns=methods_title)
+# save to excel
+df.to_excel(os.path.join(path_figure, "training_curve.xlsx"), index=False)

@@ -49,12 +49,12 @@ checkpoints = (
         # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-3",
         # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-3\epoch_1999_iter_32000.pt",
         # --------------------------------------------------------------------
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
-        "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-1\epoch_1999_iter_32000.pt",
+        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
+        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-1\epoch_1999_iter_32000.pt",
         # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-2",
         # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-2\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-3\epoch_1999_iter_32000.pt",
+        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
+        "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-3\epoch_1999_iter_32000.pt",
         # --------------------------------------------------------------------
         # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-1",
         # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-1\epoch_1999_iter_32000.pt",
@@ -133,7 +133,7 @@ checkpoints = (
 )
 
 params = {
-    "device": "cuda:0",
+    "device": "cuda:1",
     "enable_amp": True,
     "complie_model": True,
     # text embedder ------------------------------------------------------------
@@ -609,11 +609,17 @@ params = {
         # "biotisr-mito-sr-2-live",
         # "biotisr-mito-sr-3-live",
         # "biotisr-lysosome-sr-1-live",
+        # "biotisr-lysosome-sr-1-live-in",
         # "biotisr-lysosome-sr-2-live",
+        # "biotisr-lysosome-sr-2-live-in",
         # "biotisr-lysosome-sr-3-live",
-        "biotisr-ccp-sr-1-live",
+        # "biotisr-lysosome-sr-3-live-in",
+        # "biotisr-ccp-sr-1-live",
+        # "biotisr-ccp-sr-1-live-in",
         # "biotisr-ccp-sr-2-live",
+        # "biotisr-ccp-sr-2-live-in",
         # "biotisr-ccp-sr-3-live",
+        "biotisr-ccp-sr-3-live-in",
     ],
     "num_sample": 8,
     "percentiles": (0.03, 0.995),

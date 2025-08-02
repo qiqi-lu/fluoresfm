@@ -689,15 +689,15 @@ datasets_seg_show = [
     "biotisr-mt-dcv-1",
     "biotisr-mt-dcv-2",
     "biotisr-mt-dcv-3",
-    "biotisr-mito-dcv-1",
-    "biotisr-mito-dcv-2",
-    "biotisr-mito-dcv-3",
+    # "biotisr-mito-dcv-1", # not in the external dataset
+    # "biotisr-mito-dcv-2", # not in the external dataset
+    # "biotisr-mito-dcv-3", # not in the external dataset
     "biotisr-ccp-dn-1",
     "biotisr-ccp-dn-2",
     "biotisr-factin-dn-1",
     "biotisr-factin-dn-2",
-    "biotisr-factin-nonlinear-dn-1",
-    "biotisr-factin-nonlinear-dn-2",
+    # "biotisr-factin-nonlinear-dn-1", # not in the external dataset
+    # "biotisr-factin-nonlinear-dn-2", # not in the external dataset
     "biotisr-lysosome-dn-1",
     "biotisr-lysosome-dn-2",
     "biotisr-mt-dn-1",
@@ -744,26 +744,11 @@ datasets_finetune = {
         "biotisr-mt-sr-2",
         "biotisr-mt-sr-3",
     ],
-    # "biotisr-mito": [
-    #     "biotisr-mito-sr-1",
-    #     "biotisr-mito-sr-2",
-    #     "biotisr-mito-sr-3",
-    # ],
-    # "biotisr-actin-nl": [
-    #     "biotisr-factin-nonlinear-sr-1",
-    #     "biotisr-factin-nonlinear-sr-2",
-    #     "biotisr-factin-nonlinear-sr-3",
-    # ],
     "biotisr-ccp": [
         "biotisr-ccp-sr-1",
         "biotisr-ccp-sr-2",
         "biotisr-ccp-sr-3",
     ],
-    # "biotisr-ccp-2": [
-    #     "biotisr-ccp-sr-1-2",
-    #     "biotisr-ccp-sr-2-2",
-    #     "biotisr-ccp-sr-3-2",
-    # ],
     "biotisr-actin": [
         "biotisr-factin-sr-1",
         "biotisr-factin-sr-2",
@@ -774,6 +759,16 @@ datasets_finetune = {
         "biotisr-lysosome-sr-2",
         "biotisr-lysosome-sr-3",
     ],
+    # "biotisr-mito": [
+    #     "biotisr-mito-sr-1",
+    #     "biotisr-mito-sr-2",
+    #     "biotisr-mito-sr-3",
+    # ],
+    # "biotisr-actin-nl": [
+    #     "biotisr-factin-nonlinear-sr-1",
+    #     "biotisr-factin-nonlinear-sr-2",
+    #     "biotisr-factin-nonlinear-sr-3",
+    # ],
 }
 
 # ------------------------------------------------------------------------------

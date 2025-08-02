@@ -23,9 +23,11 @@ def preprocess(img, scale_factor=1):
 
 
 # ------------------------------------------------------------------------------
-path_results = os.path.join("results", "predictions")
-path_fig_save_to = os.path.join("results", "figures", "masks", "each_sample")
+path_fig_save_to = os.path.join("results", "figures", "masks", "each_sample-2")
 os.makedirs(path_fig_save_to, exist_ok=True)
+
+# ------------------------------------------------------------------------------
+path_results = os.path.join("results", "predictions")
 
 path_test_xlsx = "dataset_test-v2.xlsx"
 df_test = pandas.read_excel(path_test_xlsx)

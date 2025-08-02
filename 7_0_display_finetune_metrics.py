@@ -99,6 +99,14 @@ for i_group, group_name in enumerate(group_names):
         data_mean = metrics_mean[:, i_metric, :]  # (num_datasets, num_methods)
         data_std = metrics_std[:, i_metric, :]
 
+        ylabels = np.round(np.arange(0, 1.05, 0.1), 1)
+        if metric == "PSNR":
+            ax.set_yticks(np.arange(10, 61, 3))
+            ax.set_yticklabels(np.arange(10, 61, 3))
+        if metric in ["MSSSIM", "SSIM", "ZNCC"]:
+            ax.set_yticks(ylabels)
+            ax.set_yticklabels(ylabels)
+
         for i_meth in range(num_methods):
             ax.errorbar(
                 np.arange(num_datasets),
@@ -110,6 +118,10 @@ for i_group, group_name in enumerate(group_names):
 
         ax.set_xticks(np.arange(num_datasets))
         ax.set_xticklabels(np.arange(num_datasets) + 1)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        if i_group == 0:
+            ax.set_ylabel(metric)
     axes[0, i_group].set_title(group_name)
 
 plt.savefig(os.path.join(path_figures, "metrics_each_dataset.png"))
@@ -126,14 +138,22 @@ def plot_voilin(ax, data, metric, y_lim):
     ax_voilin = sns.violinplot(
         data=data,
         linewidth=1,
-        # linecolor="white",
         linecolor="black",
         inner="box",
         palette=methods_color,
         ax=ax,
         cut=0,
-        # inner_kws={"color": "black"},
     )
+
+    # add horizontal line
+    data_ref_median = np.median(data[:, -1], axis=0)
+    ax_voilin.axhline(
+        data_ref_median,
+        color="gray",
+        linestyle="--",
+        linewidth=1,
+    )
+
     ax_voilin.set_xticks([])
     ax_voilin.spines["right"].set_visible(False)
     ax_voilin.spines["top"].set_visible(False)
@@ -196,3 +216,12 @@ for i_metric, metric in enumerate(metrics_name):
 
 plt.savefig(os.path.join(path_figures, "metrics_overall.png"))
 plt.savefig(os.path.join(path_figures, "metrics_overall.svg"))
+
+# save source data
+writer = pd.ExcelWriter(os.path.join(path_figures, "metrics_overall.xlsx"))
+for metric in metrics_name:
+    values = metrics_value_each_sample[metric]
+    values = np.concatenate(values, axis=0)
+    df = pd.DataFrame(values, columns=methods_title)
+    df.to_excel(writer, sheet_name=metric, index=False)
+writer.close()

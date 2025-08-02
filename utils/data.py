@@ -55,7 +55,8 @@ def rolling_ball_approximation(image, radius, sf=4):
 class RotFlip(object):
     """
     Rotation and flip.
-    Input a image and a random number, and do a specific operation on the image according to the random number.
+    Input a image and a random number, and do a specific operation on the image
+    according to the random number.
     """
 
     def __init__(self):
@@ -92,7 +93,8 @@ def convert_to_8bit(img, data_range=None):
 
     ### Parameters:
     - `img` : numpy array, image.
-    - `data_range` : tuple, (vmin, vmax), the range of the image. If None, the range is calculated from the image.
+    - `data_range` : tuple, (vmin, vmax), the range of the image. If None, the
+        range is calculated from the image.
 
     ### Returns:
     - `img` : numpy array, image.
@@ -116,7 +118,9 @@ def print_dict(dict):
 
 
 def ave_pooling(x, scale_factor=1):
-    """Average pooling for 2D/3D image."""
+    """
+    Average pooling for 2D/3D image.
+    """
     x = torch.tensor(x, dtype=torch.float32)
     if len(x.shape) == 2:
         x = torch.nn.functional.avg_pool2d(x[None, None], kernel_size=scale_factor)
@@ -126,7 +130,9 @@ def ave_pooling(x, scale_factor=1):
 
 
 def add_noise(x, poisson=0, sigma_gauss=0, scale_factor=1):
-    """Add Poisson and Gaussian noise."""
+    """
+    Add Poisson and Gaussian noise.
+    """
     x = np.maximum(x, 0.0)
 
     # add poisson noise
@@ -151,7 +157,9 @@ def add_noise(x, poisson=0, sigma_gauss=0, scale_factor=1):
 
 
 def center_crop(x, size=None, verbose=False):
-    """Crop the center region of the 3D image x."""
+    """
+    Crop the center region of the 3D image x.
+    """
     if size is not None:
         dim = len(x.shape)
         if dim == 3:  # (Nz, Ny, Nx)
@@ -196,7 +204,14 @@ def center_crop(x, size=None, verbose=False):
 
 
 def even2odd_shape(x, verbose=False):
-    """Convert the image x to a odd-shape image."""
+    """
+    Convert the image x to a odd-shape image.
+    ### Parameters:
+    - `x` : numpy array, image with a shape of (Nz, Ny, Nx) or (Ny, Nx).
+    - `verbose` : bool, whether to print the shape of the image.
+    ### Returns:
+    - `x` : numpy array, image with a shape of (Nz, Ny, Nx) or (Ny, Nx).
+    """
     dim = len(x.shape)
     assert dim in [2, 3], "Only 2D or 3D image are supported."
     if dim == 3:
@@ -2107,6 +2122,12 @@ class Patch_stitcher(object):
             print(f"patch size: {self.ps}, overlap: {self.ol}")
 
     def unfold(self, img: torch.Tensor):
+        """
+        ### Parameters:
+        - `img` : torch tensor, image to be unfolded. [B, C, H, W].
+        ### Returns:
+        - `patches` : torch tensor, unfolded patches. [N, B, C, patchsize, patchsize].
+        """
         img_shape = img.shape
         dim = len(img_shape)
         if dim == 4:

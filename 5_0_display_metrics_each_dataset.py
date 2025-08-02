@@ -1,5 +1,5 @@
 """
-Dsipaly metrics of each dataset through box plot.
+Dsipaly metrics of each dataset using box plot.
 """
 
 import numpy as np
@@ -28,7 +28,7 @@ methods = [
 
 # ------------------------------------------------------------------------------
 path_predictions = os.path.join("results", "predictions")
-path_figures = os.path.join("results", "figures", "analysis", "metrics")
+path_figures = os.path.join("results", "figures", "analysis", "each_dataset")
 
 
 # ------------------------------------------------------------------------------

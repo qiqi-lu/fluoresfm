@@ -363,6 +363,7 @@ else:
     model_parameters = model.named_parameters()
 
 print("Number of trainable parameters:")
+model_parameters = list(model_parameters)  # 20250728
 print(sum(p[1].numel() for p in model_parameters if p[1].requires_grad))
 
 # ------------------------------------------------------------------------------
