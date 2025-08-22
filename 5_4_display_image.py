@@ -23,13 +23,13 @@ GREEN, BLUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
 # ------------------------------------------------------------------------------
 #              | filename | heatmap | profile | patch | figure direction
 # ------------------------------------------------------------------------------
-fig_params = ("_in_distribution_bias", True, False, True, "vertical")
+# fig_params = ("_in_distribution_bias", True, False, True, "vertical")
 # fig_params = ("_in", False, True, True, "vertical")
 # fig_params = ("_ex", False, True, True, "vertical")
 # fig_params = ("_in_text_image_control", False, False, True, "vertical")
 # fig_params = ("_live_mito", False, False, True, "horizontal")
 # fig_params = ("_live_lyso", False, False, True, "horizontal")
-# fig_params = ("_live_ccp_in", False, False, True, "horizontal")
+fig_params = ("_live_ccp_in", False, False, True, "horizontal")
 # fig_params = ("_live_lyso_in", False, False, True, "horizontal")
 # ------------------------------------------------------------------------------
 
@@ -53,17 +53,17 @@ datasets_show_dict = {
     ),
     # --------------------- internal datasets (dn-dcv-sr) ----------------------
     "_in": (
-        ("biosr-cpp-dn-1", 1, (228, 398), 60, GREEN, (136, 312, 163, 291), 1.5),
-        ("biosr-actin-dn-1", 0, (122, 169), 70, GREEN, (232, 324, 271, 308), 1),
-        ("biosr-mt-dcv-1", 0, (256, 255), 47, GREEN, (299, 233, 347, 244), 1.0),
-        ("biosr-er-dcv-2", 0, (286, 227), 53, GREEN, (245, 187, 271, 220), 1.5),
         ("rcan3d-c2s-npc-sr", 4, (231, 598), 70, GREEN, (153, 467, 199, 489), 2),
         ("rcan3d-c2s-mt-sr", 1, (146, 429), 93, GREEN, (440, 565, 492, 596), 0.8),
+        ("biosr-er-dcv-2", 0, (272, 232), 41, GREEN, (245, 187, 271, 220), 1.5),
+        ("biosr-mt-dcv-1", 0, (250, 250), 47, GREEN, (299, 233, 347, 244), 1.0),
+        ("biosr-cpp-dn-1", 1, (228, 398), 60, GREEN, (136, 312, 163, 291), 1.5),
+        ("biosr-actin-dn-1", 0, (122, 169), 70, GREEN, (232, 324, 271, 308), 1),
     ),
     # --------------------- external datasets (dn-dcv-dr) ----------------------
     "_ex": (
-        ("biotisr-ccp-dn-1", 1, (174, 159), 67, GREEN, (335, 182, 404, 241), 1.5),
-        ("biotisr-factin-dn-1", 3, (293, 132), 71, GREEN, (233, 156, 235, 202), 0.75),
+        ("biotisr-mt-sr-1", 3, (654, 175), 129, GREEN, (335, 789, 349, 870), 1.5),
+        ("biotisr-ccp-sr-3", 6, (540, 264), 70, GREEN, (399, 338, 460, 348), 1.5),
         ("biotisr-lysosome-dcv-2", 0, (150, 128), 64, GREEN, (186, 261, 189, 308), 1.5),
         (
             "biotisr-factin-nonlinear-dcv-1",
@@ -74,8 +74,8 @@ datasets_show_dict = {
             (292, 265, 334, 275),
             1.5,
         ),
-        ("biotisr-mt-sr-1", 3, (654, 175), 129, GREEN, (335, 789, 349, 870), 1.5),
-        ("biotisr-ccp-sr-3", 6, (540, 264), 70, GREEN, (694, 521, 738, 475), 1.5),
+        ("biotisr-ccp-dn-1", 1, (174, 159), 67, GREEN, (335, 182, 404, 241), 1.5),
+        ("biotisr-factin-dn-1", 3, (293, 132), 71, GREEN, (233, 156, 235, 202), 0.75),
     ),
     # ---------------------- text-image control --------------------------------
     "_in_text_image_control": (
@@ -383,7 +383,9 @@ for i_dataset in range(num_datasets):
             ]
             # flip patch
             patch = np.flipud(patch)
-            w_box, h_box = (max(img_shape[1] // 3, img_shape[0] // 3),) * 2
+            # set the size of patch to be `percent` of image size
+            percent = 0.45
+            w_box, h_box = (max(img_shape[1] * percent, img_shape[0] * percent),) * 2
             patch_ax = ax.inset_axes(
                 [img_shape[1] - w_box, img_shape[0] - h_box, w_box, h_box],
                 transform=ax.transData,

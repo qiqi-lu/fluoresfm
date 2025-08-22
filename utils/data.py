@@ -1369,6 +1369,15 @@ class Dataset_it2i(Dataset):
 
 
 def win2linux(win_path):
+    """
+    Convert a Windows path to a Linux path if the current operating system is Linux,
+    otherwise return the original path.
+    ### Parameters:
+        - `win_path` (str): The Windows path to be converted.
+    ### Returns:
+        - (str): The converted Linux path if the current operating system is Linux,
+               otherwise the original path.
+    """
     if win_path == None:
         return None
     elif os.name == "posix":
@@ -1649,6 +1658,10 @@ def read_image(img_path: str, expend_channel: bool = False) -> np.ndarray:
 def read_txt(path_txt):
     """
     Read txt file consisting of info in each line.
+    ### Parameters:
+    - `path_txt` : str, path of the txt file.
+    ### Returns:
+    - `lines` : list, info in each line.
     """
     if os.name == "posix":
         path_txt = win2linux(path_txt)

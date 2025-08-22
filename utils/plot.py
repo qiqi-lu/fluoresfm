@@ -3,6 +3,31 @@ import matplotlib.pyplot as plt
 from skimage import measure
 
 
+def image_combine_2d(image1, image2):
+    """
+    Combine two 2D images into one 2D image.
+    The left top half of the image is the first image,
+    and the right bottom half of the image is the second image.
+    ### Parameters:
+    - `image1`: numpy array, shape (H, W), the first image.
+    - `image2`: numpy array, shape (H, W), the second image.
+    ### Returns:
+    - `image_combined`: numpy array, shape (H, W).
+    """
+    image1 = image1.astype(np.float32)
+    image2 = image2.astype(np.float32)
+    assert image1.ndim == 2 and image2.ndim == 2, "Only support 2D images."
+    assert image1.shape == image2.shape, "The two images should have the same shape."
+
+    H, W = image1.shape
+    ii, jj = np.meshgrid(np.arange(H), np.arange(W), indexing="ij")
+    mask = (jj * H) >= (ii * W)  # Diagonal from top-left to bottom-right
+    # flip mask left tight
+    mask = np.flip(mask, axis=1)
+    image_combined = np.where(mask, image1, image2)
+    return image_combined
+
+
 def cal_radar_range(data, percent=(0.1, 0.95), precision=0.5):
     """
     To make the max at percent[1] and min at percent[0] of the axis, where
