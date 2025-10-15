@@ -1,6 +1,6 @@
 """
-[text -----> embedding]
 Convert text information to embedding.
+[text -----> embedding]
 !! Use text_generation.py to generate text information first.
 Embedding each line in the `txt` file to a numpy array, and saved as `npy` file.
 """
@@ -16,6 +16,7 @@ finetune = True  # only process the text for the finetune datasets.
 # ------------------------------------------------------------------------------
 
 text_type = ("ALL", 160)
+# text_type = ("ALL_wot", 160)
 # text_type = ("TSpixel", 77)
 # text_type = ("TSmicro", 77)
 # text_type = ("TS", 77)
@@ -34,9 +35,9 @@ path_save_to = path_dataset_txt.split(".")[0] + "_" + str(context_length)
 os.makedirs(path_save_to, exist_ok=True)
 
 print("-" * 80)
-print("Path dataset txt:", path_dataset_txt)
-print("Context length:", context_length)
-print("Path save to:", path_save_to)
+print(f"[INFO] Path dataset txt: {path_dataset_txt}")
+print(f"[INFO] Context length:   {context_length}")
+print(f"[INFO] Path save to:     {path_save_to}")
 
 # ------------------------------------------------------------------------------
 # load dataset text
@@ -47,7 +48,7 @@ if dataset_text[-1] == "":
     dataset_text.pop(-1)
 
 num_dataset = len(dataset_text)
-print("Number of datasets:", num_dataset)
+print(f"[INFO] Number of datasets: {num_dataset}")
 
 # ------------------------------------------------------------------------------
 # load embedder
@@ -65,10 +66,12 @@ embedder = BiomedCLIPTextEmbedder(
 embedder.eval()
 
 # ------------------------------------------------------------------------------
-pbar = tqdm.tqdm(total=num_dataset, ncols=80, desc="EMBEDDING")
+pbar = tqdm.tqdm(total=num_dataset, ncols=80, desc="[INFO] EMBEDDING")
 for i in range(num_dataset):
     prompt = dataset_text[i]
     cond = embedder(prompt)
     np.save(os.path.join(path_save_to, f"{i}.npy"), cond.cpu().detach().numpy())
     pbar.update(1)
 pbar.close()
+
+print("-" * 80)

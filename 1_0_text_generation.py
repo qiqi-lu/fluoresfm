@@ -1,6 +1,7 @@
 """
-[information in xlsx -----> text]
 Generate the text information used for training.
+The information is saved in the xlsx file.
+[information in xlsx -----> text]
 """
 
 import pandas, os, tqdm
@@ -13,6 +14,7 @@ finetune = True  # generate the text for finetune datasets
 path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 
 text_type = "ALL"  # all the information
+# text_type = "ALL_wot"  # all the information without the information about the target
 # text_type = "TSpixel"  # only task, structure, and input/output pixel size
 # text_type = "TSmicro"  # only task, structure, and input/output microscope
 # text_type = "TS"  # only task, structure
@@ -26,20 +28,21 @@ if finetune:
 os.makedirs(path_text, exist_ok=True)
 path_save_to = os.path.join(path_text, f"dataset_text_{text_type}.txt")
 
-print("Path dataset info:", path_dataset_xlx)
-print("Path save to:", path_save_to)
+print("-" * 50)
+print(f"[INFO] Path dataset info: {path_dataset_xlx}")
+print(f"[INFO] Path save to:      {path_save_to}")
 
 # ------------------------------------------------------------------------------
 # get dataset information
 print("-" * 50)
 if finetune:
-    print("Finetune")
+    print("[INFO] Finetune")
     datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64-finetune")
 else:
     datasets_frame = pandas.read_excel(path_dataset_xlx, sheet_name="64x64")
 
 num_datset = len(datasets_frame)
-print("Number of dataset:", num_datset)
+print(f"[INFO] Number of dataset: {num_datset}")
 
 text_parts = [
     "task#",
@@ -62,7 +65,7 @@ text_data = datasets_frame[text_parts]
 
 # ------------------------------------------------------------------------------
 # generate text
-pbar = tqdm.tqdm(total=num_datset, ncols=100, desc="GENERATE TEXT")
+pbar = tqdm.tqdm(total=num_datset, ncols=100, desc="[INFO] GENERATE TEXT")
 with open(path_save_to, "w") as text_file:
     for i in range(num_datset):
         # conbine text
@@ -76,6 +79,15 @@ with open(path_save_to, "w") as text_file:
                 text_data["input pixel size"][i],
                 f'{text_data["target microscope-device"][i]} {text_data["target microscope-params"][i]}',
                 text_data["target pixel size"][i],
+            )
+        elif text_type == "ALL_wot":
+            text_single = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.\n".format(
+                text_data["task#"][i],
+                text_data["sample"][i],
+                text_data["structure#"][i],
+                text_data["fluorescence indicator"][i],
+                f'{text_data["input microscope-device"][i]} {text_data["input microscope-params"][i]}',
+                text_data["input pixel size"][i],
             )
         elif text_type == "TSpixel":
             text_single = "Task: {}; structure: {}; input pixel size: {}; target pixel size: {}.\n".format(
@@ -101,8 +113,11 @@ with open(path_save_to, "w") as text_file:
                 text_data["task#"][i],
             )
         else:
-            raise ValueError("Invalid text type.")
+            raise ValueError("[ERROR] Invalid text type.")
 
         text_file.write(text_single)
         pbar.update(1)
 pbar.close()
+
+
+print("[INFO] Next is to use embeder to generate the embeddings.")

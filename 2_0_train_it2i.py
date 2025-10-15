@@ -1,6 +1,7 @@
 """
-Model training.
-- (2D image, text) to (2D image,)
+Model training and finetuning using the same code.
+- (single-channel 2D image, text) to (single-channel 2D image,)
+- (mutil-channel 2D image, text) to (single-channel 2D image,)
 """
 
 import torch, os, tqdm, json, pandas, datetime
@@ -29,6 +30,7 @@ params = {
     "pin_memory": True,
     "cudnn-auto-tunner": True,
     "complie": True,
+    # "complie": False,
     # mixed-precision ----------------------------------------------------------
     "enable_amp": True,
     "enable_gradscaler": True,
@@ -88,7 +90,7 @@ params = {
         # "biotisr-mito-sr-1",
         # "biotisr-mito-sr-2",
         # "biotisr-mito-sr-3",
-        "biotisr-mito-sr-1-2",
+        # "biotisr-mito-sr-1-2",
         # "biotisr-mito-sr-2-2",
         # "biotisr-mito-sr-3-2",
         # "biotisr-factin-nonlinear-sr-1",
@@ -109,6 +111,9 @@ params = {
         # "biotisr-lysosome-sr-1-2",
         # "biotisr-lysosome-sr-2-2",
         # "biotisr-lysosome-sr-3-2",
+        "rcan3d-c2s-mt-dcv-mc",  # 16 bs, 400 epoch
+        # "rcan3d-c2s-npc-dcv-mc",
+        # "rcan3d-c2s-sirdna-dcv-mc",
     ],
     "task": [],
     # "task": ["sr"],
@@ -133,17 +138,18 @@ params = {
     "print_loss": False,
     # saved model --------------------------------------------------------------
     "finetune": True,
-    "finetune-strategy": "in-out",
-    # "finetune-strategy": "in",
-    # "finetune-strategy": "out",
+    "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
+    # "finetune-strategy": "in", # finetune the input part convolutional layers
+    # "finetune-strategy": "out",# finetune the output part convolutional layers
     # "saved_checkpoint": None,
-    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
 }
 
 # ------------------------------------------------------------------------------
 device = torch.device(params["device"])
 torch.manual_seed(params["random_seed"])
 
+# finetune parameters update ---------------------------------------------------
 if params["finetune"] == True:
     params["path_text"] = params["path_text"] + "-finetune"
     params["path_checkpoints"] = os.path.join(params["path_checkpoints"], "finetune")
@@ -161,7 +167,8 @@ if params["finetune"] == True:
             "frac_val": 0.05,
             "lr": 0.00001,
             # "num_epochs": 2000,
-            "num_epochs": 1000,
+            # "num_epochs": 1000,
+            "num_epochs": 400,
             "lr_decay_every_iter": 10000,
             "validate_every_iter": 500,
             "use_clean_data": False,
@@ -188,13 +195,6 @@ path_save_model = os.path.join(
 )
 os.makedirs(path_save_model, exist_ok=True)
 
-# save parameters
-with open(
-    os.path.join(path_save_model, f"parameters-{datetime.date.today()}.json"), "w"
-) as f:
-    f.write(json.dumps(params, indent=1))
-
-utils_data.print_dict(params)
 
 # ------------------------------------------------------------------------------
 # dataset
@@ -229,6 +229,17 @@ path_index_file = list(data_frame["path_index"])
 dataset_index = list(data_frame["index"])
 dataset_scale_factor_lr = list(data_frame["sf_lr"])
 dataset_scale_factor_hr = list(data_frame["sf_hr"])
+
+if params["finetune"] == True:
+    # only when using one dataset to finetune
+    in_channels = int(data_frame["in_channels"].iloc[0])
+    out_channels = int(data_frame["out_channels"].iloc[0])
+    params.update(
+        {
+            "in_channels": in_channels,
+            "out_channels": out_channels,
+        }
+    )
 
 # data transform
 # transform = v2.Compose(
@@ -298,6 +309,16 @@ print(
 print(f"- GT shape: {img_hr_shape}")
 
 # ------------------------------------------------------------------------------
+# save parameters
+# ------------------------------------------------------------------------------
+with open(
+    os.path.join(path_save_model, f"parameters-{datetime.date.today()}.json"), "w"
+) as f:
+    f.write(json.dumps(params, indent=1))
+
+utils_data.print_dict(params)
+
+# ------------------------------------------------------------------------------
 # model
 # ------------------------------------------------------------------------------
 # 2D models
@@ -345,7 +366,22 @@ if params["saved_checkpoint"] is not None:
     state_dict = utils_optim.on_load_checkpoint(
         checkpoint=state_dict, complie_mode=params["complie"]
     )
-    model.load_state_dict(state_dict)
+    # --------------------------------------------------------------------------
+    # if the input and output channel is different from the original model
+    # modify the input and output convolutional layers weights
+    if params["in_channels"] > 1:
+        if params["complie"]:
+            name_layer = "_orig_mod.input_blocks.0.0.weight"
+        else:
+            name_layer = "input_blocks.0.0.weight"
+        state_dict[name_layer] = (
+            torch.repeat_interleave(
+                state_dict[name_layer], params["in_channels"], dim=1
+            )
+            / params["in_channels"]
+        )
+    # --------------------------------------------------------------------------
+    model.load_state_dict(state_dict, strict=not params["finetune"])
     start_iter = params["saved_checkpoint"].split(".")[-2].split("_")[-1]
     start_iter = int(start_iter)
     del state_dict

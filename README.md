@@ -148,6 +148,7 @@ The processed datasets are available upon request from the corresponding author 
 ## DATA PROCESSING
 ### DATA PREPARATION
 #### images and patches
+The **raw** and **GT** images are first patched into patches with a shape of `[num_channel, patch_size, patch_size]` and saved into different folders.
 - `data_cleaning.py` : exclude the patches with only background noise.
 - `count_patches.py` : count the number of patches in each dataset.
 - `display_patch_dsitribution.py`: display the distribution of patches in each task and structure.
@@ -157,6 +158,7 @@ The processed datasets are available upon request from the corresponding author 
 - `test_utils_function.py`: test the utils functions used for data preprocessing and data fold and unfold.
 - `test_model.py`: check the usability of the model and print the information of model.
 #### text
+Before training, our code first uses the information in the information `xlsx` file to generate the text and then embed the text using a text embedder.
 - `text_generation.py` : generate the text for each datasets using the information in xlsx file.
 - `download_embedder.py` : download the text embedder from huggingface.
 - `text_embedding.py` : embed the text using the text embedder.

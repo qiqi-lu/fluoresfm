@@ -1,3 +1,8 @@
+"""
+Use model to prediction restored images.
+For 3D images.
+"""
+
 import numpy as np
 import torch, os, tqdm, pandas, math, datetime
 import skimage.io as io
@@ -143,7 +148,8 @@ params = {
     # model parameters ---------------------------------------------------------
     "model_name": "unet_sd_c",
     # --------------------------------------------------------------------------
-    "in_channels": 1,
+    # "in_channels": 1,
+    "in_channels": 5,
     "out_channels": 1,
     "channels": 320,
     "n_res_blocks": 2,
@@ -770,10 +776,34 @@ for checkpoint in checkpoints:
         print("-" * 80)
         try:
             ds = datasets_frame[datasets_frame["id"] == id_dataset].iloc[0]
-            print("Dataset:", ds["id"])
+            print("[INFO] Dataset:", ds["id"])
         except:
-            print(f"{id_dataset} Not Exist")
+            print(f"[ERROR] {id_dataset} Not Exist")
             continue
+
+        # check data dimension -------------------------------------------------
+        ndim = int(ds["dim"])
+        print(f"[INFO] ndim of data: {ndim}")
+
+        if ndim == 2:
+            assert (
+                params["in_channels"] == 1
+            ), "[ERROR] in_channels should be 1 when the input image is 2D image."
+        # when the input image is 3D image, the in_channels can be 1 or more.
+        # if the in_channels is 1, the input image will be processed slice by slice.
+        # if the in_channels is more than 1, the slices will be treated as channels.
+        elif ndim == 3:
+            if params["in_channels"] == 1:
+                print(
+                    "[WARNING] in_channels is 1, the input image will be processed slice by slice."
+                )
+            else:
+                print(
+                    f"[WARNING] in_channels is {params['in_channels']}, the slices will be treated as channels."
+                )
+        else:
+            raise ValueError(f"ndim should be 2 or 3, but got {ndim}.")
+        # ----------------------------------------------------------------------
 
         # save retuls to
         path_results = os.path.join(
@@ -801,7 +831,7 @@ for checkpoint in checkpoints:
         # ----------------------------------------------------------------------
         # load text and text embedding， one text for one dataset
         # single text embedding
-        if text_type[0] in ["all", "ALL", "TSpixel", "TSmicro", "TS", "T"]:
+        if text_type[0] in ["all", "ALL", "ALL_wot", "TSpixel", "TSmicro", "TS", "T"]:
             if text_type[0] == "all":
                 text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
                     ds["task#"],
@@ -823,6 +853,15 @@ for checkpoint in checkpoints:
                     ds["input pixel size"],
                     f'{ds["target microscope-device"]} {ds["target microscope-params"]}',
                     ds["target pixel size"],
+                )
+            elif text_type[0] == "ALL_wot":
+                text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}.".format(
+                    ds["task#"],
+                    ds["sample"],
+                    ds["structure#"],
+                    ds["fluorescence indicator"],
+                    f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
+                    ds["input pixel size"],
                 )
             elif text_type[0] == "TSpixel":
                 text = "Task: {}; struture: {}; input pixel size: {}; target pixel size: {}.".format(
@@ -873,19 +912,25 @@ for checkpoint in checkpoints:
         for i_sample in range(num_sample_eva):
             print("-" * 30)
             sample_filename = filenames[i_sample]
-            print(f"- File Name: {sample_filename}")
+            print(f"[INFO] File Name: {sample_filename}")
 
             # load low-resolution image (input) --------------------------------
             img_lr = utils_data.read_image(os.path.join(ds["path_lr"], sample_filename))
             img_lr = np.clip(img_lr, 0.0, None)
             img_lr = input_normallizer(img_lr)
-            img_lr = utils_data.interp_sf(img_lr, sf=ds["sf_lr"])[None]
+            img_lr = utils_data.interp_sf(img_lr, sf=ds["sf_lr"])[
+                None
+            ]  # add batch dimension, shape = (1, C, H, W)
             img_lr = torch.tensor(img_lr).to(device)
 
             if params["data_clip"] is not None:
                 img_lr = torch.clip(
                     img_lr, min=params["data_clip"][0], max=params["data_clip"][1]
                 )
+            print(f"[INFO] Input image shape: {img_lr.shape}")
+
+            num_slices = img_lr.shape[1]  # number of slices in the input image
+            print(f"[INFO] Number of slices: {num_slices}")
 
             # ------------------------------------------------------------------
             # prediction

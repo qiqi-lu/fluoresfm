@@ -238,7 +238,7 @@ class UNetModel(nn.Module):
         Unfreeze the model at the input or output or both, and freeze the rest.
         For fine-tuning.
         """
-        print(f"Fine-tuning the model at the [{strategy}].")
+        print(f"[INFO] Fine-tuning the model at the [{strategy}].")
         for params in self.parameters():
             params.requires_grad = False  # freeze all parameters
         if strategy == "in-out":
