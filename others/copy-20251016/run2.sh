@@ -1,0 +1,6 @@
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 6.py"
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 7.py"
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 8.py"
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 9.py"
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 10.py"
+/home/recklexx/miniconda3/envs/pytorch-gpu/bin/python "/mnt/e/qiqilu/Project/2024 Foundation model/code/2_1_train_i2i copy 11.py"
