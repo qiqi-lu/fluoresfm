@@ -3,6 +3,8 @@ Show the reconstructed image of specific sample from specific dataset.
 
 Parameters:
 - `fig_direction`: The arrangement direction of different datasets in the figure. `vertical` or `horizontal`.
+    - `vertical`: The datasets are arranged vertically. [datsets x methods]
+    - `horizontal`: The datasets are arranged horizontally. [methods x datsets]
 """
 
 import numpy as np

@@ -1621,6 +1621,51 @@ def interp_sf(x, sf, mode="nearest"):
     return x_inter[0].numpy()
 
 
+def interp_iso_z(x, ps_xy=25, ps_z=160):
+    """
+    Interpolate the image to the isotropic z-axis.
+    ### Parameters:
+    - `x`: numpy array, shape (D, H, W), the image to be interpolated.
+    - `ps_xy`: float, the pixel size in the xy-axis.
+    - `ps_z`: float, the pixel size in the z-axis.
+    ### Returns:
+    - `x`: numpy array, shape (D, H, W), the interpolated image.
+    """
+    assert x.ndim == 3, "The shape of x should be (D, H, W)"
+    z_scale = ps_z / ps_xy
+    x = torch.tensor(x)[None, None]
+    x = torch.nn.functional.interpolate(x, scale_factor=(z_scale, 1, 1), mode="nearest")
+    x = x.numpy()[0, 0]
+    return x
+
+
+def iso_xy(x, ps_x, ps_y):
+    """
+    Interpolate the image to make the image have a consistent pixel size along x and y axes.
+    ### Parameters:
+    - `x`: numpy array, shape (H, W), the image to be interpolated.
+    - `ps_x`: float, the pixel size in the x-axis.
+    - `ps_y`: float, the pixel size in the y-axis.
+    ### Returns:
+    - `x`: numpy array, shape (H, W), the interpolated image.
+    """
+    assert x.ndim == 2, "The shape of x should be (H, W)"
+
+    if ps_x > ps_y:
+        sf = ps_x / ps_y
+        x = torch.tensor(x)[None, None]
+        x = torch.nn.functional.interpolate(x, scale_factor=(sf, 1), mode="nearest")
+        x = x.numpy()[0, 0]
+    elif ps_x < ps_y:
+        sf = ps_y / ps_x
+        x = torch.tensor(x)[None, None]
+        x = torch.nn.functional.interpolate(x, scale_factor=(1, sf), mode="nearest")
+        x = x.numpy()[0, 0]
+    else:
+        pass
+    return x
+
+
 def read_image(img_path: str, expend_channel: bool = False) -> np.ndarray:
     """
     Read image and convert to a numpy array. Supported data formats: `.dcm`, and `.tif`.
@@ -2134,7 +2179,7 @@ class Patch_stitcher(object):
             print("StitchPatch parameters updated.")
             print(f"patch size: {self.ps}, overlap: {self.ol}")
 
-    def unfold(self, img: torch.Tensor):
+    def unfold(self, img: torch.Tensor, showinfo: bool = True):
         """
         ### Parameters:
         - `img` : torch tensor, image to be unfolded. [B, C, H, W].
@@ -2174,10 +2219,11 @@ class Patch_stitcher(object):
                     ]
         else:
             raise ValueError("Only support 2D (batch, channel, height, width) image.")
-        print(
-            f"unfold image {img_shape} to patches {patches.shape}",
-            f"({num_patch_y},{num_patch_x})",
-        )
+        if showinfo:
+            print(
+                f"[INFO] unfold image {img_shape} to patches {patches.shape}",
+                f"({num_patch_y},{num_patch_x})",
+            )
         return patches
 
     def generate_mask(self):

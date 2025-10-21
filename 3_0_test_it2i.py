@@ -1,6 +1,7 @@
 """
 Use model to prediction restored images.
-For 2D images.
+For both 2D and 3D images with a shape of (N, C, H, W).
+The z dimension is treated as channels.
 """
 
 import numpy as np
@@ -25,51 +26,51 @@ checkpoints = (
     #     ("ALL", 160),
     # ],
     # ---------------------------- finetune ------------------------------------
-    [
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-1\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-2\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-3\epoch_1999_iter_32000.pt",
-        # --------------------------------------------------------------------
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-1\epoch_1999_iter_70000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-2\epoch_1999_iter_70000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-3\epoch_1999_iter_70000.pt",
-        # --------------------------------------------------------------------
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-1\epoch_1999_iter_70000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-2\epoch_1999_iter_70000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-3\epoch_1999_iter_70000.pt",
-        # --------------------------------------------------------------------
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-1\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-2\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-3\epoch_1999_iter_32000.pt",
-        # --------------------------------------------------------------------
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-1\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-2\epoch_1999_iter_32000.pt",
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
-        "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-3\epoch_1999_iter_32000.pt",
-        # --------------------------------------------------------------------
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-1",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-1\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-2",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-2\epoch_1999_iter_32000.pt",
-        # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-3",
-        # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-3\epoch_1999_iter_32000.pt",
-        # --------------------------------------------------------------------
-        ("ALL", 160),
-    ],
+    # [
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-1\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-2\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mt-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mt-sr-3\epoch_1999_iter_32000.pt",
+    # --------------------------------------------------------------------
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-1\epoch_1999_iter_70000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-2\epoch_1999_iter_70000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-mito-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-mito-sr-3\epoch_1999_iter_70000.pt",
+    # --------------------------------------------------------------------
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-1\epoch_1999_iter_70000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-2\epoch_1999_iter_70000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-nonlinear-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-nonlinear-sr-3\epoch_1999_iter_70000.pt",
+    # --------------------------------------------------------------------
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-1\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-2\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-factin-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-factin-sr-3\epoch_1999_iter_32000.pt",
+    # --------------------------------------------------------------------
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-1\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-2\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-ccp-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-ccp-sr-3\epoch_1999_iter_32000.pt",
+    # --------------------------------------------------------------------
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-1",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-1\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-2",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-2\epoch_1999_iter_32000.pt",
+    # "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biotisr-lysosome-sr-3",
+    # "checkpoints\\conditional\\finetune\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biotisr-lysosome-sr-3\epoch_1999_iter_32000.pt",
+    # --------------------------------------------------------------------
+    # ("ALL", 160),
+    # ],
     # ---------------------------- Text effect (test) ---------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-T",
@@ -135,6 +136,27 @@ checkpoints = (
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att123\epoch_1_iter_775000.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------- finetuned on other tasks ---------------------
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-npc-dcv-mc/epoch_395_iter_32000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc/epoch_395_iter_34000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-sirdna-dcv-mc",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-sirdna-dcv-mc/epoch_399_iter_97600.pt",
+    #     ("ALL", 160),
+    # ],
+    [
+        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-1",
+        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-projection-flywing-1/epoch_6499_iter_32500.pt",
+        ("ALL", 160),
+    ],
 )
 
 params = {
@@ -148,7 +170,9 @@ params = {
     # model parameters ---------------------------------------------------------
     "model_name": "unet_sd_c",
     # --------------------------------------------------------------------------
-    "in_channels": 1,
+    # "in_channels": 1,
+    # "in_channels": 5,
+    "in_channels": 50,
     "out_channels": 1,
     "channels": 320,
     "n_res_blocks": 2,
@@ -624,7 +648,22 @@ params = {
         # "biotisr-ccp-sr-2-live",
         # "biotisr-ccp-sr-2-live-in",
         # "biotisr-ccp-sr-3-live",
-        "biotisr-ccp-sr-3-live-in",
+        # "biotisr-ccp-sr-3-live-in",
+        # "rcan3d-c2s-mt-dcv-mc",
+        # "rcan3d-c2s-npc-dcv-mc",
+        # "rcan3d-c2s-sirdna-dcv-mc",
+        # "care-projection-flywing-0",
+        "care-projection-flywing-1",
+        # "care-projection-flywing-2",
+        # "care-projection-flywing-3",
+        # "care-denoising-flywing-0",
+        # "care-denoising-flywing-1",
+        # "care-denoising-flywing-2",
+        # "care-denoising-flywing-3",
+        # "care-projection-flywing-0-dn",
+        # "care-projection-flywing-1-dn",
+        # "care-projection-flywing-2-dn",
+        # "care-projection-flywing-3-dn",
     ],
     "num_sample": 8,
     "percentiles": (0.03, 0.995),
@@ -637,6 +676,7 @@ params = {
 }
 
 assert params["patch_size"] >= 64, "[ERROR] Patch size should be >= 64."
+
 params.update(
     {
         "overlap": params["patch_size"] // 4,
@@ -649,7 +689,7 @@ params.update(
 
 # ------------------------------------------------------------------------------
 print("-" * 80)
-print("load dataset information ...")
+print("[INFO] load dataset information ...")
 utils_data.print_dict(params)
 
 datasets_frame = pandas.read_excel(params["path_dataset_test"])
@@ -661,8 +701,8 @@ bs = params["batch_size"]
 num_datasets = len(params["id_dataset"])
 
 print("-" * 80)
-print("number of datasets:", num_datasets)
-print("number of checkpoints:", num_checkpoints)
+print("[INFO] number of datasets:", num_datasets)
+print("[INFO] number of checkpoints:", num_checkpoints)
 
 input_normallizer = utils_data.NormalizePercentile(
     params["percentiles"][0], params["percentiles"][1]
@@ -678,7 +718,7 @@ stitcher = utils_data.Patch_stitcher(
 # ------------------------------------------------------------------------------
 for checkpoint in checkpoints:
     print("-" * 80)
-    [print(x) for x in checkpoint]
+    [print(f"[INFO] CHECKPOINT: {x}") for x in checkpoint]
     print("-" * 80)
 
     suffix, path_checkpoint, text_type = checkpoint
@@ -717,7 +757,7 @@ for checkpoint in checkpoints:
     else:
         params.update({"data_clip": None})
 
-    print(f'd_cond: {params["d_cond"]}, percentiles: {params["percentiles"]}')
+    print(f'[INFO] d_cond: {params["d_cond"]}, percentiles: {params["percentiles"]}')
 
     # --------------------------------------------------------------------------
     #                                  model
@@ -735,7 +775,7 @@ for checkpoint in checkpoints:
             device=device,
         )
     else:
-        raise ValueError(f"Embedder '{params['embedder']}' does not exist.")
+        raise ValueError(f"[ERROR] Embedder '{params['embedder']}' does not exist.")
     embedder.eval()
 
     # --------------------------------------------------------------------------
@@ -756,7 +796,7 @@ for checkpoint in checkpoints:
         ).to(device)
 
     # load model parameters
-    print("load model parameters...")
+    print("[INFO] load model parameters...")
     state_dict = torch.load(path_checkpoint, map_location=device, weights_only=True)[
         "model_state_dict"
     ]
@@ -764,7 +804,7 @@ for checkpoint in checkpoints:
     state_dict = utils_optim.on_load_checkpoint(checkpoint=state_dict)
     model.load_state_dict(state_dict)
     if params["complie_model"]:
-        print("compile model...")
+        print("[INFO] compile model...")
         model = torch.compile(model)  # need time for model compile.
     model.eval()
 
@@ -801,7 +841,9 @@ for checkpoint in checkpoints:
 
         if "-live" in id_dataset:
             num_sample_eva = num_sample_total
-        print("- Number of test data:", num_sample_eva, "/", num_sample_total)
+        print("[INFO] Number of test data:", num_sample_eva, "/", num_sample_total)
+
+        TASK = ds["task"]
 
         # ----------------------------------------------------------------------
         # load text and text embedding， one text for one dataset
@@ -860,7 +902,7 @@ for checkpoint in checkpoints:
                 raise ValueError(f"Text type '{text_type[0]}' does not supported.")
 
             print("-" * 80)
-            print("Text:")
+            print("[INFO] Text:")
             print(text)
             print("-" * 80)
 
@@ -880,7 +922,7 @@ for checkpoint in checkpoints:
                     text_embed_lr, text_embed_hr = embedder(text_lr), embedder(text_hr)
                 text_embed = torch.cat([text_embed_lr, text_embed_hr], dim=1).to(device)
         else:
-            raise ValueError(f"Text type '{text_type[0]}' does not supported.")
+            raise ValueError(f"[ERROR] Text type '{text_type[0]}' does not supported.")
 
         # ----------------------------------------------------------------------
         # PREDICT
@@ -903,15 +945,50 @@ for checkpoint in checkpoints:
                     img_lr, min=params["data_clip"][0], max=params["data_clip"][1]
                 )
 
+            # check the shape of input -----------------------------------------
+            num_slices = img_lr.shape[1]  # number of slices in the input image
+            print(f"[INFO] Input image shape: {img_lr.shape}")
+            print(f"[INFO] Number of slices: {num_slices}")
+
+            # ------------------------------------------------------------------
+            # if the data have multiple slice and the model is able to process multi-channel image
+            # padding along the slice dimension
+            if TASK == "proj":
+                print(
+                    "[INFO] Projection task, using all slice as input and output one slice."
+                )
+                num_slices = 1
+            else:
+                if num_slices > 1 and params["in_channels"] > 1:
+                    # the number fo slices should larger than half of image slices +1
+                    assert num_slices >= (
+                        1 + params["in_channels"] // 2
+                    ), f"[ERROR] Number of slices should be >= {1 + params['in_channels'] // 2}, but got {num_slices}."
+
+                    # padding z dimension
+                    # padding along the slice dimension (1) with a reflect padding, padding size = in_channels // 2
+                    pad_size = params["in_channels"] // 2
+                    img_lr = torch.nn.functional.pad(
+                        img_lr, pad=(0, 0, 0, 0, pad_size, pad_size), mode="reflect"
+                    )
+                # can use a multi-channel model to process single slice image
+                assert not (
+                    num_slices == 1 and params["in_channels"] > 1
+                ), f"[ERROR] Can not use a multi-channel model to process single slice image."
+
+                print(f"[INFO] Input image shape after padding: {img_lr.shape}")
+            img_lr_shape_ori = img_lr.shape  # [N,C,H,W]
+
             # ------------------------------------------------------------------
             # prediction
+            # generate restored image slice-by-slice
             with torch.autocast("cuda", torch.float16, enabled=params["enable_amp"]):
                 with torch.no_grad():
+
                     if params["patch_image"] and (
                         params["patch_size"] < max(img_lr.shape[-2:])
                     ):
-                        # padding
-                        img_lr_shape_ori = img_lr.shape
+                        # padding xy dimension
                         if params["patch_size"] > img_lr.shape[-1]:
                             pad_size = params["patch_size"] - img_lr.shape[-1]
                             img_lr = torch.nn.functional.pad(
@@ -923,40 +1000,92 @@ for checkpoint in checkpoints:
                                 img_lr, pad=(0, 0, 0, pad_size), mode="reflect"
                             )
 
-                        # patching image
-                        img_lr_patches = stitcher.unfold(img_lr)
-
-                        # ------------------------------------------------------
-                        num_iter = math.ceil(img_lr_patches.shape[0] / bs)
-                        pbar = tqdm.tqdm(desc="PREDICT", total=num_iter, ncols=80)
-                        img_est_patches = torch.zeros_like(img_lr_patches)
-
-                        for i_iter in range(num_iter):
-                            img_est_patch = model(
-                                img_lr_patches[i_iter * bs : bs + i_iter * bs],
-                                time_embed,
-                                text_embed,
-                            )
-                            img_est_patches[
-                                i_iter * bs : bs + i_iter * bs
-                            ] += img_est_patch
-                            pbar.update(1)
-                        pbar.close()
-
-                        # ------------------------------------------------------
-                        # fold the patches
-                        img_est = stitcher.fold_linear_ramp(
-                            patches=img_est_patches,
-                            original_image_shape=img_lr.shape,
+                        img_est_multi_slice = []
+                        pbar_slice = tqdm.tqdm(
+                            desc="[INFO] PREDICT (SLICE)", total=num_slices, ncols=80
                         )
-                        img_est = torch.tensor(img_est)
+                        for i_slice in range(num_slices):
+                            # get the current slice
+                            img_lr_slice = img_lr[
+                                :, i_slice : i_slice + params["in_channels"], :, :
+                            ]
 
-                        # unpadding
-                        img_est = img_est[
-                            ..., : img_lr_shape_ori[-2], : img_lr_shape_ori[-1]
-                        ]
+                            # patching image
+                            img_lr_slice_patches = stitcher.unfold(
+                                img_lr_slice, showinfo=(i_slice == 0)
+                            )
+
+                            # ------------------------------------------------------
+                            num_iter = math.ceil(img_lr_slice_patches.shape[0] / bs)
+                            pbar = tqdm.tqdm(
+                                desc="[INFO] PREDICT",
+                                total=num_iter,
+                                ncols=80,
+                                leave=False,
+                            )
+
+                            img_est_slice_patches = torch.zeros(
+                                img_lr_slice_patches.shape[0],
+                                params["out_channels"],
+                                img_lr_slice_patches.shape[-2],
+                                img_lr_slice_patches.shape[-1],
+                                device=img_lr_slice_patches.device,
+                            )
+
+                            for i_iter in range(num_iter):
+                                img_est_slice_patch = model(
+                                    img_lr_slice_patches[
+                                        i_iter * bs : bs + i_iter * bs
+                                    ],
+                                    time_embed,
+                                    text_embed,
+                                )
+                                img_est_slice_patches[
+                                    i_iter * bs : bs + i_iter * bs
+                                ] += img_est_slice_patch
+                                pbar.update(1)
+                            pbar.close()
+
+                            # ------------------------------------------------------
+                            # fold the patches
+                            img_est_slice = stitcher.fold_linear_ramp(
+                                patches=img_est_slice_patches,
+                                original_image_shape=(
+                                    img_lr_slice.shape[0],
+                                    params["out_channels"],
+                                    img_lr_slice.shape[-2],
+                                    img_lr_slice.shape[-1],
+                                ),
+                            )
+                            img_est_slice = torch.tensor(img_est_slice)
+
+                            # unpadding
+                            img_est_slice = img_est_slice[
+                                ..., : img_lr_shape_ori[-2], : img_lr_shape_ori[-1]
+                            ]
+                            # append the current slice to the list
+                            img_est_multi_slice.append(img_est_slice)
+                            pbar_slice.update(1)
+                        pbar_slice.close()
                     else:
-                        img_est = model(img_lr, time_embed, text_embed)
+                        # if the image in xy dimension is smaller then the patch size
+                        # do not need to patch the image
+                        img_est_multi_slice = []
+                        for i_slice in range(num_slices):
+                            # get the current slice
+                            img_lr_slice = img_lr[
+                                :, i_slice : i_slice + params["in_channels"], :, :
+                            ]
+
+                            img_est_slice = model(img_lr_slice, time_embed, text_embed)
+                            img_est_slice = torch.tensor(img_est_slice)
+                            # append the current slice to the list
+                            img_est_multi_slice.append(img_est_slice)
+                    if len(img_est_multi_slice) > 1:
+                        img_est = torch.cat(img_est_multi_slice, dim=1)
+                    else:
+                        img_est = img_est_multi_slice[0]
+                    print(f"[INFO] img_est shape: {img_est.shape}")
 
             # clip
             img_est = img_est.float().cpu().detach().numpy()
@@ -964,8 +1093,8 @@ for checkpoint in checkpoints:
             # ------------------------------------------------------------------
             if num_datasets < 10:
                 if ds["path_hr"] != "Unknown":
-                    dr = 2.5
-                    clip = lambda x: np.clip(x, 0.0, dr)
+                    data_range_eva = 2.5  # data range parameter used when evaluation
+                    clip = lambda x: np.clip(x, 0.0, data_range_eva)
 
                     # high-resolution image (reference)
                     img_hr = utils_data.read_image(
@@ -981,7 +1110,7 @@ for checkpoint in checkpoints:
                     dict_eva = {
                         "img_true": clip(normalizer_eva(img_hr)),
                         "img_test": clip(normalizer_eva(img_est))[0, 0],
-                        "data_range": dr,
+                        "data_range": data_range_eva,
                     }
                     psnr = utils_eva.PSNR(**dict_eva)
                     ssim = utils_eva.SSIM(**dict_eva)
