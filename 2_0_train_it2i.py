@@ -23,7 +23,7 @@ import utils.loss_functions as utils_loss
 # ------------------------------------------------------------------------------
 params = {
     # device
-    "device": "cuda:1",
+    "device": "cuda:0",
     "random_seed": 7,
     "data_shuffle": True,
     "num_workers": 3,
@@ -62,7 +62,8 @@ params = {
     "loss": "mae",
     # learning rate ------------------------------------------------------------
     "lr": 0.00001,
-    "batch_size": 16,
+    # "batch_size": 16,
+    "batch_size": 8,
     "num_epochs": 20,
     "warm_up": 0,
     "lr_decay_every_iter": 10000 * 10,
@@ -114,18 +115,36 @@ params = {
         # "rcan3d-c2s-mt-dcv-mc",  # 16 bs, 400 epoch
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
-        # "care-projection-flywing-0",
-        # "care-projection-flywing-1",
-        # "care-projection-flywing-2",
-        # "care-projection-flywing-3",
-        # "care-denoising-flywing-0",
-        # "care-denoising-flywing-1",
-        # "care-denoising-flywing-2",
-        # "care-denoising-flywing-3",
-        "care-projection-flywing-0-dn",
+        # "care-projection-flywing-0",  # 6500 epoch
+        # "care-projection-flywing-1",  # 6500 epoch
+        # "care-projection-flywing-2",  # 6500 epoch
+        # "care-projection-flywing-3",  # 6500 epoch
+        # "care-denoising-flywing-0",  # 6500 epoch
+        # "care-denoising-flywing-1",  # 6500 epoch
+        # "care-denoising-flywing-2",  # 6500 epoch
+        # "care-denoising-flywing-3",  # 6500 epoch
+        # "care-projection-flywing-0-dn",
         # "care-projection-flywing-1-dn",
         # "care-projection-flywing-2-dn",
         # "care-projection-flywing-3-dn",
+        # "biosr-factinnl-sr3-1",
+        # "biosr-factinnl-sr3-2",
+        # "biosr-factinnl-sr3-3",
+        # "biosr-factinnl-sr3-4",
+        # "biosr-factinnl-sr3-5",
+        # "biosr-factinnl-sr3-6",  # 1000 epoch
+        # "biosr-factinnl-sr3-7",
+        # "biosr-factinnl-sr3-8",
+        # "biosr-factinnl-sr3-9",
+        # "care-iso-drosophila-3d",  # 50 epoch
+        # "synprot-channe-0-64",  # 200 epoch
+        # "synprot-channe-0-128",  # 700 epoch 16 batch size
+        # "synprot-channe-1-64",  # 200 epoch
+        # "synprot-channe-1-128",  # 700 epoch
+        # "synprot-channe-0-64-granule",
+        "synprot-channe-0-128-granule",
+        # "synprot-channe-1-64-granule",
+        # "synprot-channe-1-128-granule",
     ],
     "task": [],
     # "task": ["sr"],
@@ -153,6 +172,7 @@ params = {
     "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
     # "finetune-strategy": "in", # finetune the input part convolutional layers
     # "finetune-strategy": "out",# finetune the output part convolutional layers
+    # "finetune-strategy": "all",  # finetune the output part convolutional layers
     # "saved_checkpoint": None,
     "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
 }
@@ -177,11 +197,16 @@ if params["finetune"] == True:
             "save_every_iter": 1000,
             "plot_every_iter": 100,
             "frac_val": 0.05,
-            "lr": 0.00001,
+            # "lr": 0.00001,
+            "lr": 0.0001,
             # "num_epochs": 2000,
             # "num_epochs": 1000,
-            "num_epochs": 6500,
+            # "num_epochs": 6500,
             # "num_epochs": 400,
+            "num_epochs": 350,
+            # "num_epochs": 200,
+            # "num_epochs": 175,
+            # "num_epochs": 50,
             "lr_decay_every_iter": 10000,
             "validate_every_iter": 500,
             "use_clean_data": False,

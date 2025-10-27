@@ -152,11 +152,61 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-sirdna-dcv-mc/epoch_399_iter_97600.pt",
     #     ("ALL", 160),
     # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-1",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-projection-flywing-1/epoch_6499_iter_32500.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-0",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-projection-flywing-0/epoch_6499_iter_32500.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-0",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-denoising-flywing-0/epoch_6499_iter_32500.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-1",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-denoising-flywing-1/epoch_6499_iter_32500.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-iso-drosophila-3d",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-iso-drosophila-3d/epoch_49_iter_35000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-128",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-128/epoch_344_iter_30000.pt",
+    #     ("ALL", 160),
+    # ],
     [
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-1",
-        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-projection-flywing-1/epoch_6499_iter_32500.pt",
+        "_all_newnorm-ALL-v2-160-small-bs8-ft-inout-synprot-channe-0-128-0.0001",
+        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-128/epoch_195_iter_17000.pt",
         ("ALL", 160),
     ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64/epoch_170_iter_30000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-1-128",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-1-128/epoch_344_iter_30000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-1-64",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-1-64/epoch_170_iter_30000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biosr-factinnl-sr3-9/epoch_999_iter_32000.pt",
+    #     ("ALL", 160),
+    # ],
 )
 
 params = {
@@ -170,9 +220,9 @@ params = {
     # model parameters ---------------------------------------------------------
     "model_name": "unet_sd_c",
     # --------------------------------------------------------------------------
-    # "in_channels": 1,
+    "in_channels": 1,
     # "in_channels": 5,
-    "in_channels": 50,
+    # "in_channels": 50,
     "out_channels": 1,
     "channels": 320,
     "n_res_blocks": 2,
@@ -653,7 +703,7 @@ params = {
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
         # "care-projection-flywing-0",
-        "care-projection-flywing-1",
+        # "care-projection-flywing-1",
         # "care-projection-flywing-2",
         # "care-projection-flywing-3",
         # "care-denoising-flywing-0",
@@ -664,6 +714,18 @@ params = {
         # "care-projection-flywing-1-dn",
         # "care-projection-flywing-2-dn",
         # "care-projection-flywing-3-dn",
+        # "care-drosophila-iso",
+        "synprot-channe-0",
+        # "synprot-channe-1",
+        # "biosr-factinnl-sr3-1",
+        # "biosr-factinnl-sr3-2",
+        # "biosr-factinnl-sr3-3",
+        # "biosr-factinnl-sr3-4",
+        # "biosr-factinnl-sr3-5",
+        # "biosr-factinnl-sr3-6",
+        # "biosr-factinnl-sr3-7",
+        # "biosr-factinnl-sr3-8",
+        # "biosr-factinnl-sr3-9",
     ],
     "num_sample": 8,
     "percentiles": (0.03, 0.995),

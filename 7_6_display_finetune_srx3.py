@@ -1,7 +1,7 @@
 """
-Display the results using finetuend model to do 3D image restoration.
-only show one dataset.
-
+Display the results using finetuend model to do super-resolution with a scale
+factor of 3.
+Only show one dataset.
 """
 
 import pandas, os, tqdm, seaborn
@@ -16,32 +16,31 @@ from utils.evaluation import PSNR, MSSSIM, ZNCC
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
 GREEN, BlUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
-fig_direction = "vertical"  # [methods x 1]
-# fig_direction ='horizontal' # [1 x methods]
+# fig_direction = "vertical"  # [methods x 1]
+fig_direction = "horizontal"  # [1 x methods]
 
 # datsets and methods to show --------------------------------------------------
-#               dataset name, id sample, id slice, color, line_profile
-dataset_show = ("rcan3d-c2s-mt-dcv-mc", 2, 2, GREEN, (512, 200, 400))
-# dataset_show = ("rcan3d-c2s-npc-dcv-mc", 2, 2, GREEN, (512, 200, 400))
+#               dataset name, id sample, color, patch (x, y, size)
+dataset_show = ("biosr-factinnl-sr3-9", 0, GREEN, (938, 870, 215))
 
 methods_show = (
+    # (
+    #     "FluoResFM (dn)",
+    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-1",
+    #     "#42B4B5",
+    # ),
     (
-        "FluoResFM-slice",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
-        "#EC8860",
-    ),
-    (
-        "FluoResFM-2.5D",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
-        # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
-        "#B21F2B",
+        "FluoResFM",
+        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9",
+        "#005D6E",
     ),
 )
 
-dataset_id, id_sample, id_slice, dataset_color, line_profile = dataset_show
-methods_colors = ["#FADCC8"] + [m[2] for m in methods_show]
-methods_name = ["Confocal"] + [m[0] for m in methods_show] + ["STED"]
+dataset_id, id_sample, dataset_color, patch_pos = dataset_show
+methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
+methods_name = ["WF"] + [m[0] for m in methods_show] + ["SIM"]
 num_methods_show = len(methods_show)
+num_sample_show = 8
 
 # dataset infomation -----------------------------------------------------------
 # load dataset info
@@ -58,7 +57,6 @@ path_hr = win2linux(info["path_hr"])
 path_index = win2linux(info["path_index"])
 
 pixel_size_xy = float(info["target pixel size"].split("x")[0]) / 1000.0
-pixel_size_z = float(info["target slice spacing"].split(" ")[0]) / 1000.0
 
 sf_hr = int(info["sf_hr"])
 sf_lr = int(info["sf_lr"])
@@ -71,7 +69,7 @@ print(f"[INFO] Dataset:   {dataset_id}")
 print(f"[INFO] Path text: {path_index}")
 print(f"[INFO] Path LR:   {path_lr}")
 print(f"[INFO] Path HR:   {path_hr}")
-print(f"[INFO] Pixel size (xyz): {pixel_size_xy} x {pixel_size_xy} x {pixel_size_z} um")
+print(f"[INFO] Pixel size (xy): {pixel_size_xy} x {pixel_size_xy} um")
 
 # preprocessing settings -------------------------------------------------------
 normalizer = lambda image: normalization(image, p_low=0.03, p_high=0.995)
@@ -84,7 +82,7 @@ dict_clip = {"a_min": 0.0, "a_max": 2.5}
 filenames = read_txt(path_index)
 print("-" * 80)
 print(f"[INFO] Number of samples: {len(filenames)}")
-num_samples = len(filenames)
+num_samples = min(len(filenames), num_sample_show)
 
 imgs = []
 for i_sample in range(num_samples):
@@ -98,11 +96,11 @@ for i_sample in range(num_samples):
     img_gt = np.clip(img_gt, **dict_clip)
 
     # load the raw image
-    img_raw = io.imread(os.path.join(path_lr, filename))
+    img_raw = io.imread(os.path.join(path_lr, filename)).astype(np.float32)
     img_raw = interp_sf(img_raw, sf=sf_lr)
     img_raw = normalizer(img_raw)
     img_raw = np.clip(img_raw, **dict_clip)
-    imgs_one.append(img_raw)
+    imgs_one.append(img_raw[0])
 
     # load the prediction image
     for i_method in range(num_methods_show):
@@ -110,9 +108,9 @@ for i_sample in range(num_samples):
         img_pred = io.imread(os.path.join(path_prediction, method_id, filename))
         img_pred = normalizer(img_pred)
         img_pred = np.clip(img_pred, **dict_clip)
-        imgs_one.append(img_pred)
+        imgs_one.append(img_pred[0])
 
-    imgs_one.append(img_gt)
+    imgs_one.append(img_gt[0])
     imgs.append(imgs_one)
 
 # ------------------------------------------------------------------------------
@@ -120,6 +118,7 @@ for i_sample in range(num_samples):
 # ------------------------------------------------------------------------------
 dict_fig = {"dpi": 300, "constrained_layout": True}
 dict_colorize = {"vmin": 0.0, "vmax": 0.9, "color": dataset_color}
+dict_colorize_patch = {"vmin": 0.0, "vmax": 1.5, "color": dataset_color}
 dict_text_lt = {"fontsize": 14, "color": "white", "ha": "left", "va": "top"}
 dict_text_rt = {"fontsize": 14, "color": "white", "ha": "right", "va": "top"}
 dict_text_lb = {"fontsize": 14, "color": "white", "ha": "left", "va": "bottom"}
@@ -128,9 +127,9 @@ dict_line = {"linewidth": 1, "color": "magenta", "linestyle": "--"}
 
 # ------------------------------------------------------------------------------
 if fig_direction == "vertical":
-    nr, nc = (num_methods_show + 2) * 2, 1
+    nr, nc = num_methods_show + 2, 1
 elif fig_direction == "horizontal":
-    nr, nc = 2, (num_methods_show + 2)
+    nr, nc = 1, num_methods_show + 2
 else:
     raise ValueError(
         f"fig_direction must be 'vertical' or 'horizontal', but got {fig_direction}"
@@ -139,44 +138,49 @@ else:
 fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 [ax.set_axis_off() for ax in axes.ravel()]
 
-if fig_direction == "vertical":
-    axes_group = [axes[i * 2 : i * 2 + 2] for i in range(num_methods_show + 2)]
-elif fig_direction == "horizontal":
-    axes_group = [axes[:, i] for i in range(num_methods_show + 2)]
+fig_patch, axes_patch = plt.subplots(nc, nr, figsize=(nr * 3, nc * 3), **dict_fig)
+[ax.set_axis_off() for ax in axes_patch.ravel()]
 
 imgs_one = imgs[id_sample]
+
 for i_method in range(num_methods_show + 2):
-    ax = axes_group[i_method]
+    ax = axes[i_method]
+    ax_patch = axes_patch[i_method]
+
     img = imgs_one[i_method]
-    img_xy = img[id_slice]
-    img_zx = img[:, line_profile[0], line_profile[1] : line_profile[2]]
+    img_color = colorize(img, **dict_colorize)
+    ax.imshow(img_color)
 
-    # interpolate img_zx
-    img_zx = iso_xy(img_zx, pixel_size_z, pixel_size_xy)
+    img_color_patch = colorize(img, **dict_colorize_patch)
+    patch_color = img_color_patch[
+        patch_pos[1] : patch_pos[1] + patch_pos[2],
+        patch_pos[0] : patch_pos[0] + patch_pos[2],
+    ]
+    ax_patch.imshow(patch_color)
 
-    img_xy_color = colorize(img_xy, **dict_colorize)
-    img_zx_color = colorize(img_zx, **dict_colorize)
+    img_shape = img.shape
+    patch_shape = (patch_pos[2], patch_pos[2])
 
-    ax[0].imshow(img_xy_color)
-    ax[1].imshow(img_zx_color)
+    # add box of the patch in the image
+    if i_method == num_methods_show + 1:
+        # add the box of the patch in the image
+        rect = plt.Rectangle(
+            (patch_pos[0], patch_pos[1]),
+            patch_pos[2],
+            patch_pos[2],
+            fill=False,
+            edgecolor="magenta",
+            linewidth=1,
+        )
+        ax.add_patch(rect)
 
-    img_shape_xy = img_xy.shape
-    img_shape_zx = img_zx.shape
     # add text -----------------------------------------------------------------
-    # structure type
-    pos_text = (int(img_shape_xy[1] * 0.04), int(img_shape_xy[0] * 0.04))
-    ax[0].text(pos_text[0], pos_text[1], structure_type, **dict_text_lt)
-
-    # xy, zx
-    if i_method == 0:
-        pos_text = (int(img_shape_xy[1] * 0.04), int(img_shape_xy[0] * 0.96))
-        ax[0].text(pos_text[0], pos_text[1], "xy", **dict_text_lb)
-        pos_text = (int(img_shape_zx[1] * 0.04), int(img_shape_zx[0] * 0.96))
-        ax[1].text(pos_text[0], pos_text[1], "xz", **dict_text_lb)
-
     # method name
-    pos_text = (int(img_shape_xy[1] * 0.96), int(img_shape_xy[0] * 0.04))
-    ax[0].text(pos_text[0], pos_text[1], methods_name[i_method], **dict_text_rt)
+    pos_text = (int(img_shape[1] * 0.96), int(img_shape[0] * 0.04))
+    ax.text(pos_text[0], pos_text[1], methods_name[i_method], **dict_text_rt)
+    # patch name
+    pos_text = (int(patch_shape[1] * 0.96), int(patch_shape[0] * 0.04))
+    ax_patch.text(pos_text[0], pos_text[1], methods_name[i_method], **dict_text_rt)
 
     # add scale bar ------------------------------------------------------------
     if i_method == num_methods_show + 1:
@@ -186,22 +190,28 @@ for i_method in range(num_methods_show + 2):
             "bar_length": 5,  # um
             "bar_height": 0.01,
             "bar_color": "white",
-            "pos": (int(img_shape_xy[1] * tp), int(img_shape_xy[0] * (1 - tp))),
+            "pos": (int(img_shape[1] * tp), int(img_shape[0] * (1 - tp))),
         }
-        add_scale_bar(ax[0], image=img_xy, **dict_scale_bar)
+        add_scale_bar(ax, image=img, **dict_scale_bar)
 
-    # add line in the imxy plane -----------------------------------------------
-    if i_method == num_methods_show + 1:
-        ax[0].plot(
-            [line_profile[1], line_profile[2]],
-            [line_profile[0], line_profile[0]],
-            **dict_line,
-        )
+        dict_scale_bar_pathch = {
+            "pixel_size": pixel_size_xy,
+            "bar_length": 1,  # um
+            "bar_height": 0.01,
+            "bar_color": "white",
+            "pos": (int(patch_pos[2] * tp), int(patch_pos[2] * (1 - tp))),
+        }
+
+        add_scale_bar(ax_patch, image=patch_color, **dict_scale_bar_pathch)
 
 
 # save the figure
-plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
-plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
+fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
+fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
+
+fig_patch.savefig(os.path.join(path_save_fig, f"patch_{id_sample}.svg"))
+fig_patch.savefig(os.path.join(path_save_fig, f"patch_{id_sample}.png"))
+
 
 # ------------------------------------------------------------------------------
 # quantitative evaluation
@@ -230,7 +240,11 @@ pbar.close()
 
 metric_values = np.array(metric_values)
 metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
-
+metrics_ticks = (
+    np.linspace(0, 40, 20, endpoint=False),
+    np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+)
 # plot the metrics -------------------------------------------------------------
 print("-" * 80)
 
@@ -263,6 +277,18 @@ fig, axes = plt.subplots(nr, nc, figsize=(3 * nc, 3 * nr), **dict_fig)
 for i_metric in range(len(metrics_name)):
     metric = metrics_name[i_metric]
     ax = axes[i_metric]
+
+    # set y ticks
+    ticks = metrics_ticks[i_metric]
+    if metric == "PSNR":
+        ticks = np.round(ticks, 1)
+    elif metric == "MSSSIM":
+        ticks = np.round(ticks, 2)
+    elif metric == "ZNCC":
+        ticks = np.round(ticks, 2)
+
+    ax.set_yticks(ticks)
+    ax.set_yticklabels(ticks, fontsize=10)
 
     df_metric = df_metrics[df_metrics["Metric"] == metric]
     seaborn.boxplot(
@@ -301,7 +327,16 @@ for i_metric in range(len(metrics_name)):
     ax.set_xticklabels([])
 
     # add legend
-    ax.legend(metrics_name, loc="lower right", labelcolor=methods_colors)
+    legend = ax.legend(
+        methods_name[:-1],
+        loc="lower right",
+        labelcolor=methods_colors,
+        fontsize=8,
+        frameon=False,
+    )
+    for i, handle in enumerate(legend.legend_handles):
+        handle.set_color(methods_colors[i])
+
 
 # save the figure
 plt.savefig(os.path.join(path_save_fig, "metrics.svg"))

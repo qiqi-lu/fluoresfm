@@ -252,6 +252,9 @@ class UNetModel(nn.Module):
         elif strategy == "out":
             for params in self.out.parameters():
                 params.requires_grad = True
+        elif strategy == "all":
+            for params in self.parameters():
+                params.requires_grad = True
         else:
             raise ValueError(f"position should be in-out, in or out, not [{strategy}].")
 
