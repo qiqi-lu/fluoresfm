@@ -11,7 +11,7 @@ from skimage import io
 
 from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
@@ -121,10 +121,46 @@ for i_sample in range(num_samples):
     imgs.append(imgs_one)
 
 # ------------------------------------------------------------------------------
+# quantitative evaluation
+# ------------------------------------------------------------------------------
+# calculate the metrics of each sample
+print("-" * 80)
+pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
+
+errormaps_sample = []
+metric_values = []
+for i_sample in range(num_samples):
+    pbar.update(1)
+    imgs_one = imgs[i_sample]
+    img_gt = imgs_one[-1]
+    errormaps_method = []
+    metric_methods = []
+    for i_method in range(num_methods_show + 1):
+        img_pred = imgs_one[i_method]
+        dict_img = dict(img_true=img_gt, img_test=img_pred)
+        data_range = dict_clip["a_max"] - dict_clip["a_min"]
+
+        psnr = PSNR(data_range=data_range, **dict_img)
+        msssim = MSSSIM(data_range=data_range, **dict_img)
+        zncc = ZNCC(**dict_img)
+        rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
+        metric_methods.append([psnr, msssim, zncc, rse, rsp])
+        errormaps_method.append(emap)
+    metric_values.append(metric_methods)
+    errormaps_sample.append(errormaps_method)
+pbar.close()
+
+metric_values = np.array(metric_values)
+
+# ------------------------------------------------------------------------------
 # show image
 # ------------------------------------------------------------------------------
+print("-" * 80)
+print(f"[INFO] Show image: {id_sample}")
+
 dict_fig = {"dpi": 300, "constrained_layout": True}
 dict_colorize = {"vmin": 0.0, "vmax": 0.9, "color": dataset_color}
+dict_emap = {"vmin": 0, "vmax": 0.4, "cmap": "viridis"}
 dict_text_lt = {"fontsize": 14, "color": "white", "ha": "left", "va": "top"}
 dict_text_rt = {"fontsize": 14, "color": "white", "ha": "right", "va": "top"}
 dict_text_lb = {"fontsize": 14, "color": "white", "ha": "left", "va": "bottom"}
@@ -133,9 +169,9 @@ dict_line = {"linewidth": 1, "color": "magenta", "linestyle": "--"}
 
 # ------------------------------------------------------------------------------
 if fig_direction == "vertical":
-    nr, nc = num_methods_show + 2, 1
+    nr, nc = num_methods_show + 2, 2
 elif fig_direction == "horizontal":
-    nr, nc = 1, num_methods_show + 2
+    nr, nc = 2, num_methods_show + 2
 else:
     raise ValueError(
         f"fig_direction must be 'vertical' or 'horizontal', but got {fig_direction}"
@@ -145,13 +181,24 @@ fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 [ax.set_axis_off() for ax in axes.ravel()]
 
 imgs_one = imgs[id_sample]
+emaps_one = errormaps_sample[id_sample]
+
+# plot the image ---------------------------------------------------------------
 for i_method in range(num_methods_show + 2):
-    ax = axes[i_method]
+    if fig_direction == "vertical":
+        ax = axes[i_method][0]
+        ax_emap = axes[i_method][1]
+    elif fig_direction == "horizontal":
+        ax = axes[0][i_method]
+        ax_emap = axes[1][i_method]
+
     img = imgs_one[i_method]
-
     img_color = colorize(img, **dict_colorize)
-
     ax.imshow(img_color)
+
+    if i_method <= num_methods_show:
+        emap = emaps_one[i_method]
+        ax_emap.imshow(emap, **dict_emap)
 
     img_shape = img.shape
     # add text -----------------------------------------------------------------
@@ -176,35 +223,14 @@ plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
 plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
 
 # ------------------------------------------------------------------------------
-# quantitative evaluation
+# plot the metrics
 # ------------------------------------------------------------------------------
-# calculate the metrics of each sample
-print("-" * 80)
-pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
-
-metric_values = []
-for i_sample in range(num_samples):
-    pbar.update(1)
-    imgs_one = imgs[i_sample]
-    img_gt = imgs_one[-1]
-    metric_methods = []
-    for i_method in range(num_methods_show + 1):
-        img_pred = imgs_one[i_method]
-        dict_img = dict(img_true=img_gt, img_test=img_pred)
-        data_range = dict_clip["a_max"] - dict_clip["a_min"]
-
-        psnr = PSNR(data_range=data_range, **dict_img)
-        msssim = MSSSIM(data_range=data_range, **dict_img)
-        zncc = ZNCC(**dict_img)
-        metric_methods.append([psnr, msssim, zncc])
-    metric_values.append(metric_methods)
-pbar.close()
-
-metric_values = np.array(metric_values)
-metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
 metrics_ticks = (
     np.linspace(0, 40, 40, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
 )
 # plot the metrics -------------------------------------------------------------
@@ -247,6 +273,10 @@ for i_metric in range(len(metrics_name)):
     elif metric == "MSSSIM":
         ticks = np.round(ticks, 2)
     elif metric == "ZNCC":
+        ticks = np.round(ticks, 2)
+    elif metric == "RSE":
+        ticks = np.round(ticks, 2)
+    elif metric == "RSP":
         ticks = np.round(ticks, 2)
 
     ax.set_yticks(ticks)

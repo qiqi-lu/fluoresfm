@@ -13,12 +13,12 @@ from utils.plot import colorize, add_scale_bar
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
 GREEN, BlUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
-fig_direction = "vertical"  # [methods x 1]
-# fig_direction ='horizontal' # [1 x methods]
+# fig_direction = "vertical"  # [methods x 1]
+fig_direction = "horizontal"  # [1 x methods]
 
 # datsets and methods to show --------------------------------------------------
-#               dataset name, id sample, color
-dataset_show = ("care-drosophila-iso", 3, GREEN)
+#               dataset name, id sample, color, ROI, line position (y)
+dataset_show = ("care-drosophila-iso", 3, GREEN, ((95, 150), (485, 1190)), 190)
 
 methods_show = (
     # (
@@ -33,7 +33,7 @@ methods_show = (
     ),
 )
 
-dataset_id, id_sample, dataset_color = dataset_show
+dataset_id, id_sample, dataset_color, ROI, line_y = dataset_show
 methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
 methods_name = ["Raw"] + [m[0] for m in methods_show]
 num_methods_show = len(methods_show)
@@ -91,7 +91,7 @@ for i_sample in range(num_samples):
     img_raw = interp_sf(img_raw, sf=sf_lr)
     img_raw = normalizer(img_raw)
     img_raw = np.clip(img_raw, **dict_clip)
-    img_raw = np.transpose(img_raw, (0, 2, 1))
+    # img_raw = np.transpose(img_raw, (0, 2, 1))
     imgs_one.append(img_raw[0])
 
     # load the prediction image
@@ -100,7 +100,7 @@ for i_sample in range(num_samples):
         img_pred = io.imread(os.path.join(path_prediction, method_id, filename))
         img_pred = normalizer(img_pred)
         img_pred = np.clip(img_pred, **dict_clip)
-        img_pred = np.transpose(img_pred, (0, 2, 1))
+        # img_pred = np.transpose(img_pred, (0, 2, 1))
         imgs_one.append(img_pred[0])
 
     imgs.append(imgs_one)
@@ -111,7 +111,7 @@ for i_sample in range(num_samples):
 dict_fig = {"dpi": 300, "constrained_layout": True}
 dict_colorize = {"vmin": 0.0, "vmax": 0.9, "color": dataset_color}
 dict_text_lt = {"fontsize": 14, "color": "white", "ha": "left", "va": "top"}
-dict_text_rt = {"fontsize": 14, "color": "white", "ha": "right", "va": "top"}
+dict_text_rt = {"fontsize": 10, "color": "white", "ha": "right", "va": "top"}
 dict_text_lb = {"fontsize": 14, "color": "white", "ha": "left", "va": "bottom"}
 dict_text_rb = {"fontsize": 14, "color": "white", "ha": "right", "va": "bottom"}
 dict_line = {"linewidth": 1, "color": "magenta", "linestyle": "--"}
@@ -129,10 +129,16 @@ else:
 fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 [ax.set_axis_off() for ax in axes.ravel()]
 
+fig_line, axes_line = plt.subplots(1, 1, figsize=(nc * 3, nr * 3), **dict_fig)
+
+
 imgs_one = imgs[id_sample]
 for i_method in range(num_methods_show + 1):
     ax = axes[i_method]
     img = imgs_one[i_method]
+
+    # crop image
+    img = img[ROI[0][1] : ROI[1][1], ROI[0][0] : ROI[1][0]]
 
     img_color = colorize(img, **dict_colorize)
 
@@ -156,6 +162,28 @@ for i_method in range(num_methods_show + 1):
         }
         add_scale_bar(ax, image=img, **dict_scale_bar)
 
+    # add line -----------------------------------------------------------------
+    if i_method == num_methods_show:
+        ax.axhline(y=line_y, **dict_line)
+
+    # plot profile of the line
+    x = np.arange(img_shape[1])
+    y = img[line_y, :]
+    axes_line.plot(
+        x, y, color=methods_colors[i_method], linewidth=1, label=methods_name[i_method]
+    )
+    axes_line.set_xlim(0, img_shape[1])
+    axes_line.set_xticks([])
+    axes_line.set_ylabel("Normalized intensity")
+    # del top and right spines
+    axes_line.spines["top"].set_visible(False)
+    axes_line.spines["right"].set_visible(False)
+    # add legend
+    axes_line.legend(loc="upper right")
+
+
 # save the figure
-plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
-plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
+fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
+fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
+fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.svg"))
+fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.png"))

@@ -21,34 +21,29 @@ fig_direction = "horizontal"  # [1 x methods]
 
 # datsets and methods to show --------------------------------------------------
 #               dataset name, id sample, color, patch (x, y, size)
-dataset_show = ("synprot-channe-0-reg", 5, GREEN, (473, 701, 72))
+dataset_show = ("dl-smlm-microtubule", 1, GREEN, (598, 1508, 194))
 
 methods_show = (
-    (
-        "FluoResFM-64-1e05",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-1e05",
-        "#4D8FCB",
-    ),
-    (
-        "FluoResFM-64-0.0001",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.0001",
-        "#4D8FCB",
-    ),
+    # (
+    #     "FluoResFM-64",
+    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-dl-smlm-microtubule-64",
+    #     "#4D8FCB",
+    # ),
     (
         "FluoResFM-64-0.001",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.001",
-        "#4D8FCB",
-    ),
-    (
-        "FluoResFM-128",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8-ft-inout-synprot-channe-0-128-reg",
+        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-dl-smlm-microtubule-64-0.001",
         "#004586",
     ),
+    # (
+    #     "FluoResFM-128",
+    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8-ft-inout-dl-smlm-microtubule-128",
+    #     "#004586",
+    # ),
 )
 
 dataset_id, id_sample, dataset_color, patch_pos = dataset_show
 methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
-methods_name = ["confocal"] + [m[0] for m in methods_show] + ["STED"]
+methods_name = ["WF"] + [m[0] for m in methods_show] + ["STORM"]
 num_methods_show = len(methods_show)
 num_sample_show = 8
 
@@ -158,9 +153,6 @@ for i_method in range(num_methods_show + 2):
     ax_patch = axes_patch[i_method]
 
     img = imgs_one[i_method]
-    # crop the image to a square one
-    min_size = min(img.shape)
-    img = img[:min_size, :min_size]
 
     img_color = colorize(img, **dict_colorize)
     ax.imshow(img_color)
@@ -210,7 +202,7 @@ for i_method in range(num_methods_show + 2):
 
         dict_scale_bar_pathch = {
             "pixel_size": pixel_size_xy,
-            "bar_length": 0.2,  # um
+            "bar_length": 0.5,  # um
             "bar_height": 0.01,
             "bar_color": "white",
             "pos": (int(patch_pos[2] * tp), int(patch_pos[2] * (1 - tp))),

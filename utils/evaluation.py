@@ -8,6 +8,48 @@ from scipy.optimize import linear_sum_assignment
 import math, torch
 from pytorch_msssim import ms_ssim
 
+from nanopyx.core.transform import ErrorMap
+
+
+def FRC(image1, image2=None, threshold=0.143):
+    """
+    Fourier Ring Correlation.
+    A method used for resolution estimation.
+    ### Parameters:
+    - `image1`: image 1.
+    - `image2`: image 2. If image2 is `None`,
+        the image1 will be used to generate subimages using splitting methods.
+    - `threshold`: threshold for resolution estimation.
+    ### Returns:
+    - `resolution`: resolution estimation.
+    """
+    assert threshold > 0 and threshold < 1, "[ERROR] Threshold must be in (0,1)"
+
+
+def SQUIRREL(img, img_ref):
+    """
+    SQUIRREL analysis, super-resolution quantitative image taing and repoting error locations.
+    ### Parameters:
+    - `img`: image to evaluate, commonly be a super-resolution image.
+    - `img_ref`: reference image, commonly be a **diffraction-limited** image, also
+        can be a super-resolution image from different modality.
+    ### Returns:
+    - `RSE`: resolution-scaled error. [lower is better]
+    - `RSP`: resolution-scaled Pearson coefficient. [higher is better]
+    - `emap`: error map. Pixel-wise absolute error between the reference and resolution-scaled images.
+    """
+    # convert to numpy array
+    img = tensor_to_array(img)
+    img_ref = tensor_to_array(img_ref)
+
+    error_map = ErrorMap()
+    error_map.optimise(img_ref, img)
+    RSE = error_map.getRSE()
+    RSP = error_map.getRSP()
+    emap = np.array(error_map.imRSE)
+
+    return RSE, RSP, emap
+
 
 def tensor_to_array(img):
     """

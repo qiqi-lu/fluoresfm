@@ -7,14 +7,14 @@ The information is saved in the xlsx file.
 import pandas, os, tqdm
 
 # ------------------------------------------------------------------------------
-# finetune = False
-finetune = True  # generate the text for finetune datasets
+finetune = False
+# finetune = True  # generate the text for finetune datasets
 # ------------------------------------------------------------------------------
 
 path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 
-text_type = "ALL"  # all the information
-# text_type = "ALL_wot"  # all the information without the information about the target
+# text_type = "ALL"  # all the information
+text_type = "ALL_wot"  # all the information without the information about the target
 # text_type = "TSpixel"  # only task, structure, and input/output pixel size
 # text_type = "TSmicro"  # only task, structure, and input/output microscope
 # text_type = "TS"  # only task, structure
@@ -80,8 +80,8 @@ with open(path_save_to, "w") as text_file:
                 f'{text_data["target microscope-device"][i]} {text_data["target microscope-params"][i]}',
                 text_data["target pixel size"][i],
             )
-        elif text_type == "ALL_wot":
-            text_single = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.\n".format(
+        elif text_type == "ALL_wot":  # exclude the informaiton about the target
+            text_single = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}.\n".format(
                 text_data["task#"][i],
                 text_data["sample"][i],
                 text_data["structure#"][i],

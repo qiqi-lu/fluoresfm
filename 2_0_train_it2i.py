@@ -1,7 +1,24 @@
 """
-Model training and finetuning using the same code.
+The code can be used for both model training and fine-tuning.
 - (single-channel 2D image, text) to (single-channel 2D image,)
 - (mutil-channel 2D image, text) to (single-channel 2D image,)
+
+If you want to use all dataset to train the network,
+- set params['datasets_id'] to [].
+- set params['task'] to [].
+- set params['finetune'] to False.
+when given the path of the pre-trained model in params['saved_checkpoint'],
+the network will be trained from the pre-trained model.
+
+If you want to train from scratch,
+- set params['saved_checkpoint'] to None.
+
+If you want to finetune the network,
+- set params['finetune'] to True.
+- set params['saved_checkpoint'] to the path of the pre-trained model.
+- set params['datasets_id'] to the dataset id you want to finetune.
+- set params['task'] to the task you want to finetune.
+
 """
 
 import torch, os, tqdm, json, pandas, datetime
@@ -23,7 +40,7 @@ import utils.loss_functions as utils_loss
 # ------------------------------------------------------------------------------
 params = {
     # device
-    "device": "cuda:0",
+    "device": "cuda:1",
     "random_seed": 7,
     "data_shuffle": True,
     "num_workers": 3,
@@ -62,8 +79,8 @@ params = {
     "loss": "mae",
     # learning rate ------------------------------------------------------------
     "lr": 0.00001,
-    # "batch_size": 16,
-    "batch_size": 8,
+    "batch_size": 16,
+    # "batch_size": 8,
     "num_epochs": 20,
     "warm_up": 0,
     "lr_decay_every_iter": 10000 * 10,
@@ -135,16 +152,22 @@ params = {
         # "biosr-factinnl-sr3-6",  # 1000 epoch
         # "biosr-factinnl-sr3-7",
         # "biosr-factinnl-sr3-8",
-        # "biosr-factinnl-sr3-9",
+        # "biosr-factinnl-sr3-9",  # 1000 epoch 16 bs
         # "care-iso-drosophila-3d",  # 50 epoch
         # "synprot-channe-0-64",  # 200 epoch
         # "synprot-channe-0-128",  # 700 epoch 16 batch size
         # "synprot-channe-1-64",  # 200 epoch
         # "synprot-channe-1-128",  # 700 epoch
         # "synprot-channe-0-64-granule",
-        "synprot-channe-0-128-granule",
+        # "synprot-channe-0-128-granule",
         # "synprot-channe-1-64-granule",
         # "synprot-channe-1-128-granule",
+        # "synprot-channe-0-64-reg",  # 200 epoch
+        # "synprot-channe-0-128-reg",  # 400 epoch 8 batch size
+        # "synprot-channe-1-64-reg",  # 200 epoch
+        # "synprot-channe-1-128-reg",  # 400 epoch
+        # "dl-smlm-microtubule-64",  # 600 epoch 16 batch size
+        # "dl-smlm-microtubule-128",  # 1500 epoch
     ],
     "task": [],
     # "task": ["sr"],
@@ -154,27 +177,30 @@ params = {
     "path_text": "text\\v2",
     # "embaedding_type": "",
     # "embaedding_type": "_ALL_256",
-    "embaedding_type": "_ALL_160",
+    # "embaedding_type": "_ALL_160",
+    "embaedding_type": "_ALL_wot_160",
     # "embaedding_type": "_TSpixel_77",
     # "embaedding_type": "_TSmicro_77",
     # "embaedding_type": "_TS_77",
     # "embaedding_type": "_T_77",
     # checkpoints --------------------------------------------------------------
     # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-crossx",
-    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-wot",
     # "suffix": "_all_newnorm_ALL-v2-res1-att0123-T77",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
     "print_loss": False,
     # saved model --------------------------------------------------------------
-    "finetune": True,
+    "finetune": False,
+    "saved_checkpoint": None,
+    # "finetune": True,
     "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
     # "finetune-strategy": "in", # finetune the input part convolutional layers
     # "finetune-strategy": "out",# finetune the output part convolutional layers
     # "finetune-strategy": "all",  # finetune the output part convolutional layers
-    # "saved_checkpoint": None,
-    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
+    # "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
 }
 
 # ------------------------------------------------------------------------------
@@ -199,14 +225,16 @@ if params["finetune"] == True:
             "frac_val": 0.05,
             # "lr": 0.00001,
             "lr": 0.0001,
+            # "lr": 0.001,
             # "num_epochs": 2000,
             # "num_epochs": 1000,
+            # "num_epochs": 1500,
             # "num_epochs": 6500,
             # "num_epochs": 400,
-            "num_epochs": 350,
+            # "num_epochs": 600,
             # "num_epochs": 200,
             # "num_epochs": 175,
-            # "num_epochs": 50,
+            "num_epochs": 50,
             "lr_decay_every_iter": 10000,
             "validate_every_iter": 500,
             "use_clean_data": False,

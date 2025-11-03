@@ -11,12 +11,12 @@ import torch, os, tqdm
 import numpy as np
 
 # ------------------------------------------------------------------------------
-# finetune = False
-finetune = True  # only process the text for the finetune datasets.
+finetune = False
+# finetune = True  # only process the text for the finetune datasets.
 # ------------------------------------------------------------------------------
 
-text_type = ("ALL", 160)
-# text_type = ("ALL_wot", 160)
+# text_type = ("ALL", 160)
+text_type = ("ALL_wot", 160)
 # text_type = ("TSpixel", 77)
 # text_type = ("TSmicro", 77)
 # text_type = ("TS", 77)
@@ -48,7 +48,7 @@ if dataset_text[-1] == "":
     dataset_text.pop(-1)
 
 num_dataset = len(dataset_text)
-print(f"[INFO] Number of datasets: {num_dataset}")
+print(f"[INFO] Num. of datasets: {num_dataset}")
 
 # ------------------------------------------------------------------------------
 # load embedder
