@@ -9,9 +9,24 @@ import math, torch
 from pytorch_msssim import ms_ssim
 
 from nanopyx.core.transform import ErrorMap
+from nanopyx.core.analysis.frc import FIRECalculator
+from nanopyx.core.analysis.decorr import DecorrAnalysis
+
+from miplib.data.containers.image import Image
+from miplib.data.containers.fourier_correlation_data import (
+    FourierCorrelationDataCollection,
+)
+import miplib.analysis.resolution.fourier_ring_correlation as frc
+from miplib.ui.cli import miplib_entry_point_options as options
 
 
-def FRC(image1, image2=None, threshold=0.143):
+def FRC(
+    image1,
+    image2=None,
+    pixel_size: float = 100,
+    threshold: float = 0.143,
+    splitting_method="checkerboard",
+):
     """
     Fourier Ring Correlation.
     A method used for resolution estimation.
@@ -19,11 +34,79 @@ def FRC(image1, image2=None, threshold=0.143):
     - `image1`: image 1.
     - `image2`: image 2. If image2 is `None`,
         the image1 will be used to generate subimages using splitting methods.
+    - `pixel_size`: pixel size in um.
     - `threshold`: threshold for resolution estimation.
+    - `splitting_method`: splitting method. default is "checkerboard".
     ### Returns:
-    - `resolution`: resolution estimation.
+    - `res`: resolution estimation.
+    - `frc_curve`: frc curve.
     """
     assert threshold > 0 and threshold < 1, "[ERROR] Threshold must be in (0,1)"
+    # convert to numpy array
+    image1 = tensor_to_array(image1)
+    if image2 is None:
+        # single image FRC
+        if splitting_method == "checkerboard":
+            spacing = (pixel_size,) * 2  # um
+            image = Image(image1, spacing=spacing)
+            args_list = (
+                "None --bin-delta=1  --frc-curve-fit-type=smooth-spline "
+                " --resolution-threshold-criterion=fixed"
+            ).split()
+            args = options.get_frc_script_options(args_list)
+            frc_results = FourierCorrelationDataCollection()
+            frc_results[0] = frc.calculate_single_image_frc(image, args)
+            res = (
+                frc_results[0].resolution["resolution"] * 1000.0
+            )  # estimated resolution (nm)
+    else:
+        image2 = tensor_to_array(image2)
+        frc_calc = FIRECalculator(pixel_size=pixel_size, units="nm")
+        res = frc_calc.calculate_fire_number(image1, image2)
+        # frc_curve = frc_calc.plot_frc_curve()
+    return res
+
+
+def decorrelation_analysis(
+    img,
+    pixel_size: float = 100,
+    rmin: float = 0.0,
+    rmax: float = 1.0,
+    n_r: int = 50,
+    n_g: int = 10,
+    roi: tuple = (0, 0, 0, 0),
+):
+    """
+    Image decorrelation analysis.
+    ### Parameters:
+    - `img`: image to evaluate.
+    - `pixel_size`: pixel size in nm of the image, which is used to calculate resolution values.
+    - `rmin`: minimum radius. default is 0.0.  Resolution calculation by
+        Decorrelation Analysis is performed in the frequency space.
+        These parameters define the range of radii to be used in the calculation.
+    - `rmax`: maximum radius. default is 1.0.
+    - `n_r`: number of radial divisions for analysis. default is 50.
+    - `n_g`: number of angular divisions for analysis. default is 10.
+    - `roi`: region of interest in the format (x_min,y_min,x_max,y_max). default is (0, 0, 0, 0).
+    ### Returns:
+    - `res`: resolution estimation.
+    """
+    # convert to numpy array
+    img = tensor_to_array(img)
+
+    decorr_calc = DecorrAnalysis(
+        pixel_size=pixel_size,
+        units="nm",
+        rmin=rmin,
+        rmax=rmax,
+        n_r=n_r,
+        n_g=n_g,
+        roi=roi,
+    )
+    decorr_calc.run_analysis(img)
+    res = decorr_calc.resolution
+    decorr_curve = decorr_calc.plot_results()
+    return res, decorr_curve
 
 
 def SQUIRREL(img, img_ref):

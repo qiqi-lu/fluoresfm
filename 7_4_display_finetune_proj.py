@@ -11,7 +11,7 @@ from skimage import io
 
 from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis, FRC
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
@@ -123,18 +123,34 @@ for i_sample in range(num_samples):
 # ------------------------------------------------------------------------------
 # quantitative evaluation
 # ------------------------------------------------------------------------------
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Res (DA)", "Res (FRC)"]
+metrics_ticks = (
+    np.linspace(0, 40, 40, endpoint=False),
+    np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(600, 700, 10, endpoint=False),
+    np.linspace(450, 550, 10, endpoint=False),
+)
+
 # calculate the metrics of each sample
 print("-" * 80)
 pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
 
 errormaps_sample = []
 metric_values = []
+da_curve_sample = []
+
 for i_sample in range(num_samples):
     pbar.update(1)
     imgs_one = imgs[i_sample]
     img_gt = imgs_one[-1]
+
     errormaps_method = []
     metric_methods = []
+    da_curve_methods = []
+
     for i_method in range(num_methods_show + 1):
         img_pred = imgs_one[i_method]
         dict_img = dict(img_true=img_gt, img_test=img_pred)
@@ -144,10 +160,23 @@ for i_sample in range(num_samples):
         msssim = MSSSIM(data_range=data_range, **dict_img)
         zncc = ZNCC(**dict_img)
         rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
-        metric_methods.append([psnr, msssim, zncc, rse, rsp])
+        res_da, curve_da = decorrelation_analysis(
+            img_pred, pixel_size=pixel_size_xy * 1000.0
+        )
+        res_frc = FRC(
+            image1=img_pred,
+            image2=None,
+            pixel_size=pixel_size_xy,
+            splitting_method="checkerboard",
+        )
+
+        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da, res_frc])
         errormaps_method.append(emap)
+        da_curve_methods.append(curve_da)
+
     metric_values.append(metric_methods)
     errormaps_sample.append(errormaps_method)
+    da_curve_sample.append(da_curve_methods)
 pbar.close()
 
 metric_values = np.array(metric_values)
@@ -169,9 +198,9 @@ dict_line = {"linewidth": 1, "color": "magenta", "linestyle": "--"}
 
 # ------------------------------------------------------------------------------
 if fig_direction == "vertical":
-    nr, nc = num_methods_show + 2, 2
+    nr, nc = num_methods_show + 2, 3
 elif fig_direction == "horizontal":
-    nr, nc = 2, num_methods_show + 2
+    nr, nc = 3, num_methods_show + 2
 else:
     raise ValueError(
         f"fig_direction must be 'vertical' or 'horizontal', but got {fig_direction}"
@@ -182,15 +211,19 @@ fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 
 imgs_one = imgs[id_sample]
 emaps_one = errormaps_sample[id_sample]
+da_curve_one = da_curve_sample[id_sample]
 
 # plot the image ---------------------------------------------------------------
 for i_method in range(num_methods_show + 2):
+
     if fig_direction == "vertical":
         ax = axes[i_method][0]
         ax_emap = axes[i_method][1]
+        ax_da = axes[i_method][2]
     elif fig_direction == "horizontal":
         ax = axes[0][i_method]
         ax_emap = axes[1][i_method]
+        ax_da = axes[2][i_method]
 
     img = imgs_one[i_method]
     img_color = colorize(img, **dict_colorize)
@@ -199,6 +232,9 @@ for i_method in range(num_methods_show + 2):
     if i_method <= num_methods_show:
         emap = emaps_one[i_method]
         ax_emap.imshow(emap, **dict_emap)
+
+        curve_da = da_curve_one[i_method]
+        ax_da.imshow(curve_da)
 
     img_shape = img.shape
     # add text -----------------------------------------------------------------
@@ -225,15 +261,6 @@ plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
 # ------------------------------------------------------------------------------
 # plot the metrics
 # ------------------------------------------------------------------------------
-metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
-metrics_ticks = (
-    np.linspace(0, 40, 40, endpoint=False),
-    np.linspace(0, 1, 20, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-)
-# plot the metrics -------------------------------------------------------------
 print("-" * 80)
 
 # construct frame used for seaborn boxplot
