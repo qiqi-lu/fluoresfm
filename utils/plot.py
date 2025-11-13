@@ -3,6 +3,22 @@ import matplotlib.pyplot as plt
 from skimage import measure
 
 
+def plot_and_save_2d_image(image, path_save_to, cmap="gray", vmin=None, vmax=None):
+    """
+    Plot and save a 2D image.
+    ### Parameters:
+    - `image`: numpy array, shape (H, W), the image to plot.
+    - `path`: str, the path to save the image.
+    - `cmap`: str, the colormap to use.
+    - `vmin`: float, the minimum value of the image.
+    - `vmax`: float, the maximum value of the image.
+    """
+    fig, axes = plt.subplots(1, 1, figsize=(3, 3), dpi=300, constrained_layout=True)
+    axes.imshow(image, cmap=cmap, vmin=vmin, vmax=vmax)
+    axes.axis("off")
+    fig.savefig(path_save_to)
+
+
 def image_combine_2d(image1, image2):
     """
     Combine two 2D images into one 2D image.
