@@ -16,8 +16,8 @@ FanPoints1(find(FanPoints1(:,1)>size(L,1)),:) = []; % make sure that Fan Points 
 FanPoints1(find(FanPoints1(:,2)>size(L,2)),:) = []; % make sure that Fan Points are not out of boundary
 FanTemp = zeros(size(L));
 FanTemp (sub2ind(size(FanTemp), FanPoints1(:,1), FanPoints1(:,2))) = 1;
-% FanEdge = bwboundaries(im2bw(FanTemp));
-FanEdge = bwboundaries(imbinarize(FanTemp));
+FanEdge = bwboundaries(im2bw(FanTemp));
+FanEdge = bwboundaries(imb(FanTemp));
 FanEdge = FanEdge{1};
 % used to generate fan edge above
 

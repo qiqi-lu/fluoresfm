@@ -46,7 +46,8 @@ for ii = 1:iteration
     OFT_Img = mat2gray(OFT_Img);
     
     % extract new skeletons
-    BW = im2bw(OFT_Img,Thresh);
+    % BW = im2bw(OFT_Img,Thresh);
+    BW = imbinarize(OFT_Img);
     RawSke = bwmorph(BW,'thin',Inf);
     % [x, y] = find(RawSke==1);
     

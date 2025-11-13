@@ -8,11 +8,27 @@ clc
 clear
 disp('### Parameter setting ...')
 
-imgpath  = "E:\qiqilu\datasets\SIFNE\unzip\SIFNE\MT.tiff";           % path of image
-maskpath = "E:\qiqilu\datasets\SIFNE\unzip\SIFNE\MT_cell_mask.tiff"; % path of hand-drawn mask using ImageJ
-R        = 10;              % radius of filter
-NofOrientations_FT = 20;    % number of filter orientations
-enable_preview     = 0;
+% imgpath = "E:\qiqilu\datasets\SIFNE\unzip\SIFNE\MT.tiff";           % path of image
+% maskpath = "E:\qiqilu\datasets\SIFNE\unzip\SIFNE\MT_cell_mask.tiff"; % path of hand-drawn mask using ImageJ
+
+% imgpath = "E:\qiqilu\datasets\RCAN3D\transformed\C2S_MT\test\channel_0\STED_2d\29_0.tif";
+% imgpath = "E:\qiqilu\datasets\RCAN3D\transformed\C2S_MT\test\channel_0\confocal_2d\29_0.tif";
+% imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\rcan3d-c2s-mt-sr\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\29_0.tif";
+
+% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\47.tif";
+imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_9\47.tif";
+% imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-9\unet_sd_c_all_newnorm-ALL-v2-160-s123-bs16\47.tif";
+maskpath = "";
+
+disp('### Done.')
+
+%% Path setting
+disp('### Set path ...')
+
+R = 10; % radius of filter, default 10.
+NofOrientations_FT = 20; % number of filter orientations
+enable_preview     = 0;  % whether to preview results (show figures)
+enable_normalize = 0;
 
 [path_root, filename, ~] = fileparts(imgpath);
 path_save_root = fullfile(path_root,filename+'_analysis');
@@ -42,6 +58,14 @@ OriginImg = squeeze(OriginImg);
 
 if length(size(OriginImg))==3
     OriginImg = rgb2gray(OriginImg);
+end
+
+if isa(OriginImg,'single') || isa(OriginImg,'double')
+    OriginImg = rescale(OriginImg);
+end
+
+if enable_normalize == 1
+    OriginImg = normalize_clip(OriginImg);
 end
 
 OriginImg = imadjust(im2uint8(OriginImg));
@@ -137,10 +161,18 @@ disp('### Load cell mask ...')
 % close(figure(1));
 
 % get ROI_mask from file
-mask_ori = imread(maskpath);
-mask_ori = logical(mask_ori);
-ROI_Mask = zeros(size(OriginImg,1)+2*R,  size(OriginImg,2)+2*R);
-ROI_Mask(R+1:size(ROI_Mask,1)-R,  R+1:size(ROI_Mask,2)-R)= mask_ori;
+if exist(maskpath,'dir')
+    mask_ori = imread(maskpath);
+    mask_ori = logical(mask_ori);
+    ROI_Mask = zeros(size(OriginImg,1)+2*R,  size(OriginImg,2)+2*R);
+    ROI_Mask(R+1:size(ROI_Mask,1)-R,  R+1:size(ROI_Mask,2)-R)= mask_ori;
+else
+    if maskpath == ""
+        ROI_Mask = ones(size(OriginImg,1)+2*R,  size(OriginImg,2)+2*R);
+    else
+        disp('Need a mask or let maskpath to be "".')
+    end
+end
 
 % save data\ROI_Mask.mat ROI_Mask;
 save(fullfile(path_data,'ROI_Mask.mat'),'ROI_Mask')
@@ -182,7 +214,7 @@ end
 disp('Done.')
 
 %% Segmentation
-% automatically calculate the threshold for binarizing the nehanced image
+% automatically calculate the threshold for binarizing the enhanced image
 % whose intesities has been normalized to 1.
 % the default threshold is 1.42 times the value calculated using Otsu's
 % method.
@@ -196,6 +228,7 @@ warning off;
 % load data\R;
 
 DefaultFactor = 1.42;
+
 I = mat2gray(OFT_Img);
 t = DefaultFactor*graythresh(I); % Otsu's threshold
 
@@ -203,7 +236,8 @@ if t>=1
     t = graythresh(I);
 end
 
-BW = im2bw(I,t);
+% BW = im2bw(I,t);
+BW = imbinarize(I);
 RawSke = bwmorph(BW,'thin',Inf); % get the skeleton of the segmentation
 [x, y] = find(RawSke==1); % get the coordinates of all pixels in the skeleton
 
@@ -232,8 +266,8 @@ if enable_preview == 1
     imshow(mat2gray(OriginImg));hold on;
     plot(y-R,x-R,'r.');axis off; 
     title('Original Image with Extracted Skeleton');
-    scrsz = get(0,'ScreenSize');
-    set(figure(1),'Position',[scrsz(1) scrsz(2) scrsz(3) scrsz(4)])
+    % scrsz = get(0,'ScreenSize');
+    % set(figure(1),'Position',[scrsz(1) scrsz(2) scrsz(3) scrsz(4)])
 end
 
 disp('### Done.')
@@ -1064,7 +1098,7 @@ all_connects(:,:,RemoveIdx) = [];
 % remove ungrouped below
 % RemoveUngrp = RemoveUngrp;
 if RemoveUngrp==1
-    AllFragments = im2bw(AllFragments);
+    % AllFragments = im2bw(AllFragments);
     RemoveIdx = [];
 
     h = waitbar(0,'Removing Ungrouped Fragments...');
@@ -1190,7 +1224,7 @@ disp('### Done.')
 disp('### Display results: Junctions ...')
 
 warning off;
-close(figure(1));close(figure(2));
+% close(figure(1));close(figure(2));
 
 % load data\R.mat;
 % load data\OriginImg.mat;
@@ -1236,7 +1270,7 @@ disF = disF.*mask; % set distance outside ROI to 0
 disF = disF*PixelSize;
 
 % dispaly
-figure(1);
+figure(2);
 imagesc(disF);colormap(jet);hold on;axis off;axis image;colorbar;
 [xx, yy] = find(Overlay_Map~=0);
 plot(yy,xx,'k.');
@@ -1251,7 +1285,8 @@ mask = single(mask);
 mask(mask==0)=-1;
 disF = disF.*mask;
 d = disF(sub2ind(size(disF),x,y))*PixelSize;
-figure(2);
+
+figure(3);
 %         histogram(d);%axis square;
 histfit(d,50,'kernel');xlim([0 inf]);
 ylabel('Frequency');
@@ -1261,8 +1296,8 @@ title('Distribution of Junctions');
 % mkdir result;
 % saveas(figure(1),'result\Distribution_Junctions.fig');
 % saveas(figure(2),'result\Distribution_Junctions_Analysis.fig');
-saveas(figure(1),fullfile(path_result,'Distribution_Junctions.fig'));
-saveas(figure(2),fullfile(path_result,'Distribution_Junctions_Analysis.fig'));
+saveas(figure(2),fullfile(path_result,'Distribution_Junctions.fig'));
+saveas(figure(3),fullfile(path_result,'Distribution_Junctions_Analysis.fig'));
 
 disp('### Done.')
 
