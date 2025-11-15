@@ -15,17 +15,16 @@ Pred    |
 """
 
 from utils.data import win2linux, read_txt, normalization
-from utils.plot import plot_and_save_2d_image
+from utils.plot import colorize, add_scale_bar
 import skimage.io as io
 import numpy as np
 import matplotlib.pyplot as plt
-import os, json, pandas
+import os, pandas
 from scipy.io import loadmat
 
 # set font in svg
 plt.rcParams["svg.fonttype"] = "none"
 
-method_id = "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"
 method_id = "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"
 dataset_name = "biosr-mt-sr-9"
 id_img = 6
@@ -60,17 +59,18 @@ filename = filenames[id_img]
 filename_analysis = os.path.splitext(filename)[0] + "_analysis"
 
 paths = [path_lr, path_hr, path_predict]
+methods_name = ["Raw", "GT", "Restored"]
 
 results = []
 for path in paths:
     print(f"[INFO] Load image from {path}")
     results_single_meth = []
-    # load image
+    # load image ---------------------------------------------------------------
     img = io.imread(os.path.join(path, filename))[0]
     img = np.clip(normalizer(img), **dict_clip)
     results_single_meth.append(img)
 
-    # load analysis results ----------------------------------------------------
+    # load results -------------------------------------------------------------
     path_analysis_data = os.path.join(path, filename_analysis, "data")
     path_analysis_result = os.path.join(path, filename_analysis, "result")
 
@@ -84,32 +84,148 @@ for path in paths:
     # load filaments
     all_sorted_filament = loadmat(
         os.path.join(path_analysis_data, "all_sorted_filament.mat")
-    )["all_sorted_filament"]
+    )["all_sorted_filament"].astype(np.float32)
     results_single_meth.append(all_sorted_filament)
+
+    R = loadmat(os.path.join(path_analysis_data, "R.mat"))["R"].astype(np.float32)
+    results_single_meth.append(R)
 
     # load junctions
     NewCrPts = loadmat(os.path.join(path_analysis_data, "NewCrPts.mat"))["NewCrPts"]
     results_single_meth.append(NewCrPts)
 
     # load filament length distribution
-    filament_info = 1
-
+    analysis_info = loadmat(os.path.join(path_analysis_data, "AnalysisInfo.mat"))[
+        "AnalysisInfo"
+    ]  # ['Orientation','Total Length','End-to-End Distance','Centroid X','Centroid Y']
+    results_single_meth.append(analysis_info)
     results.append(results_single_meth)
+
+# calculate the maximum length of the filaments
+max_length = 0
+min_length = 0
+for res in results:
+    analysis_info = res[4]
+    max_length = max(max_length, analysis_info[:, 1].max())
+    min_length = min(min_length, analysis_info[:, 1].min())
 
 
 # ------------------------------------------------------------------------------
 # show images
 nr, nc = 3, 4
-dict_fig = dict(dpi=300, constrained_layout=True)
-fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), **dict_fig)
+dict_fig = dict(dpi=600, constrained_layout=True)
+num_colors = 32
+ColorList = np.random.rand(num_colors, 3)
+dict_filament = dict(linewidth=0.75)
+dict_overlap = dict(linewidth=0.75, color="black")
+dict_junction = dict(
+    linestyle="",
+    marker=".",
+    markersize=1.0,
+    markeredgecolor="#A6FF00",
+    markerfacecolor="#A6FF00",
+)
+dict_hist = dict(facecolor="none", edgecolor="black", linewidth=1)
+dict_fit_line = dict(color="#C23637", linewidth=1)
 
+
+fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), **dict_fig)
 for i_meth in range(nr):
     res = results[i_meth]
     ax = axes[i_meth]
-    # show image
-    ax[0].imshow(res[0], cmap="gray")
 
-    # show filaments
+    # show image ---------------------------------------------------------------
+    img = res[0]
+    img_color = colorize(img, vmin=0, vmax=0.9, color=(0, 255, 0))
+    ax[0].imshow(img_color, cmap="gray")
+    ax[0].set_axis_off()
+    ax[0].text(
+        0.05,
+        0.95,
+        methods_name[i_meth],
+        ha="left",
+        va="top",
+        transform=ax[0].transAxes,
+        color="white",
+        fontsize=16,
+    )
+    if i_meth == 0:
+        ax[0].set_title("Image")
+
+    # show scale bar -----------------------------------------------------------
+    if i_meth == 0:
+        img_shape = img.shape
+        tp = 0.05
+        dict_scale_bar = {
+            "pixel_size": pixel_size,
+            "bar_length": 5,  # um
+            "bar_height": 0.01,
+            "bar_color": "white",
+            "pos": (int(img_shape[1] * tp), int(img_shape[0] * (1 - tp))),
+        }
+        add_scale_bar(ax[0], image=img, **dict_scale_bar)
+
+    # show filaments -----------------------------------------------------------
+    all_sorted_filament = res[1]
+    R = res[2][0, 0].astype(np.int32)
+
+    num_filaments = all_sorted_filament.shape[2]
+    # plot each filament
+    for i_filament in range(num_filaments):
+        x = all_sorted_filament[:, 0, i_filament]
+        y = all_sorted_filament[:, 1, i_filament]
+        x = x[x != 0]
+        y = y[y != 0]
+        colr = tuple(ColorList[i_filament % num_colors])
+        ax[1].plot(y - R, x - R, color=colr, **dict_filament)
+        ax[2].plot(y - R, x - R, **dict_overlap)
+    ax[1].invert_yaxis()
+    ax[1].set_xticks([])
+    ax[1].set_yticks([])
+    ax[1].set_xlim([0, img.shape[1]])
+    ax[1].set_ylim([img.shape[0], 0])
+    ax[1].set_facecolor("black")
+    ax[1].set_box_aspect(1)
+    if i_meth == 0:
+        ax[1].set_title("Filaments")
+
+    # show junctions -----------------------------------------------------------
+    NewCrPts = res[3]
+    # get all the cooridinates of points == 1 in overlap_map
+
+    ax[2].plot(NewCrPts[:, 1] - R, NewCrPts[:, 0] - R, **dict_junction)
+    ax[2].invert_yaxis()
+    ax[2].set_xticks([])
+    ax[2].set_yticks([])
+    ax[2].set_xlim([0, img.shape[1]])
+    ax[2].set_ylim([img.shape[0], 0])
+    ax[2].set_facecolor("#C23637")
+    ax[2].set_box_aspect(1)
+    if i_meth == 0:
+        ax[2].set_title("Junctions")
+
+    # show filament length distribution ----------------------------------------
+    analysis_info = res[4]
+    # get the total length of each filament
+    total_length = analysis_info[:, 1]
+
+    # plot
+    xlim_h = (max_length // 100 + 1) * 100
+    freq, bins, _ = ax[3].hist(total_length, bins=25, range=(0, xlim_h), **dict_hist)
+    ax[3].set_xlabel("Filament length (um)")
+    ax[3].set_ylabel("Number of filaments")
+    ax[3].set_xlim([0, xlim_h])
+    ax[3].set_ylim([0, 100])
+    ax[3].set_box_aspect(1)
+    if i_meth == 0:
+        ax[3].set_title("Filament length distribution")
+
+    # add a fitted polynomial curve of the histogram
+    x = bins[:-1] + np.diff(bins) / 2
+    y = freq
+    fit = np.polyfit(x, y, 6)
+    fitted_curve = np.polyval(fit, x)
+    ax[3].plot(x, fitted_curve, **dict_fit_line)
 
 
 fig.savefig(os.path.join(path_figure, f"{filename_analysis}.png"))

@@ -16,8 +16,8 @@ disp('### Parameter setting ...')
 % imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\rcan3d-c2s-mt-sr\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\29_0.tif";
 
 % imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\47.tif";
-% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_9_up2\47.tif";
-imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-9\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\47.tif";
+imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_3_up2\47.tif";
+% imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-3\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\47.tif";
 maskpath = "";
 
 disp('### Done.')
