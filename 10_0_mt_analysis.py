@@ -24,10 +24,12 @@ from scipy.io import loadmat
 
 # set font in svg
 plt.rcParams["svg.fonttype"] = "none"
-
+# ------------------------------------------------------------------------------
 method_id = "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"
 dataset_name = "biosr-mt-sr-9"
-id_img = 6
+#
+img_info = (6, (387, 480, 150), (810, 206, 150))
+id_img, box_1, box_2 = img_info
 
 normalizer = lambda image: normalization(image, p_low=0.03, p_high=0.995)
 dict_clip = {"a_min": 0.0, "a_max": 2.5}
@@ -42,10 +44,12 @@ path_hr = win2linux(info["path_hr"])
 path_txt = win2linux(info["path_index"])
 pixel_size = float(info["target pixel size"].split("x")[0]) / 1000  # um
 filenames = read_txt(path_txt)
+filename = filenames[id_img]
 
 path_predict = os.path.join("results", "predictions", dataset_name, method_id)
-
-path_figure = os.path.join("results", "figures", "images", dataset_name)
+path_figure = os.path.join(
+    "results", "figures", "images", dataset_name, filename.split(".")[0]
+)
 os.makedirs(path_figure, exist_ok=True)
 
 
@@ -55,7 +59,6 @@ print(f"[INFO] Pixel size: {pixel_size} um")
 
 # ------------------------------------------------------------------------------
 # load images
-filename = filenames[id_img]
 filename_analysis = os.path.splitext(filename)[0] + "_analysis"
 
 paths = [path_lr, path_hr, path_predict]
@@ -112,7 +115,7 @@ for res in results:
 
 # ------------------------------------------------------------------------------
 # show images
-nr, nc = 3, 4
+nr, nc = 3, 3
 dict_fig = dict(dpi=600, constrained_layout=True)
 num_colors = 32
 ColorList = np.random.rand(num_colors, 3)
@@ -127,12 +130,16 @@ dict_junction = dict(
 )
 dict_hist = dict(facecolor="none", edgecolor="black", linewidth=1)
 dict_fit_line = dict(color="#C23637", linewidth=1)
+dict_rect = dict(facecolor="none", edgecolor="white", linewidth=1, linestyle="-")
 
 
 fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), **dict_fig)
+fig_len, axes_len = plt.subplots(nrows=nr, ncols=1, figsize=(3, nr * 3), **dict_fig)
+
 for i_meth in range(nr):
     res = results[i_meth]
     ax = axes[i_meth]
+    ax_len = axes_len[i_meth]
 
     # show image ---------------------------------------------------------------
     img = res[0]
@@ -147,10 +154,8 @@ for i_meth in range(nr):
         va="top",
         transform=ax[0].transAxes,
         color="white",
-        fontsize=16,
+        fontsize=14,
     )
-    if i_meth == 0:
-        ax[0].set_title("Image")
 
     # show scale bar -----------------------------------------------------------
     if i_meth == 0:
@@ -186,8 +191,6 @@ for i_meth in range(nr):
     ax[1].set_ylim([img.shape[0], 0])
     ax[1].set_facecolor("black")
     ax[1].set_box_aspect(1)
-    if i_meth == 0:
-        ax[1].set_title("Filaments")
 
     # show junctions -----------------------------------------------------------
     NewCrPts = res[3]
@@ -201,8 +204,20 @@ for i_meth in range(nr):
     ax[2].set_ylim([img.shape[0], 0])
     ax[2].set_facecolor("#C23637")
     ax[2].set_box_aspect(1)
+
+    # add titles ---------------------------------------------------------------
     if i_meth == 0:
-        ax[2].set_title("Junctions")
+        for i_txt, txt in enumerate(["Image", "Filaments", "Junctions"]):
+            ax[i_txt].text(
+                0.95,
+                0.95,
+                txt,
+                ha="right",
+                va="top",
+                transform=ax[i_txt].transAxes,
+                color="white",
+                fontsize=14,
+            )
 
     # show filament length distribution ----------------------------------------
     analysis_info = res[4]
@@ -211,22 +226,33 @@ for i_meth in range(nr):
 
     # plot
     xlim_h = (max_length // 100 + 1) * 100
-    freq, bins, _ = ax[3].hist(total_length, bins=25, range=(0, xlim_h), **dict_hist)
-    ax[3].set_xlabel("Filament length (um)")
-    ax[3].set_ylabel("Number of filaments")
-    ax[3].set_xlim([0, xlim_h])
-    ax[3].set_ylim([0, 100])
-    ax[3].set_box_aspect(1)
-    if i_meth == 0:
-        ax[3].set_title("Filament length distribution")
+    freq, bins, _ = ax_len.hist(
+        total_length, bins=25, range=(0, xlim_h), cumulative=True, **dict_hist
+    )
+    if i_meth == nr - 1:
+        ax_len.set_xlabel("Filament length (nm)")
+    # ax_len.set_ylabel("Frequency")
+    ax_len.set_xlim([0, xlim_h])
+    ax_len.set_yticks([0, 100, 200, 300, 400])
+    ax_len.set_ylim([0, 400])
+    ax_len.set_box_aspect(1)
 
     # add a fitted polynomial curve of the histogram
     x = bins[:-1] + np.diff(bins) / 2
     y = freq
     fit = np.polyfit(x, y, 6)
     fitted_curve = np.polyval(fit, x)
-    ax[3].plot(x, fitted_curve, **dict_fit_line)
+    ax_len.plot(x, fitted_curve, **dict_fit_line)
 
+# add boxes --------------------------------------------------------------------
+for ax in axes.ravel():
+    for box in [box_1, box_2]:
+        ax.add_patch(
+            plt.Rectangle((box[0], box[1]), box[2], box[2], fill=False, **dict_rect)
+        )
 
+# save figures -----------------------------------------------------------------
 fig.savefig(os.path.join(path_figure, f"{filename_analysis}.png"))
 fig.savefig(os.path.join(path_figure, f"{filename_analysis}.svg"))
+fig_len.savefig(os.path.join(path_figure, f"{filename_analysis}_len.png"))
+fig_len.savefig(os.path.join(path_figure, f"{filename_analysis}_len.svg"))

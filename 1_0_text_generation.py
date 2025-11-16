@@ -7,14 +7,14 @@ The information is saved in the xlsx file.
 import pandas, os, tqdm
 
 # ------------------------------------------------------------------------------
-finetune = False
-# finetune = True  # generate the text for finetune datasets
+# finetune = False
+finetune = True  # generate the text for finetune datasets
 # ------------------------------------------------------------------------------
 
 path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 
-# text_type = "ALL"  # all the information
-text_type = "ALL_wot"  # all the information without the information about the target
+text_type = "ALL"  # all the information
+# text_type = "ALL_wot"  # all the information without the information about the target
 # text_type = "TSpixel"  # only task, structure, and input/output pixel size
 # text_type = "TSmicro"  # only task, structure, and input/output microscope
 # text_type = "TS"  # only task, structure

@@ -11,12 +11,12 @@ import torch, os, tqdm
 import numpy as np
 
 # ------------------------------------------------------------------------------
-finetune = False
-# finetune = True  # only process the text for the finetune datasets.
+# finetune = False
+finetune = True  # only process the text for the finetune datasets.
 # ------------------------------------------------------------------------------
 
-# text_type = ("ALL", 160)
-text_type = ("ALL_wot", 160)
+text_type = ("ALL", 160)
+# text_type = ("ALL_wot", 160)
 # text_type = ("TSpixel", 77)
 # text_type = ("TSmicro", 77)
 # text_type = ("TS", 77)

@@ -258,7 +258,7 @@ metrics_ticks = (
     np.linspace(0, 1, 10, endpoint=False),
     np.linspace(0, 1, 40, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1000, 100, endpoint=False),
+    np.linspace(0, 1000, 20, endpoint=False),
 )
 # plot the metrics -------------------------------------------------------------
 print("-" * 80)

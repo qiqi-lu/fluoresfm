@@ -57,16 +57,8 @@ params = {
     "in_channels": 1,
     "out_channels": 1,
     "channels": 320,
-    # -----------------
-    # "n_res_blocks": 1,
-    # "attention_levels": [1, 2, 3],
-    # -----------------
     "n_res_blocks": 1,
     "attention_levels": [0, 1, 2, 3],
-    # -----------------
-    # "n_res_blocks": 2,
-    # "attention_levels": [1, 2, 3],
-    # -----------------
     "channel_multipliers": [1, 2, 4, 4],
     "n_heads": 8,
     "tf_layers": 1,
@@ -130,6 +122,7 @@ params = {
         # "biotisr-lysosome-sr-2-2",
         # "biotisr-lysosome-sr-3-2",
         # "rcan3d-c2s-mt-dcv-mc",  # 16 bs, 400 epoch
+        "rcan3d-c2s-mt-dcv-mc-3d",  # 16 bs, 2100 epoch
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
         # "care-projection-flywing-0",  # 6500 epoch
@@ -177,30 +170,32 @@ params = {
     "path_text": "text\\v2",
     # "embaedding_type": "",
     # "embaedding_type": "_ALL_256",
-    # "embaedding_type": "_ALL_160",
-    "embaedding_type": "_ALL_wot_160",
+    "embaedding_type": "_ALL_160",
+    # "embaedding_type": "_ALL_wot_160",
     # "embaedding_type": "_TSpixel_77",
     # "embaedding_type": "_TSmicro_77",
     # "embaedding_type": "_TS_77",
     # "embaedding_type": "_T_77",
     # checkpoints --------------------------------------------------------------
     # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-crossx",
-    # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
-    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-wot",
+    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-wot",
     # "suffix": "_all_newnorm_ALL-v2-res1-att0123-T77",
     "path_checkpoints": "checkpoints\conditional",
     "save_every_iter": 5000,
     "plot_every_iter": 100,
     "print_loss": False,
     # saved model --------------------------------------------------------------
-    "finetune": False,
-    "saved_checkpoint": None,
-    # "finetune": True,
+    # use when training from scrach --------------------------------------------
+    # "finetune": False,
+    # "saved_checkpoint": None,
+    # use when finetuning ------------------------------------------------------
+    "finetune": True,
     "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
     # "finetune-strategy": "in", # finetune the input part convolutional layers
     # "finetune-strategy": "out",# finetune the output part convolutional layers
     # "finetune-strategy": "all",  # finetune the output part convolutional layers
-    # "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
+    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
 }
 
 # ------------------------------------------------------------------------------
@@ -224,9 +219,10 @@ if params["finetune"] == True:
             "plot_every_iter": 100,
             "frac_val": 0.05,
             # "lr": 0.00001,
-            "lr": 0.0001,
-            # "lr": 0.001,
+            # "lr": 0.0001,
+            "lr": 0.001,
             # "num_epochs": 2000,
+            "num_epochs": 2100,
             # "num_epochs": 1000,
             # "num_epochs": 1500,
             # "num_epochs": 6500,
@@ -234,7 +230,7 @@ if params["finetune"] == True:
             # "num_epochs": 600,
             # "num_epochs": 200,
             # "num_epochs": 175,
-            "num_epochs": 50,
+            # "num_epochs": 50,
             "lr_decay_every_iter": 10000,
             "validate_every_iter": 500,
             "use_clean_data": False,
@@ -368,11 +364,11 @@ img_lr_shape = dataset_train[0]["lr"].shape
 img_hr_shape = dataset_train[0]["hr"].shape
 text_shape = dataset_train[0]["text"].shape
 
-print(f"- Num of Batches (train| valid): {num_batches_train}|{num_batch_val}")
+print(f"[INFO] Num of Batches (train| valid): {num_batches_train}|{num_batch_val}")
 print(
-    f"- Input shape: ({img_lr_shape}, {text_shape})",
+    f"[INFO] Input shape: ({img_lr_shape}, {text_shape})",
 )
-print(f"- GT shape: {img_hr_shape}")
+print(f"[INFO] GT shape: {img_hr_shape}")
 
 # ------------------------------------------------------------------------------
 # save parameters
@@ -424,7 +420,7 @@ torch.set_float32_matmul_precision("high")
 # ------------------------------------------------------------------------------
 # pre-trained model parameters
 if params["saved_checkpoint"] is not None:
-    print("- Load saved pre-trained model parameters:", params["saved_checkpoint"])
+    print("[INFO] Load saved pre-trained model parameters:", params["saved_checkpoint"])
     state_dict = torch.load(
         params["saved_checkpoint"], map_location=device, weights_only=True
     )["model_state_dict"]
@@ -446,6 +442,23 @@ if params["saved_checkpoint"] is not None:
             )
             / params["in_channels"]
         )
+    if params["out_channels"] > 1:
+        if params["complie"]:
+            name_layer = "_orig_mod.out.2.weight"
+            name_layer_bias = "_orig_mod.out.2.bias"
+        else:
+            name_layer = "out.2.weight"
+            name_layer_bias = "out.2.bias"
+        state_dict[name_layer] = (
+            torch.repeat_interleave(
+                state_dict[name_layer], params["out_channels"], dim=0
+            )
+            / params["out_channels"]
+        )
+        state_dict[name_layer_bias] = torch.repeat_interleave(
+            state_dict[name_layer_bias], params["out_channels"], dim=0
+        )
+
     # --------------------------------------------------------------------------
     model.load_state_dict(state_dict, strict=not params["finetune"])
     start_iter = params["saved_checkpoint"].split(".")[-2].split("_")[-1]
@@ -458,15 +471,15 @@ if params["finetune"] == True:
     start_iter = 0
     model_parameters = model.finetune(strategy=params["finetune-strategy"])
     # print the name of parameters that are not frozen
-    print(f"- Finetune model parameters:")
+    print(f"[INFO] Finetune model parameters:")
     for name, param in model_parameters:
-        print(f"  - ({name, param.shape})")
+        print(f"- ({name, param.shape})")
 else:
     model_parameters = model.named_parameters()
 
-print("Number of trainable parameters:")
+print("[INFO] Number of trainable parameters:")
 model_parameters = list(model_parameters)  # 20250728
-print(sum(p[1].numel() for p in model_parameters if p[1].requires_grad))
+print(f"[INFO] {sum(p[1].numel() for p in model_parameters if p[1].requires_grad)}")
 
 # ------------------------------------------------------------------------------
 # optimization
@@ -488,8 +501,10 @@ LR_schedule.init(start_iter)
 # ------------------------------------------------------------------------------
 # trains
 # ------------------------------------------------------------------------------
-print(f"Batch size: {params['batch_size']} | Num of Batches: {num_batches_train}")
-print(f"save model to {path_save_model}")
+print(
+    f"[INFO] Batch size: {params['batch_size']} | Num of Batches: {num_batches_train}"
+)
+print(f"[INFO] save model to {path_save_model}")
 
 scaler = torch.GradScaler("cuda", enabled=params["enable_gradscaler"])
 # create zero time embedding
@@ -500,7 +515,7 @@ try:
     for i_epoch in range(params["num_epochs"]):
         pbar = tqdm.tqdm(
             total=num_batches_train,
-            desc=f"Epoch {i_epoch + 1}|{params['num_epochs']}",
+            desc=f"[INFO] Epoch {i_epoch + 1}|{params['num_epochs']}",
             leave=True,
             ncols=100,
         )
@@ -591,7 +606,9 @@ try:
             if (i_iter % params["validate_every_iter"] == 0) and (
                 params["enable_validation"] == True
             ):
-                pbar_val = tqdm.tqdm(desc="VALIDATION", total=num_batch_val, ncols=100)
+                pbar_val = tqdm.tqdm(
+                    desc="[INFO] VALIDATION", total=num_batch_val, ncols=100
+                )
                 model.eval()  # convert model to evaluation model
 
                 # --------------------------------------------------------------
@@ -655,7 +672,7 @@ try:
     # --------------------------------------------------------------------------
     # save and finish
     # --------------------------------------------------------------------------
-    print(f"\nsave model (epoch: {i_epoch}, iter: {i_iter})")
+    print(f"\n[INFO] save model (epoch: {i_epoch}, iter: {i_iter})")
 
     # saving general checkpoint
     model_dict = {"model_state_dict": getattr(model, "_orig_mod", model).state_dict()}
@@ -666,11 +683,11 @@ try:
 
     log_writer.flush()
     log_writer.close()
-    print("Training done.")
+    print("[INFO] Training done.")
 
 except KeyboardInterrupt:
-    print("\nTraining stop, saving model ...")
-    print(f"\nSave model (epoch: {i_epoch}, iter: {i_iter})")
+    print("\n[INFO] Training stop, saving model ...")
+    print(f"\n[INFO] Save model (epoch: {i_epoch}, iter: {i_iter})")
 
     # saving general checkpoint
     model_dict = {"model_state_dict": getattr(model, "_orig_mod", model).state_dict()}
@@ -682,4 +699,4 @@ except KeyboardInterrupt:
     pbar.close()
     log_writer.flush()
     log_writer.close()
-    print("Training done.")
+    print("[INFO] Training done.")
