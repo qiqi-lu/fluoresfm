@@ -21,11 +21,6 @@ fig_direction = "horizontal"  # [1 x methods]
 dataset_show = ("care-drosophila-iso", 3, GREEN, ((95, 150), (485, 1190)), 190)
 
 methods_show = (
-    # (
-    #     "FluoResFM (dn)",
-    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-1",
-    #     "#B271AB",
-    # ),
     (
         "FluoResFM",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-iso-drosophila-3d",
@@ -128,6 +123,10 @@ else:
 
 fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 [ax.set_axis_off() for ax in axes.ravel()]
+fig_fft, axes_fft = plt.subplots(
+    nr, nc, figsize=(nc * 3, nr * 3), **dict_fig
+)  # for fft
+[ax.set_axis_off() for ax in axes_fft.ravel()]
 
 fig_line, axes_line = plt.subplots(1, 1, figsize=(nc * 3, nr * 3), **dict_fig)
 
@@ -143,6 +142,23 @@ for i_method in range(num_methods_show + 1):
     img_color = colorize(img, **dict_colorize)
 
     ax.imshow(img_color)
+    # show fft of image (no color) ---------------------------------------------
+    # pad the image to a square shape
+    img_shape = img.shape
+    if img_shape[0] > img_shape[1]:
+        pad = (img_shape[0] - img_shape[1]) // 2
+        img_square = np.pad(img, ((0, 0), (pad, pad)), mode="constant")
+    elif img_shape[0] < img_shape[1]:
+        pad = (img_shape[1] - img_shape[0]) // 2
+        img_square = np.pad(img, ((pad, pad), (0, 0)), mode="constant")
+    else:
+        pass
+    ax_fft = axes_fft[i_method]
+    img_fft = np.fft.fftshift(np.fft.fft2(img_square))
+    img_fft = np.log(np.abs(img_fft) + 1)
+    # img_fft = np.abs(img_fft)
+    img_fft = img_fft / np.max(img_fft)
+    ax_fft.imshow(img_fft, cmap="hot")
 
     img_shape = img.shape
     # add text -----------------------------------------------------------------
@@ -187,3 +203,5 @@ fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
 fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
 fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.svg"))
 fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.png"))
+fig_fft.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_fft.svg"))
+fig_fft.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_fft.png"))

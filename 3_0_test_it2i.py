@@ -131,6 +131,7 @@ checkpoints = (
     #     ("TSpixel", 77),
     # ],
     # ----------------------------- other models -------------------------------
+    # this model has a different architecture.
     # [
     #     "_all_newnorm-ALL-v2-160-s123-bs16",
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att123\epoch_1_iter_775000.pt",
@@ -148,10 +149,16 @@ checkpoints = (
     #     ("ALL", 160),
     # ],
     # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-0.001",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc/epoch_395_iter_34000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-sirdna-dcv-mc",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-sirdna-dcv-mc/epoch_399_iter_97600.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-1",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-projection-flywing-1/epoch_6499_iter_32500.pt",
@@ -172,11 +179,13 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-denoising-flywing-1/epoch_6499_iter_32500.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-iso-drosophila-3d",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-care-iso-drosophila-3d/epoch_49_iter_35000.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-128",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-128/epoch_344_iter_30000.pt",
@@ -207,11 +216,18 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-1-64/epoch_170_iter_30000.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biosr-factinnl-sr3-9/epoch_999_iter_32000.pt",
     #     ("ALL", 160),
     # ],
+    [
+        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9-0.001",
+        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-biosr-factinnl-sr3-9/epoch_999_iter_32000.pt",
+        ("ALL", 160),
+    ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs8-ft-inout-dl-smlm-microtubule-128",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-dl-smlm-microtubule-128/epoch_1499_iter_40500.pt",
@@ -227,6 +243,7 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-dl-smlm-microtubule-64/epoch_599_iter_32400.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs8-ft-inout-synprot-channe-0-128-reg",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_8_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-128-reg/epoch_399_iter_32000.pt",
@@ -237,21 +254,21 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
     #     ("ALL", 160),
     # ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-1e05",
-        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
-        ("ALL", 160),
-    ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.001",
-        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
-        ("ALL", 160),
-    ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.0001",
-        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
-        ("ALL", 160),
-    ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-1e05",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.001",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
+    #     ("ALL", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-synprot-channe-0-64-reg-0.0001",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-synprot-channe-0-64-reg/epoch_196_iter_32000.pt",
+    #     ("ALL", 160),
+    # ],
 )
 
 params = {
@@ -764,17 +781,11 @@ params = {
         # "synprot-channe-1",
         # "synprot-channe-0-granule",
         # "synprot-channe-1-granule",
-        # "biosr-factinnl-sr3-1",
-        # "biosr-factinnl-sr3-2",
         # "biosr-factinnl-sr3-3",
-        # "biosr-factinnl-sr3-4",
-        # "biosr-factinnl-sr3-5",
         # "biosr-factinnl-sr3-6",
-        # "biosr-factinnl-sr3-7",
-        # "biosr-factinnl-sr3-8",
-        # "biosr-factinnl-sr3-9",
+        "biosr-factinnl-sr3-9",
         # "dl-smlm-microtubule",
-        "synprot-channe-0-reg",
+        # "synprot-channe-0-reg",
         # "synprot-channe-1-reg",
     ],
     "num_sample": 8,

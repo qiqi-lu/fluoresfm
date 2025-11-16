@@ -11,11 +11,11 @@ from skimage import io
 
 from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis, FRC
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
-GREEN, BlUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
+GREEN, BLUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
 # fig_direction = "vertical"  # [methods x 1]
 fig_direction = "horizontal"  # [1 x methods]
 
@@ -24,25 +24,15 @@ fig_direction = "horizontal"  # [1 x methods]
 dataset_show = ("dl-smlm-microtubule", 1, GREEN, (598, 1508, 194))
 
 methods_show = (
-    # (
-    #     "FluoResFM-64",
-    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-dl-smlm-microtubule-64",
-    #     "#4D8FCB",
-    # ),
     (
-        "FluoResFM-64-0.001",
+        "FluoResFM-64",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-dl-smlm-microtubule-64-0.001",
         "#004586",
     ),
-    # (
-    #     "FluoResFM-128",
-    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8-ft-inout-dl-smlm-microtubule-128",
-    #     "#004586",
-    # ),
 )
 
 dataset_id, id_sample, dataset_color, patch_pos = dataset_show
-methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
+methods_colors = ["#8E99AB"] + [m[2] for m in methods_show] + ["#002752"]
 methods_name = ["WF"] + [m[0] for m in methods_show] + ["STORM"]
 num_methods_show = len(methods_show)
 num_sample_show = 8
@@ -61,6 +51,7 @@ path_lr = win2linux(info["path_lr"])
 path_hr = win2linux(info["path_hr"])
 path_index = win2linux(info["path_index"])
 
+pixel_size_xy_input = float(info["input pixel size"].split("x")[0]) / 1000.0
 pixel_size_xy = float(info["target pixel size"].split("x")[0]) / 1000.0
 
 sf_hr = int(info["sf_hr"])
@@ -74,6 +65,9 @@ print(f"[INFO] Dataset:   {dataset_id}")
 print(f"[INFO] Path text: {path_index}")
 print(f"[INFO] Path LR:   {path_lr}")
 print(f"[INFO] Path HR:   {path_hr}")
+print(
+    f"[INFO] Pixel size (xy) (input): {pixel_size_xy_input} x {pixel_size_xy_input} um"
+)
 print(f"[INFO] Pixel size (xy): {pixel_size_xy} x {pixel_size_xy} um")
 
 # preprocessing settings -------------------------------------------------------
@@ -227,8 +221,8 @@ print("-" * 80)
 pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
 
 metric_values = []
+res_gt = []
 for i_sample in range(num_samples):
-    pbar.update(1)
     imgs_one = imgs[i_sample]
     img_gt = imgs_one[-1]
     metric_methods = []
@@ -240,16 +234,31 @@ for i_sample in range(num_samples):
         psnr = PSNR(data_range=data_range, **dict_img)
         msssim = MSSSIM(data_range=data_range, **dict_img)
         zncc = ZNCC(**dict_img)
-        metric_methods.append([psnr, msssim, zncc])
+        rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
+        if i_method == 0:
+            pxs = pixel_size_xy_input
+            img_pred = interp_sf(img_pred[None], sf=-8)[0]
+        else:
+            pxs = pixel_size_xy
+        res_da, curve_da = decorrelation_analysis(img_pred, pixel_size=pxs * 1000.0)
+        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
+    res_da_gt, curve_da_gt = decorrelation_analysis(
+        img_gt, pixel_size=pixel_size_xy * 1000.0
+    )
+    res_gt.append(res_da_gt)
     metric_values.append(metric_methods)
+    pbar.update(1)
 pbar.close()
 
 metric_values = np.array(metric_values)
-metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution"]
 metrics_ticks = (
     np.linspace(0, 40, 20, endpoint=False),
-    np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 40, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1000, 100, endpoint=False),
 )
 # plot the metrics -------------------------------------------------------------
 print("-" * 80)
@@ -277,6 +286,21 @@ for i_method in range(num_methods_show + 1):
         )
 print(df_metrics)
 
+# append the ground truth resolution to the dataframe
+df_metrics = pandas.concat(
+    [
+        df_metrics,
+        pandas.DataFrame(
+            {
+                "Method": ["STORM"] * len(res_gt),
+                "Metric": ["Resolution"] * len(res_gt),
+                "Value": res_gt,
+            }
+        ),
+    ],
+    ignore_index=True,
+)
+
 nr, nc = 1, len(metrics_name)
 fig, axes = plt.subplots(nr, nc, figsize=(3 * nc, 3 * nr), **dict_fig)
 
@@ -292,6 +316,12 @@ for i_metric in range(len(metrics_name)):
         ticks = np.round(ticks, 2)
     elif metric == "ZNCC":
         ticks = np.round(ticks, 2)
+    elif metric == "RSE":
+        ticks = np.round(ticks, 2)
+    elif metric == "RSP":
+        ticks = np.round(ticks, 2)
+    elif metric == "Resolution":
+        ticks = np.round(ticks, 0)
 
     ax.set_yticks(ticks)
     ax.set_yticklabels(ticks, fontsize=10)
@@ -333,15 +363,26 @@ for i_metric in range(len(metrics_name)):
     ax.set_xticklabels([])
 
     # add legend
-    legend = ax.legend(
-        methods_name[:-1],
-        loc="lower right",
-        labelcolor=methods_colors,
-        fontsize=8,
-        frameon=False,
-    )
-    for i, handle in enumerate(legend.legend_handles):
-        handle.set_color(methods_colors[i])
+    if i_metric == 0:
+        legend = ax.legend(
+            methods_name[:-1],
+            loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
+    if metric == "Resolution":
+        legend = ax.legend(
+            methods_name,
+            loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
 
 
 # save the figure

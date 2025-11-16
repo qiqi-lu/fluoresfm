@@ -11,7 +11,8 @@ from skimage import io
 
 from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis, FRC
+import multiprocessing
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
@@ -24,20 +25,15 @@ fig_direction = "horizontal"  # [1 x methods]
 dataset_show = ("biosr-factinnl-sr3-9", 0, GREEN, (938, 870, 215))
 
 methods_show = (
-    # (
-    #     "FluoResFM (dn)",
-    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-1",
-    #     "#42B4B5",
-    # ),
     (
         "FluoResFM",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9",
+        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-biosr-factinnl-sr3-9-0.001",
         "#005D6E",
     ),
 )
 
 dataset_id, id_sample, dataset_color, patch_pos = dataset_show
-methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
+methods_colors = ["#8E99AB"] + [m[2] for m in methods_show] + ["#003245"]
 methods_name = ["WF"] + [m[0] for m in methods_show] + ["SIM"]
 num_methods_show = len(methods_show)
 num_sample_show = 8
@@ -56,6 +52,7 @@ path_lr = win2linux(info["path_lr"])
 path_hr = win2linux(info["path_hr"])
 path_index = win2linux(info["path_index"])
 
+pixel_size_xy_input = float(info["input pixel size"].split("x")[0]) / 1000.0
 pixel_size_xy = float(info["target pixel size"].split("x")[0]) / 1000.0
 
 sf_hr = int(info["sf_hr"])
@@ -221,11 +218,15 @@ print("-" * 80)
 pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
 
 metric_values = []
+res_gt = []
+
 for i_sample in range(num_samples):
     pbar.update(1)
     imgs_one = imgs[i_sample]
     img_gt = imgs_one[-1]
+
     metric_methods = []
+
     for i_method in range(num_methods_show + 1):
         img_pred = imgs_one[i_method]
         dict_img = dict(img_true=img_gt, img_test=img_pred)
@@ -234,16 +235,31 @@ for i_sample in range(num_samples):
         psnr = PSNR(data_range=data_range, **dict_img)
         msssim = MSSSIM(data_range=data_range, **dict_img)
         zncc = ZNCC(**dict_img)
-        metric_methods.append([psnr, msssim, zncc])
+        rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
+        if i_method == 0:
+            pxs = pixel_size_xy_input
+            img_pred = interp_sf(img_pred[None], sf=-sf_lr)[0]
+        else:
+            pxs = pixel_size_xy
+        res_da, curve_da = decorrelation_analysis(img_pred, pixel_size=pxs * 1000.0)
+        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
+    # calculate the resolution of the ground truth image
+    res_da_gt, curve_da_gt = decorrelation_analysis(
+        img_gt, pixel_size=pixel_size_xy * 1000.0
+    )
+    res_gt.append(res_da_gt)
     metric_values.append(metric_methods)
 pbar.close()
 
 metric_values = np.array(metric_values)
-metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution"]
 metrics_ticks = (
     np.linspace(0, 40, 20, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 40, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1000, 25, endpoint=False),
 )
 # plot the metrics -------------------------------------------------------------
 print("-" * 80)
@@ -269,6 +285,21 @@ for i_method in range(num_methods_show + 1):
             ],
             ignore_index=True,
         )
+
+# append the resolution of the ground truth image into the dataframe
+df_metrics = pandas.concat(
+    [
+        df_metrics,
+        pandas.DataFrame(
+            {
+                "Method": ["SIM"] * len(res_gt),
+                "Metric": ["Resolution"] * len(res_gt),
+                "Value": res_gt,
+            }
+        ),
+    ],
+    ignore_index=True,
+)
 print(df_metrics)
 
 nr, nc = 1, len(metrics_name)
@@ -286,6 +317,12 @@ for i_metric in range(len(metrics_name)):
         ticks = np.round(ticks, 2)
     elif metric == "ZNCC":
         ticks = np.round(ticks, 2)
+    elif metric == "RSE":
+        ticks = np.round(ticks, 2)
+    elif metric == "RSP":
+        ticks = np.round(ticks, 2)
+    elif metric == "Resolution":
+        ticks = np.round(ticks, 0)
 
     ax.set_yticks(ticks)
     ax.set_yticklabels(ticks, fontsize=10)
@@ -297,7 +334,7 @@ for i_metric in range(len(metrics_name)):
         y="Value",
         ax=ax,
         hue="Method",
-        palette=methods_colors,
+        palette=methods_colors[:-1],
         showfliers=False,
         fill=False,
         legend="auto",
@@ -312,7 +349,7 @@ for i_metric in range(len(metrics_name)):
         ax=ax,
         jitter=True,
         size=4,
-        palette=methods_colors,
+        palette=methods_colors[:-1],
     )
 
     # del the xlabel
@@ -326,16 +363,27 @@ for i_metric in range(len(metrics_name)):
     ax.set_xticks([])
     ax.set_xticklabels([])
 
-    # add legend
-    legend = ax.legend(
-        methods_name[:-1],
-        loc="lower right",
-        labelcolor=methods_colors,
-        fontsize=8,
-        frameon=False,
-    )
-    for i, handle in enumerate(legend.legend_handles):
-        handle.set_color(methods_colors[i])
+    # add legend ---------------------------------------------------------------
+    if i_metric == 0:
+        legend = ax.legend(
+            methods_name[:-1],
+            loc="lower right",
+            labelcolor=methods_colors[:-1],
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
+    if metric == "Resolution":
+        legend = ax.legend(
+            methods_name,
+            loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
 
 
 # save the figure

@@ -22,15 +22,16 @@ fig_direction = "vertical"  # [methods x 1]
 # datsets and methods to show --------------------------------------------------
 #               dataset name, id sample, color
 dataset_show = ("care-projection-flywing-1", 2, GREEN)
+# (0) low, (1) middle, (3) high SNR, (2) GT
 
 methods_show = (
     (
-        "FluoResFM (dn)",
+        "FluoResFM (dn)",  # maximum projection + denoising (network)
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-denoising-flywing-1",
         "#B271AB",
     ),
     (
-        "FluoResFM (proj)",
+        "FluoResFM (proj)",  # direct projection (network)
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-care-projection-flywing-1",
         "#6E2769",
     ),
@@ -123,15 +124,14 @@ for i_sample in range(num_samples):
 # ------------------------------------------------------------------------------
 # quantitative evaluation
 # ------------------------------------------------------------------------------
-metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Res (DA)", "Res (FRC)"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution"]
 metrics_ticks = (
-    np.linspace(0, 40, 40, endpoint=False),
+    np.linspace(0, 40, 20, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(600, 700, 10, endpoint=False),
-    np.linspace(450, 550, 10, endpoint=False),
+    np.linspace(0, 1, 40, endpoint=False),
+    np.linspace(0, 1, 40, endpoint=False),
+    np.linspace(600, 700, 5, endpoint=False),
 )
 
 # calculate the metrics of each sample
@@ -163,14 +163,7 @@ for i_sample in range(num_samples):
         res_da, curve_da = decorrelation_analysis(
             img_pred, pixel_size=pixel_size_xy * 1000.0
         )
-        res_frc = FRC(
-            image1=img_pred,
-            image2=None,
-            pixel_size=pixel_size_xy,
-            splitting_method="checkerboard",
-        )
-
-        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da, res_frc])
+        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
         errormaps_method.append(emap)
         da_curve_methods.append(curve_da)
 
@@ -305,6 +298,8 @@ for i_metric in range(len(metrics_name)):
         ticks = np.round(ticks, 2)
     elif metric == "RSP":
         ticks = np.round(ticks, 2)
+    elif metric == "Resolution":
+        ticks = np.round(ticks, 0)
 
     ax.set_yticks(ticks)
     ax.set_yticklabels(ticks, fontsize=10)
@@ -345,16 +340,18 @@ for i_metric in range(len(metrics_name)):
     ax.set_xticks([])
     ax.set_xticklabels([])
 
-    # add legend
-    legend = ax.legend(
-        methods_name[:-1],
-        loc="lower right",
-        labelcolor=methods_colors,
-        fontsize=8,
-        frameon=False,
-    )
-    for i, handle in enumerate(legend.legend_handles):
-        handle.set_color(methods_colors[i])
+    if i_metric == 0:
+        # add legend
+        legend = ax.legend(
+            methods_name[:-1],
+            loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
+            handle.set_linewidth(1)
 
 
 # save the figure

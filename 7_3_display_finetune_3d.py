@@ -11,7 +11,7 @@ from skimage import io
 
 from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
@@ -33,6 +33,12 @@ methods_show = (
     (
         "FluoResFM-M2O",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
+        # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
+        "#B21F2B",
+    ),
+    (
+        "FluoResFM-M2O-0.001",
+        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-0.001",
         # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
         "#B21F2B",
     ),
@@ -224,17 +230,36 @@ for i_sample in range(num_samples):
         psnr = PSNR(data_range=data_range, **dict_img)
         msssim = MSSSIM(data_range=data_range, **dict_img)
         zncc = ZNCC(**dict_img)
-        metric_methods.append([psnr, msssim, zncc])
+        rses, rsps, emaps, res_das = [], [], [], []
+        for i_slice in range(img_pred.shape[0]):
+            img_pred_slice = img_pred[i_slice]
+            img_gt_slice = img_gt[i_slice]
+            rse, rsp, emap = SQUIRREL(img=img_pred_slice, img_ref=img_gt_slice)
+            rses.append(rse)
+            rsps.append(rsp)
+            # emaps.append(emap)
+            res_da, curve_da = decorrelation_analysis(
+                img_pred_slice, pixel_size=pixel_size_xy * 1000.0
+            )
+            res_das.append(res_da)
+        rse = np.mean(rses)
+        rsp = np.mean(rsps)
+        res_da = np.mean(res_das)
+        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
     metric_values.append(metric_methods)
 pbar.close()
 
 metric_values = np.array(metric_values)
 
-metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution"]
 metrics_ticks = (
     np.linspace(0, 40, 40, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(0, 1, 10, endpoint=False),
+    np.linspace(600, 700, 10, endpoint=False),
+    # np.linspace(450, 550, 10, endpoint=False),
 )
 
 # plot the metrics -------------------------------------------------------------
