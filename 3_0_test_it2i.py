@@ -1081,6 +1081,11 @@ for checkpoint in checkpoints:
                     "[INFO] Projection task, using all slice as input and output one slice."
                 )
                 num_slices = 1
+            elif "real3d" in TASK:
+                print(
+                    "[INFO] 3D reconstruction task, using all slice as input and output multiple slices."
+                )
+                num_slices = 1
             else:
                 if num_slices > 1 and params["in_channels"] > 1:
                     # the number fo slices should larger than half of image slices +1

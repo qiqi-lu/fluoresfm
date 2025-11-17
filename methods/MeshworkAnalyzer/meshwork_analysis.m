@@ -1,0 +1,10 @@
+%% Parameter setting
+clc
+clear
+path_img = "E:\qiqilu\datasets\BioSR\transformed\F_actin\test\channel_0\SIM\37.tif";
+
+
+%% Read image
+img = imread(path_img);
+
+%% meshwork segmentation

@@ -218,9 +218,9 @@ if params["finetune"] == True:
             "save_every_iter": 1000,
             "plot_every_iter": 100,
             "frac_val": 0.05,
-            # "lr": 0.00001,
+            "lr": 0.00001,
             # "lr": 0.0001,
-            "lr": 0.001,
+            # "lr": 0.001,
             # "num_epochs": 2000,
             "num_epochs": 2100,
             # "num_epochs": 1000,
@@ -511,19 +511,30 @@ scaler = torch.GradScaler("cuda", enabled=params["enable_gradscaler"])
 time_embed = torch.zeros(size=(params["batch_size"],)).to(device)
 time_embed_val = torch.zeros(size=(params["batch_size"],)).to(device)
 
+enable_pbar_echo = True if params["num_epochs"] > 100 else False
+enable_pbar_iter = True if params["num_epochs"] <= 100 else False
+pbar_echo = tqdm.tqdm(
+    total=params["num_epochs"],
+    desc=f"[INFO] Epoches",
+    leave=enable_pbar_echo,
+    ncols=100,
+)
+
 try:
     for i_epoch in range(params["num_epochs"]):
-        pbar = tqdm.tqdm(
+        pbar_echo.update(1)
+
+        pbar_iter = tqdm.tqdm(
             total=num_batches_train,
             desc=f"[INFO] Epoch {i_epoch + 1}|{params['num_epochs']}",
-            leave=True,
+            leave=enable_pbar_iter,
             ncols=100,
         )
 
         # ----------------------------------------------------------------------
         for i_batch, data in enumerate(dataloader_train):
             i_iter = i_batch + i_epoch * num_batches_train + start_iter
-            pbar.update(1)
+            pbar_iter.update(1)
             # skip
             # if i_iter < start_iter:
             #     continue
@@ -555,7 +566,8 @@ try:
                 print(f"- output max/min: {imgs_est.max()} {imgs_est.min()}")
                 print(f"- estimation max/min: {imgs_est.max()} {imgs_est.min()}")
                 print("-" * 50)
-                pbar.close()
+                pbar_iter.close()
+                pbar_echo.close()
                 log_writer.close()
                 exit()
 
@@ -571,7 +583,7 @@ try:
                 ssim = utils_eva.SSIM_tb(img_true=imgs_hr, img_test=imgs_est)
                 psnr = utils_eva.PSNR_tb(img_true=imgs_hr, img_test=imgs_est)
 
-                pbar.set_postfix(
+                pbar_iter.set_postfix(
                     loss=f"{loss.cpu().detach().numpy():>.4f}, PSNR: {psnr:>.4f}, SSIM: {ssim:>.4f}"
                 )
 
@@ -667,7 +679,8 @@ try:
                 pbar_val.close()
                 # convert model to train mode
                 model.train(True)
-        pbar.close()
+        pbar_iter.close()
+    pbar_echo.close()
 
     # --------------------------------------------------------------------------
     # save and finish
@@ -696,7 +709,8 @@ except KeyboardInterrupt:
         os.path.join(path_save_model, f"epoch_{i_epoch}_iter_{i_iter+1}.pt"),
     )
 
-    pbar.close()
+    pbar_iter.close()
+    pbar_echo.close()
     log_writer.flush()
     log_writer.close()
     print("[INFO] Training done.")
