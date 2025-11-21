@@ -33,13 +33,16 @@ methods_show = (
     (
         "FluoResFM-M2O",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
-        # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
         "#B21F2B",
     ),
     (
         "FluoResFM-M2O-0.001",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-0.001",
-        # "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-npc-dcv-mc",
+        "#B21F2B",
+    ),
+    (
+        "FluoResFM-M2M-0.0001",
+        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-3d-0.0001",
         "#B21F2B",
     ),
 )

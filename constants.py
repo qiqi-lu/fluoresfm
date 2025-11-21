@@ -1,0 +1,74 @@
+"""
+Save the global constants used in the project.
+"""
+
+# task, structure, and microscope metadata used for structural categorical embedding
+task_struc_micro_voc = [
+    "super-resolution with a scale factor of 2",
+    "deconvolution",
+    "denoising",
+    "super-resolution with a factor of 5 in one dimension",
+    "super-resolution with a factor of 10.2 in one dimension",
+    "super-resolution with a factor of 8 in one dimension",
+    "super-resolution with a scale factor of 3",
+    "surface projection",
+    "super-resolution with a scale factor of 4",
+    "super-resolution with a scale factor of 8",
+    "clathrin-coated pits",
+    "endoplasmic reticulum",
+    "actin filament",
+    "microtubule",
+    "Myosin-IIA",
+    "nuclei",
+    "histone",
+    "nuclear envelope",
+    "nuclei/membrane",
+    "granule",
+    "tubulin",
+    "nucleoid",
+    "MreB filament",
+    "membrane",
+    "mitochondria",
+    "lysosome",
+    "survivin",
+    "neural crest cells",
+    "chromosome",
+    "nuclear pore complex",
+    "Golgi",
+    "nuclei/actin filament/mitochondria",
+    "microspheres",
+    "cortical neuron",
+    "FtsZ",
+    "cytoplasm",
+    "nuclear",
+    "nuclear/cytoplasm",
+    "None",
+    "synaptic protein PSD95",
+    "synaptic protein Bassoon",
+    "wide-field microscope",
+    "spinning disc confocal microscope",
+    "multiphoton laser-scanning microscope",
+    "light-sheet microscope",
+    "spinning disk confocal microscope",
+    "two-photon laser-scanning microscope",
+    "confocal microscope",
+    "confocal microscope in two-photon imaging mode",
+    "instant structured illumination microscope",
+    "two-photon mesoscope",
+    "linear structured illumination microscope",
+    "non-linear structured illumination microscope",
+    "ground truth",
+    "structured illumination microscope",
+    "stimulated emission depletion microscope",
+    "stochastic optical reconstruction microscopy (STORM)",
+]
+
+
+if __name__ == "__main__":
+    print("-" * 80)
+    # print the list and index
+    for i, item in enumerate(task_struc_micro_voc):
+        print("{} - {}".format(i, item))
+    print("-" * 80)
+    # print the length of vocabulary
+    print("[INFO] Length of vocabulary: {}".format(len(task_struc_micro_voc)))
