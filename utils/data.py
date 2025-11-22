@@ -18,6 +18,26 @@ import utils.data as utils_data
 from torch.utils.data import Dataset
 
 
+class IDTokenizer(object):
+    def __init__(self, all_tokens):
+        self.all_tokens = all_tokens
+        # construct id-token pairs
+        self.token2id = {token: i for i, token in enumerate(self.all_tokens)}
+        self.id2token = {i: token for i, token in enumerate(self.all_tokens)}
+
+    def encode(self, input):
+        if isinstance(input, str):
+            return self.token2id[input]
+        elif isinstance(input, list):
+            return [self.token2id[token] for token in input]
+
+    def decode(self, input):
+        if isinstance(input, int):
+            return self.id2token[input]
+        elif isinstance(input, list):
+            return [self.id2token[id] for id in input]
+
+
 def rolling_ball_approximation(image, radius, sf=4):
     """
     Background subtraction using rolling ball algorithm.\n
@@ -1391,11 +1411,31 @@ def win2linux(win_path):
 
 
 class Dataset_iit(Dataset):
-    """output (image, image, text), (image, image, task) or (image, image)"""
+    """
+    Output (image, image, text), (image, image, task), (image, image), (image, image, token-id)
+    ### Parameters:
+    - `dim` (int): The dimension of the image.
+    - `path_index_file`: list of the path of the filename files.
+    - `path_dataset_lr`: list of the path of the low-resolution image files.
+    - `path_dataset_hr`: list of the path of the high-resolution image files.
+    - `path_dataset_text_embedding`: path of the folder of text embedding.
+    - `transform`: transformation of the image.
+    - `scale_factor_lr`: scale factor of the low-resolution image. list or int. for each dataset.
+    - `scale_factor_hr`: scale factor of the high-resolution image. list or int. for each dataset.
+    - `task`: task of the dataset. used for UniFMIR.
+    - `output_type`: output type.
+        - `"ii-text"` (default): output (image, image, text embedding).
+        - `"ii-task"`: output (image, image, task).
+        - `"ii"`: output (image, image).
+        - `"ii-id"`: output (image, image, id-token). Used for structural prompt.
+    - `use_clean_data`: whether to use the clean data. the patch with too much backgroud will be removed.
+    - `rotflip`: whether to use rotation and flip.
+    - `clip`: whether clip the value of image.
+    """
 
     def __init__(
         self,
-        dim,
+        dim: int,
         path_index_file,  # image name file
         path_dataset_lr,
         path_dataset_hr,
@@ -1433,23 +1473,25 @@ class Dataset_iit(Dataset):
 
         # collect all the path of image
         num_dataset = len(path_dataset_lr)
-        print("-" * 90)
-        print(f"- Number of datastes: {num_dataset}")
+        print("-" * 80)
+        print(f"[INFO] Number of datastes: {num_dataset}")
 
         self.path_sample_lr, self.path_sample_hr = [], []
         self.scale_factor_lr, self.scale_factor_hr = [], []
 
-        if output_type == "ii-text":
+        if output_type == "ii-text" or output_type == "ii-id":
             self.path_sample_text = []
         if output_type == "ii-task":
             self.sampel_task = []
 
-        for i in range(num_dataset):
-            sf_lr = scale_factor_lr[i]
-            sf_hr = scale_factor_hr[i]
-            path_index = path_index_file[i]
-            path_lr = path_dataset_lr[i]
-            path_hr = path_dataset_hr[i]
+        # loop over all the datasets to collect file paths of all the images
+        for i_dataset in range(num_dataset):
+            # get the scale factor information and file path information of current dataset
+            sf_lr = scale_factor_lr[i_dataset]
+            sf_hr = scale_factor_hr[i_dataset]
+            path_index = path_index_file[i_dataset]
+            path_lr = path_dataset_lr[i_dataset]
+            path_hr = path_dataset_hr[i_dataset]
 
             if os.name == "posix":
                 path_index = win2linux(path_index)
@@ -1477,31 +1519,32 @@ class Dataset_iit(Dataset):
                 # high-resolution images
                 self.path_sample_hr.append(os.path.join(path_hr, sample_name))
 
-                if output_type == "ii-text":
+                if output_type == "ii-text" or output_type == "ii-id":
                     # text of images
                     self.path_sample_text.append(
                         os.path.join(
-                            path_dataset_text_embedding, str(dataset_index[i]) + ".npy"
+                            path_dataset_text_embedding,
+                            str(dataset_index[i_dataset]) + ".npy",
                         )
                     )
                 if output_type == "ii-task":
                     # collect task of each sample
-                    if task[i] == "sr":
+                    if task[i_dataset] == "sr":
                         id_task = 1
-                    elif task[i] == "dn":
+                    elif task[i_dataset] == "dn":
                         id_task = 2
-                    elif task[i] == "iso":
+                    elif task[i_dataset] == "iso":
                         id_task = 3
-                    elif task[i] == "dcv":
+                    elif task[i_dataset] == "dcv":
                         id_task = 4
                     self.sampel_task.append(id_task)
 
             if len(path_dataset_lr) <= 3:
-                print(f"- Dataset:\n- LR: {path_lr}\n- HR: {path_hr}")
-                print(f"- Number of samples: {len(sample_names)}")
+                print(f"[INFO] Dataset:\n- LR: {path_lr}\n- HR: {path_hr}")
+                print(f"[INFO] Number of samples: {len(sample_names)}")
 
-        print(f"- total number of samples: {self.__len__()}")
-        print("-" * 90)
+        print(f"[INFO] Total number of samples: {self.__len__()}")
+        print("-" * 80)
 
         if self.rotflip:
             num_sample = self.__len__()
@@ -1554,9 +1597,12 @@ class Dataset_iit(Dataset):
         img_hr = torch.tensor(img_hr)
 
         # text
-        if self.output_type == "ii-text":
+        if self.output_type == "ii-text":  # (image, image, text embedding)
             text = np.load(self.path_sample_text[idx])
             text = torch.tensor(text, dtype=torch.float32)[0]
+        if self.output_type == "ii-id":  # (image, image, token-id)
+            text = np.load(self.path_sample_text[idx])
+            text = torch.tensor(text, dtype=torch.int64)
 
         # interpolation low-quality image when the image size of them is different
         if self.scale_factor_lr[idx] != 1:
@@ -1583,7 +1629,7 @@ class Dataset_iit(Dataset):
             img_hr = torch.clamp(img_hr, min=self.clip[0], max=self.clip[1])
 
         # output
-        if self.output_type == "ii-text":
+        if self.output_type == "ii-text" or self.output_type == "ii-id":
             return {"lr": img_lr, "hr": img_hr, "text": text}
         elif self.output_type == "ii":
             return {"lr": img_lr, "hr": img_hr}

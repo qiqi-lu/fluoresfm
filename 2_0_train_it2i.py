@@ -34,6 +34,8 @@ import utils.evaluation as utils_eva
 import utils.optim as utils_optim
 import utils.loss_functions as utils_loss
 
+from constants import task_struc_micro_voc
+
 
 # ------------------------------------------------------------------------------
 # parameters
@@ -122,7 +124,7 @@ params = {
         # "biotisr-lysosome-sr-2-2",
         # "biotisr-lysosome-sr-3-2",
         # "rcan3d-c2s-mt-dcv-mc",  # 16 bs, 400 epoch
-        "rcan3d-c2s-mt-dcv-mc-3d",  # 16 bs, 2100 epoch
+        # "rcan3d-c2s-mt-dcv-mc-3d",  # 16 bs, 2100 epoch
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
         # "care-projection-flywing-0",  # 6500 epoch
@@ -170,15 +172,17 @@ params = {
     "path_text": "text\\v2",
     # "embaedding_type": "",
     # "embaedding_type": "_ALL_256",
-    "embaedding_type": "_ALL_160",
+    # "embaedding_type": "_ALL_160",
     # "embaedding_type": "_ALL_wot_160",
     # "embaedding_type": "_TSpixel_77",
     # "embaedding_type": "_TSmicro_77",
     # "embaedding_type": "_TS_77",
     # "embaedding_type": "_T_77",
+    "embaedding_type": "_STRUCTURAL-TSMM_tokenized",
     # checkpoints --------------------------------------------------------------
     # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-crossx",
-    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123",
+    "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-structural-prompt",
     # "suffix": "_all_newnorm_ALL-v2-160-res1-att0123-wot",
     # "suffix": "_all_newnorm_ALL-v2-res1-att0123-T77",
     "path_checkpoints": "checkpoints\conditional",
@@ -187,20 +191,33 @@ params = {
     "print_loss": False,
     # saved model --------------------------------------------------------------
     # use when training from scrach --------------------------------------------
-    # "finetune": False,
-    # "saved_checkpoint": None,
+    "finetune": False,
+    "saved_checkpoint": None,
     # use when finetuning ------------------------------------------------------
-    "finetune": True,
-    "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
+    # "finetune": True,
+    # "finetune-strategy": "in-out",  # finetune the input and output part convolutional layers
     # "finetune-strategy": "in", # finetune the input part convolutional layers
     # "finetune-strategy": "out",# finetune the output part convolutional layers
     # "finetune-strategy": "all",  # finetune the output part convolutional layers
-    "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
+    # "saved_checkpoint": "checkpoints\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",  # fintune base
 }
 
 # ------------------------------------------------------------------------------
 device = torch.device(params["device"])
 torch.manual_seed(params["random_seed"])
+
+print("-" * 80)
+if "tokenize" in params["embaedding_type"]:
+    structural_prompt = True
+    print("[INFO] Using structural prompt.")
+    output_type = "ii-id"
+    len_tokens = len(task_struc_micro_voc)
+    print(f"[INFO] Length of token vacabulary: {len_tokens}")
+else:
+    structural_prompt = False
+    output_type = "ii-text"
+    len_tokens = 0
+print(f"[INFO] Output type: {output_type}")
 
 # finetune parameters update ---------------------------------------------------
 if params["finetune"] == True:
@@ -285,12 +302,24 @@ if params["task"]:
 if params["datasets_id"]:
     data_frame = data_frame[data_frame["id"].isin(params["datasets_id"])]
 
-path_dataset_lr = list(data_frame["path_lr"])
-path_dataset_hr = list(data_frame["path_hr"])
-path_index_file = list(data_frame["path_index"])
-dataset_index = list(data_frame["index"])
-dataset_scale_factor_lr = list(data_frame["sf_lr"])
-dataset_scale_factor_hr = list(data_frame["sf_hr"])
+# below are the necessary columns in the excel file ----------------------------
+path_dataset_lr = list(data_frame["path_lr"])  # path of the input image
+path_dataset_hr = list(data_frame["path_hr"])  # path of the output image
+path_index_file = list(data_frame["path_index"])  # path of the filename file
+dataset_index = list(data_frame["index"])  # unique index of the datasets
+dataset_scale_factor_lr = list(data_frame["sf_lr"])  # scale factor of the input image
+dataset_scale_factor_hr = list(data_frame["sf_hr"])  # scale factor of the output image
+
+# the above variable should have the same length as the number of datasets
+assert (
+    len(path_dataset_lr)
+    == len(path_dataset_hr)
+    == len(path_index_file)
+    == len(dataset_index)
+    == len(dataset_scale_factor_lr)
+    == len(dataset_scale_factor_hr)
+), "[ERROR] The length of the dataset infomation variables should be the same."
+# ------------------------------------------------------------------------------
 
 if params["finetune"] == True:
     # only when using one dataset to finetune
@@ -321,7 +350,7 @@ dataset_all = utils_data.Dataset_iit(
     transform=transform,
     scale_factor_lr=dataset_scale_factor_lr,
     scale_factor_hr=dataset_scale_factor_hr,
-    output_type="ii-text",
+    output_type=output_type,
     use_clean_data=params["use_clean_data"],
     rotflip=False,
     clip=params["data_clip"],
@@ -397,16 +426,19 @@ if params["model_name"] == "unet_sd_c":
         d_cond=params["d_cond"],
         pixel_shuffle=params["pixel_shuffle"],
         scale_factor=params["scale_factor"],
+        structural_prompt=structural_prompt,
+        n_tokens=len_tokens,
     )
 
-with torch.autocast("cuda", torch.float16, enabled=params["enable_amp"]):
-    dtype = torch.float16 if params["enable_amp"] else torch.float32
-    summary(
-        model=model,
-        input_size=((1,) + img_lr_shape, (1,), (1, text_shape[0], 768)),
-        dtypes=(dtype,) * 3,
-        device=params["device"],
-    )
+dtype = torch.float16 if params["enable_amp"] else torch.float32
+if not structural_prompt:
+    input_size = ((1,) + img_lr_shape, (1,), (1, text_shape[0], 768))
+    dtypes = (dtype,) * 3
+else:
+    input_size = ((1,) + img_lr_shape, (1,), (1, text_shape[0]))
+    dtypes = (dtype,) * 2 + (torch.int64,)
+with torch.autocast("cuda", dtype, enabled=params["enable_amp"]):
+    summary(model=model, input_size=input_size, dtypes=dtypes, device=params["device"])
 
 model.to(device=device)
 

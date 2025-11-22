@@ -7,18 +7,21 @@ The information is saved in the xlsx file.
 import pandas, os, tqdm
 
 # ------------------------------------------------------------------------------
-# finetune = False
-finetune = True  # generate the text for finetune datasets
+finetune = False
+# finetune = True  # generate the text for finetune datasets
 # ------------------------------------------------------------------------------
 
 path_dataset_xlx = "dataset_train_transformer-v2.xlsx"
 
-text_type = "ALL"  # all the information
+# text_type = "ALL"  # all the information
 # text_type = "ALL_wot"  # all the information without the information about the target
 # text_type = "TSpixel"  # only task, structure, and input/output pixel size
 # text_type = "TSmicro"  # only task, structure, and input/output microscope
 # text_type = "TS"  # only task, structure
 # text_type = "T"  # only task
+text_type = (
+    "STRUCTURAL-TSMM"  # structural prompts [task, structure, input/output microscope]
+)
 
 # ------------------------------------------------------------------------------
 path_text = os.path.join("text", "v2")
@@ -67,6 +70,7 @@ text_data = datasets_frame[text_parts]
 # generate text
 pbar = tqdm.tqdm(total=num_datset, ncols=100, desc="[INFO] GENERATE TEXT")
 with open(path_save_to, "w") as text_file:
+    # generate text for each dataset
     for i in range(num_datset):
         # conbine text
         if text_type == "ALL":
@@ -111,6 +115,13 @@ with open(path_save_to, "w") as text_file:
         elif text_type == "T":
             text_single = "Task: {}.\n".format(
                 text_data["task#"][i],
+            )
+        elif text_type == "STRUCTURAL-TSMM":
+            text_single = "{};{};{};{}\n".format(
+                text_data["task#"][i],
+                text_data["structure#"][i],
+                text_data["input microscope-device"][i],
+                text_data["target microscope-device"][i],
             )
         else:
             raise ValueError("[ERROR] Invalid text type.")

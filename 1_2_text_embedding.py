@@ -69,7 +69,7 @@ embedder.eval()
 pbar = tqdm.tqdm(total=num_dataset, ncols=80, desc="[INFO] EMBEDDING")
 for i in range(num_dataset):
     prompt = dataset_text[i]
-    cond = embedder(prompt)
+    cond = embedder(prompt)  # shape = [1, 160, 768]
     np.save(os.path.join(path_save_to, f"{i}.npy"), cond.cpu().detach().numpy())
     pbar.update(1)
 pbar.close()

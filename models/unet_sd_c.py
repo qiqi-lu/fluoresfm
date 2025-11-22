@@ -55,6 +55,8 @@ class UNetModel(nn.Module):
         d_cond: int = 768,  # 0 or None when without condition
         pixel_shuffle: bool = False,
         scale_factor: int = 4,
+        structural_prompt: bool = False,
+        n_tokens=0,
     ):
         """
         :param in_channels: is the number of channels in the input feature map
@@ -68,21 +70,40 @@ class UNetModel(nn.Module):
         :param d_cond: is the size of the conditional embedding in the transformers
         :param pixel_shuffle: is whether to use pixel shuffle (custom)
         :param scale_factor: is the scale factor for pixel shuffle (custom)
+        :param structural_prompt: is whether to use structural prompt (custom)
         """
         super().__init__()
         self.channels = channels
-
         self.d_cond = d_cond
+        self.structural_prompt = structural_prompt
+
         # input pixel-unshuffle ------------------------------------------------
         # custom defined processing for input for large image, not in original code
         self.pixel_shuffle = pixel_shuffle
         if self.pixel_shuffle:
+            print(
+                f"[INFO] Using pixel shuffle with scale factor {scale_factor} to process the input image."
+            )
             self.patching = nn.PixelUnshuffle(downscale_factor=scale_factor)
             self.unpatching = nn.PixelShuffle(upscale_factor=scale_factor)
             in_channels = in_channels * (scale_factor**2)
             out_channels = out_channels * (scale_factor**2)
-        # ----------------------------------------------------------------------
 
+        # ----------------------------------------------------------------------
+        # if a structural prompt, a embedding is learned for each metadata.
+        # such as metadata = [task, structure, microscopy (input), microscopy (output)]
+        if structural_prompt:
+            print(f"[INFO] Using structural prompt with {n_tokens} metadata tokens.")
+            print(f"[INFO] Metadata embedding size: {d_cond}")
+            assert (
+                n_tokens > 0
+            ), "[ERROR] n_tokens should be > 0 when using structural prompt."
+            assert (
+                d_cond > 0
+            ), "[ERROR] d_cond should be > 0 when using structural prompt."
+            self.metadata_embed = nn.Embedding(n_tokens, d_cond)
+
+        # ----------------------------------------------------------------------
         # Number of levels
         levels = len(channel_multipliers)
         # Size time embeddings
@@ -92,6 +113,7 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             nn.Linear(d_time_emb, d_time_emb),
         )
+        # self.time_embed = None
 
         # Input half of the U-Net
         self.input_blocks = nn.ModuleList()
@@ -194,26 +216,43 @@ class UNetModel(nn.Module):
         # $\cos\Bigg(\frac{t}{10000^{\frac{2i}{c}}}\Bigg)$ and $\sin\Bigg(\frac{t}{10000^{\frac{2i}{c}}}\Bigg)$
         return torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
 
-    def forward(self, x: torch.Tensor, time_steps: torch.Tensor, cond: torch.Tensor):
+    def forward(
+        self,
+        x: torch.Tensor,
+        time_steps: torch.Tensor,
+        cond: torch.Tensor,
+    ):
         """
         :param x: is the input feature map of shape `[batch_size, channels, width, height]`
         :param time_steps: are the time steps of shape `[batch_size]`
         :param cond: conditioning of shape `[batch_size, n_cond, d_cond]`
+            or `[batch_size, n_metadata]`.
         """
         # To store the input half outputs for skip connections
         x_input_block = []
 
         # Get time step embeddings ---------------------------------------------
+        # do not use time step embedding, as I do not use the model in a
+        # diffusion process
+
         # t_emb = self.time_step_embedding(time_steps)
         # t_emb = self.time_embed(t_emb)
         t_emb = None
+
         # ----------------------------------------------------------------------
         if (self.d_cond is None) or (self.d_cond == 0):
             cond = None
 
+        # ----------------------------------------------------------------------
+        # if a structural prompt, a embedding is learned for each metadata.
+        if self.structural_prompt:
+            cond = self.metadata_embed(cond)  # [batch_size, n_metadata, d_cond]
+
+        # ----------------------------------------------------------------------
         # pixel shuffle
         if self.pixel_shuffle:
             x = self.patching(x)
+        # ----------------------------------------------------------------------
 
         # Input half of the U-Net
         for module in self.input_blocks:
@@ -256,7 +295,9 @@ class UNetModel(nn.Module):
             for params in self.parameters():
                 params.requires_grad = True
         else:
-            raise ValueError(f"position should be in-out, in or out, not [{strategy}].")
+            raise ValueError(
+                f"[ERROR] Position should be in-out, in or out, not [{strategy}]."
+            )
 
         return [p for p in self.named_parameters() if p[1].requires_grad]
 
@@ -432,4 +473,5 @@ def _test_time_embeddings():
 
 #
 if __name__ == "__main__":
+    # test the time embeddings funciton
     _test_time_embeddings()
