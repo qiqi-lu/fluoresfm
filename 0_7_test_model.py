@@ -14,10 +14,14 @@ device = torch.device("cuda:0")
 
 structural_prompt = False
 # structural_prompt = True
-length_voc = len(task_struc_micro_voc)
 
-print("-" * 80)
-print(f"[INFP] Length of token vacabulary: {length_voc}")
+if structural_prompt:
+    length_voc = len(task_struc_micro_voc)
+
+    print("-" * 80)
+    print(f"[INFP] Length of token vacabulary: {length_voc}")
+else:
+    length_voc = None
 
 # ------------------------------------------------------------------------------
 # model
@@ -99,6 +103,16 @@ with torch.autocast("cuda", torch.float16, enabled=True):
         input_size=((1,) + img_lr_shape, (1,), text_empty),
         dtypes=dtypes,
         device=device,
-        depth=7,
+        depth=3,
         col_names=["input_size", "output_size", "num_params", "params_percent"],
     )
+
+
+print("-" * 80)
+print(
+    "[WARNNING] The number of the parameter should delete the layers for time embedding."
+)
+print(
+    "[WARNNING] Or you can disable them in the code, including the `emb_layers` in ResBlck and `time_embed` in UNetModel."
+)
+print("-" * 80)

@@ -105,9 +105,10 @@ class UNetModel(nn.Module):
 
         # ----------------------------------------------------------------------
         # Number of levels
-        levels = len(channel_multipliers)
-        # Size time embeddings
-        d_time_emb = channels * 4
+        levels = len(channel_multipliers)  # 4
+
+        # Size time embeddings (not use) ---------------------------------------
+        d_time_emb = channels * 4  # 1280
         self.time_embed = nn.Sequential(
             nn.Linear(channels, d_time_emb),
             nn.SiLU(),
@@ -127,19 +128,21 @@ class UNetModel(nn.Module):
             TimestepEmbedSequential(nn.Conv2d(in_channels, channels, 3, padding=1))
         )
         # Number of channels at each block in the input half of U-Net
-        input_block_channels = [channels]
+        input_block_channels = [channels]  # 320
         # Number of channels at each level
-        channels_list = [channels * m for m in channel_multipliers]
+        channels_list = [
+            channels * m for m in channel_multipliers
+        ]  # [320, 640, 1280, 1280]
         # Prepare levels
-        for i in range(levels):
+        for i in range(levels):  # 0, 1, 2, 3
             # Add the residual blocks and attentions
-            for _ in range(n_res_blocks):
+            for _ in range(n_res_blocks):  # 0
                 # Residual block maps from previous number of channels to the number of
                 # channels in the current level
                 layers = [ResBlock(channels, d_time_emb, out_channels=channels_list[i])]
                 channels = channels_list[i]
                 # Add transformer
-                if i in attention_levels:
+                if i in attention_levels:  # [0, 1, 2, 3]
                     layers.append(
                         SpatialTransformer(channels, n_heads, tf_layers, d_cond)
                     )
@@ -162,9 +165,9 @@ class UNetModel(nn.Module):
         # Second half of the U-Net
         self.output_blocks = nn.ModuleList([])
         # Prepare levels in reverse order
-        for i in reversed(range(levels)):
+        for i in reversed(range(levels)):  # 3, 2, 1, 0
             # Add the residual blocks and attentions
-            for j in range(n_res_blocks + 1):
+            for j in range(n_res_blocks + 1):  # 0, 1
                 # Residual block maps from previous number of channels plus the
                 # skip connections from the input half of U-Net to the number of
                 # channels in the current level.
@@ -393,6 +396,8 @@ class ResBlock(nn.Module):
             nn.SiLU(),
             nn.Linear(d_t_emb, out_channels),
         )
+        # self.emb_layers = None
+
         # Final convolution layer
         self.out_layers = nn.Sequential(
             normalization(out_channels),
