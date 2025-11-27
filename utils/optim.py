@@ -81,7 +81,7 @@ class StepLR_iter(object):
                 g["lr"] = lr
 
 
-def on_load_checkpoint(checkpoint: dict, complie_mode=False):
+def on_load_checkpoint(checkpoint: dict, complie_mode: bool = False):
     """
     This function is used to load the parameters from the checkpoint into the model.
 
@@ -90,11 +90,11 @@ def on_load_checkpoint(checkpoint: dict, complie_mode=False):
     So they are processed differently when loading the parameters.
 
     ### Parameters:
-        - checkpoint (dict): The checkpoint to load the parameters from.
-        - complie_mode (bool): Whether the model is compiled. Default is False.
+    - `checkpoint` (dict): The checkpoint to load the parameters from.
+    - `complie_mode` (bool): Whether the model is compiled. Default is False.
 
     ### Returns:
-        - checkpoint (dict): The checkpoint with the parameters loaded into the model.
+    - `checkpoint` (dict): The checkpoint with the parameters loaded into the model.
     """
     # keys_list = list(checkpoint["state_dict"].keys())
     keys_list = list(checkpoint.keys())

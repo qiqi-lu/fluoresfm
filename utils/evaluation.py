@@ -78,18 +78,23 @@ def decorrelation_analysis(
 ):
     """
     Image decorrelation analysis.
+    Reference: https://github.com/HenriquesLab/NanoPyx/blob/main/notebooks/SRMetrics.ipynb
     ### Parameters:
     - `img`: image to evaluate.
-    - `pixel_size`: pixel size in nm of the image, which is used to calculate resolution values.
-    - `rmin`: minimum radius. default is 0.0.  Resolution calculation by
-        Decorrelation Analysis is performed in the frequency space.
-        These parameters define the range of radii to be used in the calculation.
-    - `rmax`: maximum radius. default is 1.0.
+    - `pixel_size`: pixel size in `nm` of the image, which is used to calculate resolution values.
+    - `rmin`: minimum radius. default is 0.0.
+    - `rmax`: maximum radius. default is 1.0. Resolution calculation by
+        Decorrelation Analysis is performed in the frequency space. These
+        parameters define the range of radii to be used in the calculation.
     - `n_r`: number of radial divisions for analysis. default is 50.
     - `n_g`: number of angular divisions for analysis. default is 10.
-    - `roi`: region of interest in the format (x_min,y_min,x_max,y_max). default is (0, 0, 0, 0).
+    - `roi`: region of interest in the format `(x_min, y_min, x_max, y_max)`.
+        Default is `(0, 0, 0, 0)`.
     ### Returns:
     - `res`: resolution estimation.
+    - `decorr_curve`: the decorrelation curve image saved as a numpy array.
+        The plt.figure was convert to a numpy array.
+        https://github.com/HenriquesLab/NanoPyx/blob/a96aef3e2fbd292b0ff9aec07786e68bf4f0574a/src/nanopyx/core/analysis/decorr.pyx#L460
     """
     # convert to numpy array
     img = tensor_to_array(img)
@@ -111,11 +116,13 @@ def decorrelation_analysis(
 
 def SQUIRREL(img, img_ref):
     """
-    SQUIRREL analysis, super-resolution quantitative image taing and repoting error locations.
+    **SQUIRREL analysis**, super-resolution quantitative image taing and repoting error locations.
+    Reference: https://github.com/HenriquesLab/NanoPyx/blob/main/notebooks/SRMetrics.ipynb
     ### Parameters:
     - `img`: image to evaluate, commonly be a super-resolution image.
     - `img_ref`: reference image, commonly be a **diffraction-limited** image, also
-        can be a super-resolution image from different modality.
+        can be a super-resolution image from different modality. (But its resolution
+        may need to be lower than that of `img`)
     ### Returns:
     - `RSE`: resolution-scaled error. [lower is better]
     - `RSP`: resolution-scaled Pearson coefficient. [higher is better]

@@ -1388,15 +1388,15 @@ class Dataset_it2i(Dataset):
         return {"lr": img_lr, "lr_text": txt_lr, "hr": img_hr, "hr_text": txt_hr}
 
 
-def win2linux(win_path):
+def win2linux(win_path: str):
     """
     Convert a Windows path to a Linux path if the current operating system is Linux,
     otherwise return the original path.
     ### Parameters:
-        - `win_path` (str): The Windows path to be converted.
+    - `win_path` (str): The Windows path to be converted.
     ### Returns:
-        - (str): The converted Linux path if the current operating system is Linux,
-               otherwise the original path.
+    - `path` (str): The converted Linux path if the current operating system is Linux,
+        otherwise the original path.
     """
     if win_path == None:
         return None

@@ -2,7 +2,7 @@
 Calculate the metrics of each image in each dataset.
 Saved into a excel file.
 Each row is a sample, each column is a methods, each sheet is a metric.
-Ouput:
+OuTput:
     - results/predictions/{dataset_name}/metrics-v2.xlsx
     -------------------------------------------------------
     | id           | method-1 | method-2 | ... | method-n |

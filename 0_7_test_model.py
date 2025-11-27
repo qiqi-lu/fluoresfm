@@ -113,6 +113,6 @@ print(
     "[WARNNING] The number of the parameter should delete the layers for time embedding."
 )
 print(
-    "[WARNNING] Or you can disable them in the code, including the `emb_layers` in ResBlck and `time_embed` in UNetModel."
+    "[WARNNING] Or you can disable them in the code, including the `emb_layers` in ResBlock and `time_embed` in UNetModel."
 )
 print("-" * 80)
