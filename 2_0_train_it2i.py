@@ -212,7 +212,7 @@ if "tokenize" in params["embaedding_type"]:
     print("[INFO] Using structural prompt.")
     output_type = "ii-id"
     len_tokens = len(task_struc_micro_voc)
-    print(f"[INFO] Length of token vacabulary: {len_tokens}")
+    print(f"[INFO] Length of token vocabulary: {len_tokens}")
 else:
     structural_prompt = False
     output_type = "ii-text"

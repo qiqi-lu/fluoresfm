@@ -16,6 +16,8 @@ import utils.data as utils_data
 import utils.evaluation as utils_eva
 import utils.optim as utils_optim
 
+from constants import task_struc_micro_voc
+
 # ------------------------------------------------------------------------------
 # parameters
 # ------------------------------------------------------------------------------
@@ -33,10 +35,16 @@ checkpoints = (
     #     ("ALL", 160),
     # ],
     # --------------------------- w/o target metadata --------------------------
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
+    #     "checkpoints/conditional/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-wo-target-metadata/epoch_2_iter_700000.pt",
+    #     ("ALL_wot", 160),
+    # ],
+    # --------------------------- structrual prompt ----------------------------
     [
-        "_all_newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
-        "checkpoints/conditional/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-wo-target-metadata/epoch_2_iter_700000.pt",
-        ("ALL_wot", 160),
+        "_all_newnorm-ALL-v2-160-small-bs16-structural-prompt",
+        "checkpoints/conditional/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-structural-prompt/epoch_2_iter_700000.pt",
+        ("STRUCTURAL-TSMM", 160),
     ],
     # ---------------------------- finetune ------------------------------------
     # [
@@ -308,183 +316,183 @@ params = {
     "data_clip": None,
     "id_dataset": [
         # # ------------------------ ALL (INTERNAL + EXTERNAL) -----------------
-        "biosr-cpp-sr-1",
-        "biosr-cpp-sr-2",
-        "biosr-cpp-sr-3",
-        "biosr-cpp-sr-4",
-        "biosr-cpp-sr-5",
-        "biosr-cpp-sr-6",
-        "biosr-cpp-sr-7",
-        "biosr-cpp-sr-8",
-        "biosr-cpp-sr-9",
-        "biosr-er-sr-1",
-        "biosr-er-sr-2",
-        "biosr-er-sr-3",
-        "biosr-er-sr-4",
-        "biosr-er-sr-5",
-        "biosr-er-sr-6",
-        "biosr-mt-sr-1",
-        "biosr-mt-sr-2",
-        "biosr-mt-sr-3",
-        "biosr-mt-sr-4",
-        "biosr-mt-sr-5",
-        "biosr-mt-sr-6",
-        "biosr-mt-sr-7",
-        "biosr-mt-sr-8",
-        "biosr-mt-sr-9",
-        "biosr-actin-sr-1",
-        "biosr-actin-sr-2",
-        "biosr-actin-sr-3",
-        "biosr-actin-sr-4",
-        "biosr-actin-sr-5",
-        "biosr-actin-sr-6",
-        "biosr-actin-sr-7",
-        "biosr-actin-sr-8",
-        "biosr-actin-sr-9",
-        "biosr-actin-sr-10",
-        "biosr-actin-sr-11",
-        "biosr-actin-sr-12",
-        "deepbacs-sim-ecoli-sr",
-        "deepbacs-sim-saureus-sr",
-        "w2s-c0-sr-1",
-        "w2s-c0-sr-2",
-        "w2s-c0-sr-3",
-        "w2s-c0-sr-4",
-        "w2s-c0-sr-5",
-        "w2s-c0-sr-6",
-        "w2s-c0-sr-7",
-        "w2s-c1-sr-1",
-        "w2s-c1-sr-2",
-        "w2s-c1-sr-3",
-        "w2s-c1-sr-4",
-        "w2s-c1-sr-5",
-        "w2s-c1-sr-6",
-        "w2s-c1-sr-7",
-        "w2s-c2-sr-1",
-        "w2s-c2-sr-2",
-        "w2s-c2-sr-3",
-        "w2s-c2-sr-4",
-        "w2s-c2-sr-5",
-        "w2s-c2-sr-6",
-        "w2s-c2-sr-7",
-        # "srcaco2-h2b-sr-8",
-        # "srcaco2-h2b-sr-4",
-        "srcaco2-h2b-sr-2",
-        # "srcaco2-survivin-sr-8",
-        # "srcaco2-survivin-sr-4",
-        "srcaco2-survivin-sr-2",
-        # "srcaco2-tubulin-sr-8",
-        # "srcaco2-tubulin-sr-4",
-        "srcaco2-tubulin-sr-2",
-        # ----------------------------------------------------------------------
-        "biosr-cpp-dn-1",
-        "biosr-cpp-dn-2",
-        "biosr-cpp-dn-3",
-        "biosr-cpp-dn-4",
-        "biosr-cpp-dn-5",
-        "biosr-cpp-dn-6",
-        "biosr-cpp-dn-7",
-        "biosr-cpp-dn-8",
-        "biosr-er-dn-1",
-        "biosr-er-dn-2",
-        "biosr-er-dn-3",
-        "biosr-er-dn-4",
-        "biosr-er-dn-5",
-        "biosr-mt-dn-1",
-        "biosr-mt-dn-2",
-        "biosr-mt-dn-3",
-        "biosr-mt-dn-4",
-        "biosr-mt-dn-5",
-        "biosr-mt-dn-6",
-        "biosr-mt-dn-7",
-        "biosr-mt-dn-8",
-        "biosr-actin-dn-1",
-        "biosr-actin-dn-2",
-        "biosr-actin-dn-3",
-        "biosr-actin-dn-4",
-        "biosr-actin-dn-5",
-        "biosr-actin-dn-6",
-        "biosr-actin-dn-7",
-        "biosr-actin-dn-8",
-        "biosr-actin-dn-9",
-        "biosr-actin-dn-10",
-        "biosr-actin-dn-11",
-        "biosr-actinnl-dn-1",
-        "biosr-actinnl-dn-2",
-        "biosr-actinnl-dn-3",
-        "biosr-actinnl-dn-4",
-        "biosr-actinnl-dn-5",
-        "biosr-actinnl-dn-6",
-        "biosr-actinnl-dn-7",
-        "biosr-actinnl-dn-8",
-        "biosr+-ccp-dn-1",
-        "biosr+-ccp-dn-2",
-        "biosr+-ccp-dn-3",
-        "biosr+-ccp-dn-4",
-        "biosr+-ccp-dn-5",
-        "biosr+-ccp-dn-6",
-        "biosr+-ccp-dn-7",
-        "biosr+-ccp-dn-8",
-        "biosr+-er-dn-1",
-        "biosr+-er-dn-2",
-        "biosr+-er-dn-3",
-        "biosr+-er-dn-4",
-        "biosr+-er-dn-5",
-        "biosr+-er-dn-6",
-        "biosr+-actin-dn-1",
-        "biosr+-actin-dn-2",
-        "biosr+-actin-dn-3",
-        "biosr+-actin-dn-4",
-        "biosr+-actin-dn-5",
-        "biosr+-actin-dn-6",
-        "biosr+-actin-dn-7",
-        "biosr+-actin-dn-8",
-        "biosr+-actin-dn-9",
-        "biosr+-actin-dn-10",
-        "biosr+-actin-dn-11",
-        "biosr+-mt-dn-1",
-        "biosr+-mt-dn-2",
-        "biosr+-mt-dn-3",
-        "biosr+-mt-dn-4",
-        "biosr+-mt-dn-5",
-        "biosr+-mt-dn-6",
-        "biosr+-mt-dn-7",
-        "biosr+-mt-dn-8",
-        "biosr+-myosin-dn-1",
-        "biosr+-myosin-dn-2",
-        "biosr+-myosin-dn-3",
-        "biosr+-myosin-dn-4",
-        "biosr+-myosin-dn-5",
-        "biosr+-myosin-dn-6",
-        "biosr+-myosin-dn-7",
-        "biosr+-myosin-dn-8",
-        "care-planaria-dn-1",
-        "care-planaria-dn-2",
-        "care-planaria-dn-3",
-        "care-tribolium-dn-1",
-        "care-tribolium-dn-2",
-        "care-tribolium-dn-3",
-        "deepbacs-ecoli-dn",
-        "deepbacs-ecoli2-dn",
-        "w2s-c0-dn-1",
-        "w2s-c0-dn-2",
-        "w2s-c0-dn-3",
-        "w2s-c0-dn-4",
-        "w2s-c0-dn-5",
-        "w2s-c0-dn-6",
-        "w2s-c1-dn-1",
-        "w2s-c1-dn-2",
-        "w2s-c1-dn-3",
-        "w2s-c1-dn-4",
-        "w2s-c1-dn-5",
-        "w2s-c1-dn-6",
-        "w2s-c2-dn-1",
-        "w2s-c2-dn-2",
-        "w2s-c2-dn-3",
-        "w2s-c2-dn-4",
-        "w2s-c2-dn-5",
-        "w2s-c2-dn-6",
-        "srcaco2-h2b-dn-8",
+        # "biosr-cpp-sr-1",
+        # "biosr-cpp-sr-2",
+        # "biosr-cpp-sr-3",
+        # "biosr-cpp-sr-4",
+        # "biosr-cpp-sr-5",
+        # "biosr-cpp-sr-6",
+        # "biosr-cpp-sr-7",
+        # "biosr-cpp-sr-8",
+        # "biosr-cpp-sr-9",
+        # "biosr-er-sr-1",
+        # "biosr-er-sr-2",
+        # "biosr-er-sr-3",
+        # "biosr-er-sr-4",
+        # "biosr-er-sr-5",
+        # "biosr-er-sr-6",
+        # "biosr-mt-sr-1",
+        # "biosr-mt-sr-2",
+        # "biosr-mt-sr-3",
+        # "biosr-mt-sr-4",
+        # "biosr-mt-sr-5",
+        # "biosr-mt-sr-6",
+        # "biosr-mt-sr-7",
+        # "biosr-mt-sr-8",
+        # "biosr-mt-sr-9",
+        # "biosr-actin-sr-1",
+        # "biosr-actin-sr-2",
+        # "biosr-actin-sr-3",
+        # "biosr-actin-sr-4",
+        # "biosr-actin-sr-5",
+        # "biosr-actin-sr-6",
+        # "biosr-actin-sr-7",
+        # "biosr-actin-sr-8",
+        # "biosr-actin-sr-9",
+        # "biosr-actin-sr-10",
+        # "biosr-actin-sr-11",
+        # "biosr-actin-sr-12",
+        # "deepbacs-sim-ecoli-sr",
+        # "deepbacs-sim-saureus-sr",
+        # "w2s-c0-sr-1",
+        # "w2s-c0-sr-2",
+        # "w2s-c0-sr-3",
+        # "w2s-c0-sr-4",
+        # "w2s-c0-sr-5",
+        # "w2s-c0-sr-6",
+        # "w2s-c0-sr-7",
+        # "w2s-c1-sr-1",
+        # "w2s-c1-sr-2",
+        # "w2s-c1-sr-3",
+        # "w2s-c1-sr-4",
+        # "w2s-c1-sr-5",
+        # "w2s-c1-sr-6",
+        # "w2s-c1-sr-7",
+        # "w2s-c2-sr-1",
+        # "w2s-c2-sr-2",
+        # "w2s-c2-sr-3",
+        # "w2s-c2-sr-4",
+        # "w2s-c2-sr-5",
+        # "w2s-c2-sr-6",
+        # "w2s-c2-sr-7",
+        # # "srcaco2-h2b-sr-8",
+        # # "srcaco2-h2b-sr-4",
+        # "srcaco2-h2b-sr-2",
+        # # "srcaco2-survivin-sr-8",
+        # # "srcaco2-survivin-sr-4",
+        # "srcaco2-survivin-sr-2",
+        # # "srcaco2-tubulin-sr-8",
+        # # "srcaco2-tubulin-sr-4",
+        # "srcaco2-tubulin-sr-2",
+        # # ----------------------------------------------------------------------
+        # "biosr-cpp-dn-1",
+        # "biosr-cpp-dn-2",
+        # "biosr-cpp-dn-3",
+        # "biosr-cpp-dn-4",
+        # "biosr-cpp-dn-5",
+        # "biosr-cpp-dn-6",
+        # "biosr-cpp-dn-7",
+        # "biosr-cpp-dn-8",
+        # "biosr-er-dn-1",
+        # "biosr-er-dn-2",
+        # "biosr-er-dn-3",
+        # "biosr-er-dn-4",
+        # "biosr-er-dn-5",
+        # "biosr-mt-dn-1",
+        # "biosr-mt-dn-2",
+        # "biosr-mt-dn-3",
+        # "biosr-mt-dn-4",
+        # "biosr-mt-dn-5",
+        # "biosr-mt-dn-6",
+        # "biosr-mt-dn-7",
+        # "biosr-mt-dn-8",
+        # "biosr-actin-dn-1",
+        # "biosr-actin-dn-2",
+        # "biosr-actin-dn-3",
+        # "biosr-actin-dn-4",
+        # "biosr-actin-dn-5",
+        # "biosr-actin-dn-6",
+        # "biosr-actin-dn-7",
+        # "biosr-actin-dn-8",
+        # "biosr-actin-dn-9",
+        # "biosr-actin-dn-10",
+        # "biosr-actin-dn-11",
+        # "biosr-actinnl-dn-1",
+        # "biosr-actinnl-dn-2",
+        # "biosr-actinnl-dn-3",
+        # "biosr-actinnl-dn-4",
+        # "biosr-actinnl-dn-5",
+        # "biosr-actinnl-dn-6",
+        # "biosr-actinnl-dn-7",
+        # "biosr-actinnl-dn-8",
+        # "biosr+-ccp-dn-1",
+        # "biosr+-ccp-dn-2",
+        # "biosr+-ccp-dn-3",
+        # "biosr+-ccp-dn-4",
+        # "biosr+-ccp-dn-5",
+        # "biosr+-ccp-dn-6",
+        # "biosr+-ccp-dn-7",
+        # "biosr+-ccp-dn-8",
+        # "biosr+-er-dn-1",
+        # "biosr+-er-dn-2",
+        # "biosr+-er-dn-3",
+        # "biosr+-er-dn-4",
+        # "biosr+-er-dn-5",
+        # "biosr+-er-dn-6",
+        # "biosr+-actin-dn-1",
+        # "biosr+-actin-dn-2",
+        # "biosr+-actin-dn-3",
+        # "biosr+-actin-dn-4",
+        # "biosr+-actin-dn-5",
+        # "biosr+-actin-dn-6",
+        # "biosr+-actin-dn-7",
+        # "biosr+-actin-dn-8",
+        # "biosr+-actin-dn-9",
+        # "biosr+-actin-dn-10",
+        # "biosr+-actin-dn-11",
+        # "biosr+-mt-dn-1",
+        # "biosr+-mt-dn-2",
+        # "biosr+-mt-dn-3",
+        # "biosr+-mt-dn-4",
+        # "biosr+-mt-dn-5",
+        # "biosr+-mt-dn-6",
+        # "biosr+-mt-dn-7",
+        # "biosr+-mt-dn-8",
+        # "biosr+-myosin-dn-1",
+        # "biosr+-myosin-dn-2",
+        # "biosr+-myosin-dn-3",
+        # "biosr+-myosin-dn-4",
+        # "biosr+-myosin-dn-5",
+        # "biosr+-myosin-dn-6",
+        # "biosr+-myosin-dn-7",
+        # "biosr+-myosin-dn-8",
+        # "care-planaria-dn-1",
+        # "care-planaria-dn-2",
+        # "care-planaria-dn-3",
+        # "care-tribolium-dn-1",
+        # "care-tribolium-dn-2",
+        # "care-tribolium-dn-3",
+        # "deepbacs-ecoli-dn",
+        # "deepbacs-ecoli2-dn",
+        # "w2s-c0-dn-1",
+        # "w2s-c0-dn-2",
+        # "w2s-c0-dn-3",
+        # "w2s-c0-dn-4",
+        # "w2s-c0-dn-5",
+        # "w2s-c0-dn-6",
+        # "w2s-c1-dn-1",
+        # "w2s-c1-dn-2",
+        # "w2s-c1-dn-3",
+        # "w2s-c1-dn-4",
+        # "w2s-c1-dn-5",
+        # "w2s-c1-dn-6",
+        # "w2s-c2-dn-1",
+        # "w2s-c2-dn-2",
+        # "w2s-c2-dn-3",
+        # "w2s-c2-dn-4",
+        # "w2s-c2-dn-5",
+        # "w2s-c2-dn-6",
+        # "srcaco2-h2b-dn-8",
         "srcaco2-h2b-dn-4",
         "srcaco2-h2b-dn-2",
         "srcaco2-survivin-dn-8",
@@ -874,12 +882,22 @@ for checkpoint in checkpoints:
     path_checkpoint = utils_data.win2linux(path_checkpoint)
 
     # update parameters according to the checkpoint
-    if "cross" in suffix:
+    # check whether use structural text
+    if "STRUCTURAL" in text_type[0]:
+        structural_prompt = True
+        print("[INFO] Use STRUCTURAL TEXT.")
+        len_tokens = len(task_struc_micro_voc)
+        print(f"[INFO] Length of token vocabulary: {len_tokens}")
+    else:
+        structural_prompt = False
+        len_tokens = 0
+
+    if "cross" in suffix:  # without text information
         params["d_cond"] = None
     else:
         params["d_cond"] = 768
 
-    if "clip" in suffix:
+    if "clip" in suffix:  # whether clip pixel value in the input image.
         params.update({"data_clip": (0.0, 2.5)})
     else:
         params.update({"data_clip": None})
@@ -890,21 +908,25 @@ for checkpoint in checkpoints:
     # --------------------------------------------------------------------------
     #                                  model
     # --------------------------------------------------------------------------
-    # Text Embedder
-    if params["embedder"] == "clip":
-        # embedder = CLIPTextEmbedder(device=torch.device("cpu"))
-        embedder = CLIPTextEmbedder(device=device)
-    elif params["embedder"] == "biomedclip":
-        embedder = BiomedCLIPTextEmbedder(
-            path_json=params["path_embedder_json"],
-            path_bin=params["path_embedder_bin"],
-            context_length=text_type[1],
-            # device=torch.device("cpu"),
-            device=device,
-        )
+    if structural_prompt == False:
+        # Text Embedder (only when using un-structural text)
+        print("[INFO] Load Text Embedder...")
+        if params["embedder"] == "clip":
+            # embedder = CLIPTextEmbedder(device=torch.device("cpu"))
+            embedder = CLIPTextEmbedder(device=device)
+        elif params["embedder"] == "biomedclip":
+            embedder = BiomedCLIPTextEmbedder(
+                path_json=params["path_embedder_json"],
+                path_bin=params["path_embedder_bin"],
+                context_length=text_type[1],
+                # device=torch.device("cpu"),
+                device=device,
+            )
+        else:
+            raise ValueError(f"[ERROR] Embedder '{params['embedder']}' does not exist.")
+        embedder.eval()
     else:
-        raise ValueError(f"[ERROR] Embedder '{params['embedder']}' does not exist.")
-    embedder.eval()
+        tokenizer = utils_data.IDTokenizer(all_tokens=task_struc_micro_voc)
 
     # --------------------------------------------------------------------------
     # 2D models
@@ -921,6 +943,8 @@ for checkpoint in checkpoints:
             d_cond=params["d_cond"],
             pixel_shuffle=params["pixel_shuffle"],
             scale_factor=params["scale_factor"],
+            structural_prompt=structural_prompt,
+            n_tokens=len_tokens,
         ).to(device)
 
     # load model parameters
@@ -941,6 +965,8 @@ for checkpoint in checkpoints:
     # --------------------------------------------------------------------------
     for id_dataset in params["id_dataset"]:
         print("-" * 80)
+
+        # load dataset information
         try:
             ds = datasets_frame[datasets_frame["id"] == id_dataset].iloc[0]
             print("[INFO] Dataset:", ds["id"])
@@ -974,74 +1000,101 @@ for checkpoint in checkpoints:
         TASK = ds["task"]
 
         # ----------------------------------------------------------------------
-        # load text and text embedding， one text for one dataset
-        # single text embedding
-        if text_type[0] in ["all", "ALL", "ALL_wot", "TSpixel", "TSmicro", "TS", "T"]:
-            if text_type[0] == "all":
-                text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
-                    ds["task#"],
-                    ds["sample"],
-                    ds["structure#"],
-                    ds["fluorescence indicator"],
-                    ds["input microscope"],
-                    ds["input pixel size"],
-                    ds["target microscope"],
-                    ds["target pixel size"],
+        if structural_prompt == False:
+            # load text and text embedding， one text for one dataset
+            # single text embedding
+            if text_type[0] in [
+                "all",
+                "ALL",
+                "ALL_wot",
+                "TSpixel",
+                "TSmicro",
+                "TS",
+                "T",
+            ]:
+                if text_type[0] == "all":
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        ds["sample"],
+                        ds["structure#"],
+                        ds["fluorescence indicator"],
+                        ds["input microscope"],
+                        ds["input pixel size"],
+                        ds["target microscope"],
+                        ds["target pixel size"],
+                    )
+                elif text_type[0] == "ALL":
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        ds["sample"],
+                        ds["structure#"],
+                        ds["fluorescence indicator"],
+                        f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
+                        ds["input pixel size"],
+                        f'{ds["target microscope-device"]} {ds["target microscope-params"]}',
+                        ds["target pixel size"],
+                    )
+                elif text_type[0] == "ALL_wot":
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}.".format(
+                        ds["task#"],
+                        ds["sample"],
+                        ds["structure#"],
+                        ds["fluorescence indicator"],
+                        f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
+                        ds["input pixel size"],
+                    )
+                elif text_type[0] == "TSpixel":
+                    text = "Task: {}; struture: {}; input pixel size: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        ds["structure#"],
+                        ds["input pixel size"],
+                        ds["target pixel size"],
+                    )
+                elif text_type[0] == "TSmicro":
+                    text = "Task: {}; struture: {}; input microscope: {}; target microscope: {}.".format(
+                        ds["task#"],
+                        ds["structure#"],
+                        ds["input microscope-device"],
+                        ds["target microscope-device"],
+                    )
+                elif text_type[0] == "TS":
+                    text = "Task: {}; struture: {}".format(
+                        ds["task#"], ds["structure#"]
+                    )
+                elif text_type[0] == "T":
+                    text = "Task: {}.".format(ds["task#"])
+                else:
+                    raise ValueError(f"Text type '{text_type[0]}' does not supported.")
+
+                print("-" * 80)
+                print("[INFO] Text:")
+                print(text)
+                print("-" * 80)
+
+                # embed text -------------------------------------------------------
+                if (params["d_cond"] == 0) or (params["d_cond"] is None):
+                    text_embed = None
+                else:
+                    with torch.no_grad():
+                        text_embed = embedder(text).to(device)
+            else:
+                raise ValueError(
+                    f"[ERROR] Text type '{text_type[0]}' is not supported."
                 )
-            elif text_type[0] == "ALL":
-                text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
-                    ds["task#"],
-                    ds["sample"],
-                    ds["structure#"],
-                    ds["fluorescence indicator"],
-                    f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
-                    ds["input pixel size"],
-                    f'{ds["target microscope-device"]} {ds["target microscope-params"]}',
-                    ds["target pixel size"],
-                )
-            elif text_type[0] == "ALL_wot":
-                text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}.".format(
-                    ds["task#"],
-                    ds["sample"],
-                    ds["structure#"],
-                    ds["fluorescence indicator"],
-                    f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
-                    ds["input pixel size"],
-                )
-            elif text_type[0] == "TSpixel":
-                text = "Task: {}; struture: {}; input pixel size: {}; target pixel size: {}.".format(
-                    ds["task#"],
-                    ds["structure#"],
-                    ds["input pixel size"],
-                    ds["target pixel size"],
-                )
-            elif text_type[0] == "TSmicro":
-                text = "Task: {}; struture: {}; input microscope: {}; target microscope: {}.".format(
+        else:
+            assert text_type[0] in [
+                "STRUCTURAL-TSMM"
+            ], f"[ERROR] Text type '{text_type[0]}' is not supported."
+            if text_type[0] == "STRUCTURAL-TSMM":
+                text_list = [
                     ds["task#"],
                     ds["structure#"],
                     ds["input microscope-device"],
                     ds["target microscope-device"],
-                )
-            elif text_type[0] == "TS":
-                text = "Task: {}; struture: {}".format(ds["task#"], ds["structure#"])
-            elif text_type[0] == "T":
-                text = "Task: {}.".format(ds["task#"])
-            else:
-                raise ValueError(f"Text type '{text_type[0]}' does not supported.")
-
-            print("-" * 80)
-            print("[INFO] Text:")
-            print(text)
-            print("-" * 80)
-
-            # embed text -------------------------------------------------------
-            if (params["d_cond"] == 0) or (params["d_cond"] is None):
-                text_embed = None
-            else:
-                with torch.no_grad():
-                    text_embed = embedder(text).to(device)
-        else:
-            raise ValueError(f"[ERROR] Text type '{text_type[0]}' is not supported.")
+                ]
+                text_tokenized = tokenizer.encode(text_list)
+                text_tokenized = np.array(text_tokenized)[None]
+                text_embed = torch.tensor(text_tokenized, dtype=torch.int64).to(device)
 
         # ----------------------------------------------------------------------
         # PREDICT loop over all the samples in the dataset
@@ -1054,7 +1107,7 @@ for checkpoint in checkpoints:
             img_lr = utils_data.read_image(os.path.join(ds["path_lr"], sample_filename))
             img_lr = np.clip(img_lr, 0.0, None)
             img_lr = input_normallizer(img_lr)
-            img_lr = utils_data.interp_sf(img_lr, sf=ds["sf_lr"])[None]
+            img_lr = utils_data.interp_sf(img_lr, sf=int(ds["sf_lr"]))[None]
             # add batch dimension, shape = (1, C, H, W)
             img_lr = torch.tensor(img_lr).to(device)
 
@@ -1227,7 +1280,7 @@ for checkpoint in checkpoints:
                     img_hr = utils_data.read_image(
                         os.path.join(ds["path_hr"], sample_filename)
                     )
-                    img_hr = utils_data.interp_sf(img_hr, sf=ds["sf_hr"])[0]
+                    img_hr = utils_data.interp_sf(img_hr, sf=int(ds["sf_hr"]))[0]
 
                     # calculate metrics
                     dict_eva = {
@@ -1248,7 +1301,8 @@ for checkpoint in checkpoints:
                 arr=img_est[0],
                 check_contrast=False,
             )
-    del embedder
+    if structural_prompt == False:
+        del embedder
     del model
 
 print("-" * 80)

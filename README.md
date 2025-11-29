@@ -49,7 +49,9 @@ The text encoder from [BiomedCLIP](https://huggingface.co/microsoft/BiomedCLIP-P
 ![unet](/markdown/figures/unet.png)
 **Detailed architecture of FluoResFM.** FluoResFM takes the low-quality image and its corresponding textual prior information as inputs and outputs the restored high-quality image. It employs a text-conditioned U-Net as backbone, which consists of an encoder, a decoder, and skip connections. The encoder begins with a convolution layer, and the decoder ends with a convolution layer to generate the restored images. Each scale of the encoder and decoder contains a residual block and a text-image fusion block. The text prompt is projected into a text embedding using a text embedder and then injected into the cross-attention layer within the text-image fusion block. Only blocks labeled with “fire” markers are fine-finetuned during the fine-tuning stage.
 
-A small example data and pre-trained model can be download from https://pan.baidu.com/s/16gSqctnA0EqE8zHGTL4yFg?pwd=ypcm.
+A small example data and pre-trained model can be download from
+1. Baidu Yun: https://pan.baidu.com/s/16gSqctnA0EqE8zHGTL4yFg?pwd=ypcm.
+2. Google Drive:  https://drive.google.com/drive/folders/1WoTo2at_4-9HGW_b7Ia1o_axYQqHqzJA?usp=drive_link
 
 ## DATA COLLECTION
 All the data used for training and testing are publicly accessible.
