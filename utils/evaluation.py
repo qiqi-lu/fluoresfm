@@ -75,6 +75,7 @@ def decorrelation_analysis(
     n_r: int = 50,
     n_g: int = 10,
     roi: tuple = (0, 0, 0, 0),
+    enable_plot: bool = False,
 ):
     """
     Image decorrelation analysis.
@@ -110,7 +111,10 @@ def decorrelation_analysis(
     )
     decorr_calc.run_analysis(img)
     res = decorr_calc.resolution
-    decorr_curve = decorr_calc.plot_results()
+    if enable_plot:
+        decorr_curve = decorr_calc.plot_results()
+    else:
+        decorr_curve = None
     return res, decorr_curve
 
 

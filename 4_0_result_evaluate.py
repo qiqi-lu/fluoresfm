@@ -13,7 +13,7 @@ OuTput:
     -------------------------------------------------------
 """
 
-import os, pandas, traceback
+import os, pandas, traceback, tqdm
 import numpy as np
 import utils.data as utils_data
 import utils.evaluation as eva
@@ -351,9 +351,9 @@ params = {
         # "biotisr-factin-dcv-1",
         # "biotisr-factin-dcv-2",
         # "biotisr-factin-dcv-3",
-        # "biotisr-factin-nonlinear-dcv-1",
-        # "biotisr-factin-nonlinear-dcv-2",
-        # "biotisr-factin-nonlinear-dcv-3",
+        "biotisr-factin-nonlinear-dcv-1",
+        "biotisr-factin-nonlinear-dcv-2",
+        "biotisr-factin-nonlinear-dcv-3",
         # "biotisr-lysosome-dcv-1",
         # "biotisr-lysosome-dcv-2",
         # "biotisr-lysosome-dcv-3",
@@ -410,7 +410,7 @@ params = {
         # "biotisr-factin-sr-3",
         # "biotisr-lysosome-sr-1",
         # "biotisr-lysosome-sr-2",
-        "biotisr-lysosome-sr-3",
+        # "biotisr-lysosome-sr-3",
         # "cellpose3-2photon-dn-1",
         # "cellpose3-2photon-dn-4",
         # "cellpose3-2photon-dn-16",
@@ -430,8 +430,6 @@ params = {
         # ("CARE:MT", "care_biosr_sr_mt-v2-newnorm"),
         # ("CARE:F-actin", "care_biosr_sr_actin-v2-newnorm"),
         # ("CARE:Mix", "care_biosr_sr_mix-v2-newnorm"),
-        # ------------------- comparison methods -------------------------------
-        # ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
         # --------------------- BATCH SIZE EFFECT ------------------------------
         # (
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs4",
@@ -441,54 +439,65 @@ params = {
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs8",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8",
         # ),
+        # ------------------- comparison methods -------------------------------
+        ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
         # --------------------- FINAL MODEL-------------------------------------
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
-        # ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+        ),
         # ----------------------- W/O TEXT -------------------------------------
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
-        # ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
+        ),
         # # -------------------- TEXT EFFECT (TRAIN) ---------------------------
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
-        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
-        # ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
+            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
+        ),
         (
             "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
             "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
         ),
+        # ----------------------------------------------------------------------
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-structural-prompt",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-structural-prompt",
+        ),
         # # -------------------- TEXT EFFECT (TEST) ------------------------
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-        # ),
-        # (
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        # ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+        ),
+        (
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+        ),
     ),
     "percentiles": (0.03, 0.995),
 }
@@ -516,8 +525,8 @@ methods = [i[1] for i in params["methods"]]
 
 print("-" * 80)
 print(f"[INFO] Number of methods: {len(methods)}")
-for i in len(titles):
-    print(f"[INFO] methods names: {titles[i]} | method ids: {methods[i]}")
+for i in range(len(titles)):
+    print(f"[INFO] Method name: {titles[i]} | Method ID: {methods[i]}")
 print(f"[INFO] Metrics: {metrics_names}")
 print("-" * 80)
 
@@ -555,7 +564,7 @@ for id_dataset in params["dataset_names"]:
     # get the information of current dataset
     ds = data_frame[data_frame["id"] == id_dataset].iloc[0]
     path_results = os.path.join(params["path_results"], ds["id"])
-    path_metrics_file = os.path.join(path_results, f"metrics-v2.xlsx")
+    path_metrics_file = os.path.join(path_results, f"metrics-v3.xlsx")
     pixel_size = float(ds["target pixel size"].split("x")[0]) / 1000.0
 
     # --------------------------------------------------------------------------
@@ -600,19 +609,20 @@ for id_dataset in params["dataset_names"]:
     writer = pandas.ExcelWriter(path_metrics_file, engine="xlsxwriter")
     try:
         metrics_dataset = []
+        pbar = tqdm.tqdm(total=num_sample_analysis, desc=f"[INFO] Evaluating", ncols=80)
         for i_sample in range(num_sample_analysis):
             sample_name = sample_filenames[i_sample]
             imgs_all = []  # collect estimated images
 
             # load ground truth ------------------------------------------------
             img_gt = utils_data.read_image(os.path.join(ds["path_hr"], sample_name))
-            img_gt = utils_data.interp_sf(img_gt, sf=ds["sf_hr"])[0]
+            img_gt = utils_data.interp_sf(img_gt, sf=int(ds["sf_hr"]))[0]
             img_gt = normalizer(img_gt)
             img_gt = np.clip(img_gt, **dict_clip)
 
             # load raw image ---------------------------------------------------
             img_raw = utils_data.read_image(os.path.join(ds["path_lr"], sample_name))
-            img_raw = utils_data.utils_data.interp_sf(img_raw, sf=ds["sf_lr"])[0]
+            img_raw = utils_data.interp_sf(img_raw, sf=int(ds["sf_lr"]))[0]
             # img_raw = eva.linear_transform(img_true=img_gt, img_test=img_raw)
             img_raw = normalizer(img_raw)
             img_raw = np.clip(img_raw, **dict_clip)
@@ -665,15 +675,24 @@ for id_dataset in params["dataset_names"]:
                     # the ground truth image
                     psnr, ssim, zncc, nrmse, msssim, rse, rsp = 0, 0, 0, 0, 0, 0, 0
 
-                res_da, _ = eva.decorrelation_analysis(
-                    img=img, pixel_size=pixel_size * 1000.0
-                )
+                if i_img == 0:
+                    # if the image was interpolate the estimate resolution will be smaller.
+                    # so I convert the raw image to its original shape.
+                    img_ret = utils_data.interp_sf(x=img[None], sf=int(-ds["sf_lr"]))[0]
+                    res_da, _ = eva.decorrelation_analysis(
+                        img=img_ret, pixel_size=pixel_size * 1000.0 * ds["sf_lr"]
+                    )
+                else:
+                    res_da, _ = eva.decorrelation_analysis(
+                        img=img, pixel_size=pixel_size * 1000.0
+                    )
 
                 metrics_method.append(
                     [psnr, ssim, zncc, nrmse, msssim, rse, rsp, res_da]
                 )  # (num_meth, num_metric)
             metrics_dataset.append(metrics_method)  # (num_sample, num_meth, num_metric)
-
+            pbar.update(1)
+        pbar.close()
         # (num_sample, num_meth, num_metric)
         metrics_dataset = np.array(metrics_dataset)
         assert metrics_dataset.shape[-1] == len(

@@ -1645,18 +1645,18 @@ def interpx(x, shape):
     return x_inter.numpy()[0, 0]
 
 
-def interp_sf(x, sf, mode="nearest"):
+def interp_sf(x, sf: int, mode="nearest"):
     """
     Interpolate the image based on the scale factor.
-    When `sf` > 1, the image is unsampled.
-    When `sf` < 1, the image is downsampled.
+    - When `sf` > 1, the image is unsampled.
+    - When `sf` < 1, the image is downsampled.
 
     ### Args:
-    - `x` : numpy array, image to be interpolated. [C, H, W]
-    - `sf` : float, scale factor.
+    - `x` : (numpy array) image to be interpolated. [C, H, W]
+    - `sf` : (float) scale factor.
 
     ### Returns:
-    - `x_inter` : numpy array, interpolated image. [C, H, W]
+    - `x_inter` : (numpy array) interpolated image. [C, H, W]
     """
     assert len(x.shape) == 3, "The image shape should be [C, H, W]."
     x = torch.unsqueeze(torch.tensor(x), dim=0)
