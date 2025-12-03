@@ -5,6 +5,7 @@ from skimage.metrics import (
     normalized_root_mse,
 )
 from scipy.optimize import linear_sum_assignment
+from scipy.stats import bootstrap
 import math, torch
 from pytorch_msssim import ms_ssim
 
@@ -18,6 +19,62 @@ from miplib.data.containers.fourier_correlation_data import (
 )
 import miplib.analysis.resolution.fourier_ring_correlation as frc
 from miplib.ui.cli import miplib_entry_point_options as options
+
+
+def median_difference_paired(data1, data2):
+    """
+    Calculate the median paired difference between two datasets.\n
+    `np.median(data1 - data2)`
+    ### Parameters:
+    - `data1`: (numpy array) data 1.
+    - `data2`: (numpy array) data 2.
+    ### Returns:
+    - `median_diff`: (numpy array) median difference between two datasets.
+    """
+    median_diff = np.median(data1 - data2)
+    return median_diff
+
+
+def median_difference(data1, data2):
+    """
+    Calculate the median difference between two datasets.\n
+    `np.median(data1) - np.median(data2)`
+    ### Parameters:
+    - `data1`: (numpy array) data 1.
+    - `data2`: (numpy array) data 2.
+    ### Returns:
+    - `median_diff`: (numpy array) median difference between two datasets.
+    """
+    median_diff = np.median(data1) - np.median(data2)
+    return median_diff
+
+
+def median_diff_IC(data1, data2, confidence_level=0.95, paired=True):
+    """
+    Calculate the median difference between two datasets and its confidence interval.
+    ### Parameters:
+    - `data1`: (numpy array) data 1.
+    - `data2`: (numpy array) data 2.
+    ### Returns:
+    - `median_diff`: (numpy array) median difference between two datasets.
+    - `IC`: (numpy array) confidence interval of the median difference.
+    """
+    assert data1.shape == data2.shape, "The shape of data1 and data2 must be the same."
+    assert (
+        confidence_level > 0 and confidence_level < 1
+    ), "Confidence level must be in (0,1)"
+    data = (data1, data2)
+    stat_func = median_difference_paired if paired else median_difference
+    res = bootstrap(
+        data,
+        statistic=stat_func,
+        confidence_level=confidence_level,
+        paired=paired,
+        random_state=7,
+    )
+    median_diff = stat_func(data1, data2)
+    IC = (res.confidence_interval.low, res.confidence_interval.high)
+    return median_diff, IC
 
 
 def FRC(

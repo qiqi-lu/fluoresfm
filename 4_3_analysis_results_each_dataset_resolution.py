@@ -1,7 +1,8 @@
 """
+Only analysis the resolution.
 Calculate the (mean, std, n, p value) of each dataset, and save them into a single excel file.
 Ouput:
-    - results/statistic/{dataset_group}/all_mean_std_pvalue.xlsx
+    - results/statistic/{dataset_group}/all_mean_std_pvalue_res.xlsx
     ---------------------------------------------------------------------------------------
     | dataset-name | task | raw-mean | raw-std | raw-n | raw-statistic | raw-pvalue | ... |
     ---------------------------------------------------------------------------------------
@@ -17,8 +18,8 @@ from scipy.stats import wilcoxon
 from utils.evaluation import median_diff_IC
 
 
-# dataset_group = "internal_dataset"
-dataset_group = "external_dataset"
+dataset_group = "internal_dataset"
+# dataset_group = "external_dataset"
 excel_file_name = "metrics-v3.xlsx"
 
 # ------------------------------------------------------------------------------
@@ -36,13 +37,14 @@ methods = [
     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
     # "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-    "UNet-c:all-newnorm-ALL-v2-160-small-bs16",  # must be the last one
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
+    "gt",
 ]
 
 methods_comp = methods[:-1]
 methods_targ = methods[-1]  # all the other methods are compared to the last one.
 
-metrics = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution (DA)"]
+metrics = ["Resolution (DA)"]
 tasks = ["sr", "dcv", "dn"]
 
 # ------------------------------------------------------------------------------
@@ -68,7 +70,7 @@ for meth in methods:
 
 # ------------------------------------------------------------------------------
 writer = pandas.ExcelWriter(
-    os.path.join(path_statistic, "all_mean_std_pvalue.xlsx"), engine="xlsxwriter"
+    os.path.join(path_statistic, "all_mean_std_pvalue_res.xlsx"), engine="xlsxwriter"
 )
 
 for metric in metrics:
@@ -114,14 +116,7 @@ for metric in metrics:
                 if meth not in data_frame.columns:
                     continue
                 data_comp = data_frame[meth]
-
-                if metric in ["PSNR", "MSSSIM", "ZNCC", "RSP"]:
-                    res = wilcoxon(data_targ, data_comp, alternative="greater")
-                if metric in ["RSE"]:
-                    res = wilcoxon(data_targ, data_comp, alternative="less")
-                if metric in ["Resolution (DA)"]:
-                    res = wilcoxon(data_targ, data_comp, alternative="two-sided")
-
+                res = wilcoxon(data_targ, data_comp, alternative="two-sided")
                 med_diff, med_ic = median_diff_IC(data_targ, data_comp)
 
                 # save to frame

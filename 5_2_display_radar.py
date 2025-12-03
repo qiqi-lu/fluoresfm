@@ -17,27 +17,33 @@ dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"
+# ------------------------------------------------------------------------------
 
+if prefix == "compare_different_methods":
+    methods_info = (
+        ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#FF0000"),
+        # ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#FF0000"),
+        # ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#FF0000"),
+        # ("FluoResFM-bs16", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
+        # ("FluoResFM-bs8", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#92C4E9"),
+        # ("FluoResFM-bs4", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#C1E4FA"),
+        (
+            "FluoResFM (w/o text)",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+            "#2962FF",
+        ),
+        ("UniFMIR", "UniFMIR:all-v2", "#00810A"),
+        ("Raw", "raw", "#212C3E"),
+    )
+if prefix == "compare_different_text":
+    methods_info = (
+        ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#FF0000"),
+        ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-small-bs16-T77"),
+        ("FluoResFM-TS", "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77"),
+        ("FluoResFM-TSpixel", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77"),
+        ("FluoResFM-TSmicro", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77"),
+    )
 
-methods_info = (
-    ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#FF0000"),
-    # ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#FF0000"),
-    # ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#FF0000"),
-    # ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-small-bs16-T77"),
-    # ("FluoResFM-TS", "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77"),
-    # ("FluoResFM-TSpixel", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77"),
-    # ("FluoResFM-TSmicro", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77"),
-    # ("FluoResFM-bs16", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
-    # ("FluoResFM-bs8", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#92C4E9"),
-    # ("FluoResFM-bs4", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#C1E4FA"),
-    (
-        "FluoResFM (w/o text)",
-        "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-        "#2962FF",
-    ),
-    ("UniFMIR", "UniFMIR:all-v2", "#00810A"),
-    ("Raw", "raw", "#212C3E"),
-)
 
 colors_task = {"sr": "#D95D5B", "dcv": "#57AA3E", "dn": "#4D8FCB"}
 
@@ -53,22 +59,26 @@ colors_meth = [meth[2] for meth in methods_info]
 
 # metrics
 # metrics = ["PSNR", "SSIM", "ZNCC"]
-metrics = ["PSNR", "MSSSIM", "ZNCC"]
-metrics_precision = [0.1, 0.001, 0.001, 0.005, 0.005]
+# metrics = ["PSNR", "MSSSIM", "ZNCC"]
+# metrics_precision = [0.1, 0.001, 0.001, 0.005, 0.005]
+metrics = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
+metrics_precision = [0.1, 0.001, 0.001, 0.001, 0.001]
 metrics_range = (0.2, 0.95)  # relative range of metric
 num_metrics = len(metrics)
 
 # file path
 path_statistic = os.path.join("results", "statistic", dataset_group)
 path_figure = os.path.join("results", "figures", "analysis", dataset_group)
+os.makedirs(path_figure, exist_ok=True)
 path_xlsx = os.path.join(path_statistic, "all_mean_std_pvalue.xlsx")
 
+# ------------------------------------------------------------------------------
 print("-" * 80)
-print("dataset_group:", dataset_group)
-print("prefix:", prefix)
-print("Methods:", methods)
-print("Metrics:", metrics)
-print("Number of dataset (show):", num_dataset_show)
+print("[INFO] dataset_group:", dataset_group)
+print("[INFO] prefix:", prefix)
+print("[INFO] Methods:", methods)
+print("[INFO] Metrics:", metrics)
+print("[INFO] Number of dataset (show):", num_dataset_show)
 print("-" * 80)
 
 # ------------------------------------------------------------------------------
@@ -90,7 +100,7 @@ dict_line = {"linewidth": 1.5, "linestyle": "solid"}
 for i_metric, metric in enumerate(metrics):
     ax = axes[i_metric]
     print("-" * 80)
-    print(f"Metric: {metric}")
+    print(f"[INFO] Metric: {metric}")
 
     df_metric = pandas.read_excel(path_xlsx, sheet_name=metric)[
         ["dataset-name", "task"] + methods
@@ -112,7 +122,12 @@ for i_metric, metric in enumerate(metrics):
     ax.set_theta_direction(-1)
 
     # add a circular ring around the plot
-    ax.plot(angles[0:num_sr], [1] * num_sr, color=colors_task["sr"], **dict_ring)
+    ax.plot(
+        angles[0:num_sr],
+        [1] * num_sr,
+        color=colors_task["sr"],
+        **dict_ring,
+    )
     ax.plot(
         angles[num_sr : num_sr + num_dcv],
         [1] * num_dcv,
@@ -161,21 +176,64 @@ ax.legend(loc="upper right", labelspacing=0.8, edgecolor="white")
 plt.savefig(os.path.join(path_figure, f"{prefix}_radar.png"))
 plt.savefig(os.path.join(path_figure, f"{prefix}_radar.svg"))
 
+# ------------------------------------------------------------------------------
 # save source data
+# ------------------------------------------------------------------------------
 writer = pandas.ExcelWriter(
     os.path.join(path_figure, f"{prefix}_radar.xlsx"), engine="xlsxwriter"
-)
+)  # used for source data
+
+writer_stat = pandas.ExcelWriter(
+    os.path.join(path_figure, f"{prefix}_radar_stat.xlsx"), engine="xlsxwriter"
+)  # used for supplementary table
+
+methods_mean = [meth[1] + "-mean" for meth in methods_info]
+methods_std = [meth[1] + "-std" for meth in methods_info]
+methods_median = [meth[1] + "-median-diff" for meth in methods_info]
+methods_IC_low = [meth[1] + "-IC (low)" for meth in methods_info]
+methods_IC_high = [meth[1] + "-IC (high)" for meth in methods_info]
+
+
 for i_metric, metric in enumerate(metrics):
-    df_metric = pandas.read_excel(path_xlsx, sheet_name=metric)[
-        ["dataset-name", "task"] + methods
-    ]
+    df_metric = pandas.read_excel(path_xlsx, sheet_name=metric)
     df_metric = df_metric[df_metric["dataset-name"].isin(id_dataset_show)]
     df_metric = df_metric.set_index("dataset-name").loc[id_dataset_show].reset_index()
-    # rename the columns
+
+    # save the source data -----------------------------------------------------
     df_save = pandas.DataFrame()
     df_save["dataset-name"] = df_metric["dataset-name"]
     df_save["task"] = df_metric["task"]
     for i_meth, meth in enumerate(methods):
         df_save[titles[i_meth]] = df_metric[meth]
     df_save.to_excel(writer, sheet_name=metric, index=True)
+
+    # save the statistics ------------------------------------------------------
+    df_save_stat = pandas.DataFrame()
+    df_save_stat["dataset-name"] = df_metric["dataset-name"]
+    df_save_stat["task"] = df_metric["task"]
+    df_save_stat["ID"] = np.arange(len(df_metric["dataset-name"]))
+
+    for i_meth, meth in enumerate(methods):
+        i_meth = len(methods) - 1 - i_meth
+        mean_std = [
+            f"{m:.4f} ({s:.4f})"
+            for m, s in zip(
+                df_metric[methods_mean[i_meth]], df_metric[methods_std[i_meth]]
+            )
+        ]
+        df_save_stat[titles[i_meth] + "-mean(std)"] = mean_std
+
+        if i_meth != 0:
+            m_ic = [
+                f"{m:.4f}({l:.4f}, {h:.4f})"
+                for m, l, h in zip(
+                    df_metric[methods_median[i_meth]],
+                    df_metric[methods_IC_low[i_meth]],
+                    df_metric[methods_IC_high[i_meth]],
+                )
+            ]
+            df_save_stat[titles[i_meth] + "-median(IC)"] = m_ic
+    df_save_stat.to_excel(writer_stat, sheet_name=metric, index=True)
+
 writer.close()
+writer_stat.close()
