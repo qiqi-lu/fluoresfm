@@ -9,92 +9,192 @@ from utils.plot import add_significant_bars
 from scipy.stats import wilcoxon
 
 plt.rcParams["svg.fonttype"] = "none"
-direction_fig = "vertical"
-# direction_fig = "horizontal"  # arrangement of different metrics
+# direction_fig = "vertical"
+direction_fig = "horizontal"  # arrangement of different metrics
 # ------------------------------------------------------------------------------
 
 # suffix, inex, task_fusion = "different_methods", "internal_dataset", False
-suffix, inex, task_fusion = "different_methods", "external_dataset", False
+# suffix, inex, task_fusion = "different_methods", "external_dataset", False
+
 # suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", True
 # suffix, inex, task_fusion = "different_text_test_fusion", "external_dataset", True
 
 # suffix, inex, task_fusion = "different_text_train_fusion", "internal_dataset", True
 # suffix, inex, task_fusion = "different_text_train_fusion", "external_dataset", True
+
 # suffix, inex, task_fusion = "different_batch_size", "internal_dataset", True
 # suffix, inex, task_fusion = "different_batch_size", "external_dataset", True
 
+# suffix, inex, task_fusion = "wot-our-fusion", "internal_dataset", True
+suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
+
+
 # ------------------------------------------------------------------------------
-metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
 tasks = ["sr", "dcv", "dn"]
 
 path_statistic = os.path.join("results", "statistic", inex)
 path_figure = os.path.join("results", "figures", "analysis", inex)
 
-y_lim_dict = {
-    "internal_dataset": {
-        "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
-        "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
-        "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
-        "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
-    },
-    "external_dataset": {
-        "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
-        "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
-        "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
-        "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
-    },
-}
-
 # ------------------------------------------------------------------------------
 #         Title | ID | Color
 # ------------------------------------------------------------------------------
 methods_dict = {
-    "different_methods": [
-        ("Raw", "raw", "#C1C7D5"),
-        ("UniFMIR", "UniFMIR:all-v2", "#96C36E"),
-        (
-            "FluoResFM (w/o text)",
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-            "#92C4E9",
-        ),
-        ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#EA9A9D"),
-    ],
-    "different_text_test_fusion": [
-        ("Raw", "raw", "#C1C7D5"),
-        ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T", "#C5E3EB"),
-        ("FluoResFM-TS", "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS", "#8CCCCE"),
-        # (
-        #     "FluoResFM-TSmicro",
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-        #     "#018F99",
-        # ),
-        # (
-        #     "FluoResFM-TSpixel",
-        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        #     "#005D6E",
-        # ),
-        ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#42B4B5"),
-    ],
-    "different_text_train_fusion": [
-        ("Raw", "raw", "#C1C7D5"),
-        ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-small-bs16-T77", "#C1E4FA"),
-        ("FluoResFM-TS", "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77", "#92C4E9"),
-        # ("FluoResFM-TSpixel", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77", "#0068A9"),
-        # ("FluoResFM-TSmicro", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77", "#004586"),
-        ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
-    ],
-    "different_batch_size": [
-        ("Raw", "raw", "#C1C7D5"),
-        ("FluoResFM-bs4", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#C1E4FA"),
-        ("FluoResFM-bs8", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#92C4E9"),
-        ("FluoResFM-bs16", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
-    ],
+    "different_methods": {
+        "method-name": [
+            ("Raw", "raw", "#C1C7D5"),
+            ("UniFMIR", "UniFMIR:all-v2", "#96C36E"),
+            (
+                "FluoResFM (w/o text)",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+                "#92C4E9",
+            ),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#EA9A9D"),
+        ],
+        "test-pairs": ((1, 3), (2, 3)),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
+                "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
+            },
+        },
+        "box-aspect": 1,
+    },
+    "different_text_test_fusion": {
+        "method-name": [
+            ("Raw", "raw", "#C1C7D5"),
+            ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T", "#C5E3EB"),
+            (
+                "FluoResFM-TS",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+                "#8CCCCE",
+            ),
+            # (
+            #     "FluoResFM-TSmicro",
+            #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+            #     "#018F99",
+            # ),
+            # (
+            #     "FluoResFM-TSpixel",
+            #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+            #     "#005D6E",
+            # ),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#42B4B5"),
+        ],
+        "test-pairs": ((1, 3), (2, 3)),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
+                "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
+            },
+        },
+        "box-aspect": 1,
+    },
+    "different_text_train_fusion": {
+        "method-name": [
+            ("Raw", "raw", "#C1C7D5"),
+            ("FluoResFM-T", "UNet-c:all-newnorm-ALL-v2-small-bs16-T77", "#C1E4FA"),
+            ("FluoResFM-TS", "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77", "#92C4E9"),
+            # ("FluoResFM-TSpixel", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77", "#0068A9"),
+            # ("FluoResFM-TSmicro", "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77", "#004586"),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
+        ],
+        "test-pairs": ((1, 3), (2, 3)),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
+                "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
+            },
+        },
+        "box-aspect": 1,
+    },
+    "different_batch_size": {
+        "method-name": [
+            ("Raw", "raw", "#C1C7D5"),
+            ("FluoResFM-bs4", "UNet-c:all-newnorm-ALL-v2-160-small-bs4", "#C1E4FA"),
+            ("FluoResFM-bs8", "UNet-c:all-newnorm-ALL-v2-160-small-bs8", "#92C4E9"),
+            ("FluoResFM-bs16", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
+        ],
+        "test-pairs": ((1, 3), (2, 3)),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
+                "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
+            },
+        },
+        "box-aspect": 1,
+    },
+    "wot-our-fusion": {
+        "method-name": [
+            (
+                "w/o target metadata",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
+                "#C1C7D5",
+            ),
+            # (
+            #     "w/o target metadata (in)",
+            #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+            #     "#92C4E9",
+            # ),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
+        ],
+        # "test-pairs": ((0, 2), (1, 2)),
+        "test-pairs": ((0, 1),),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
+                "fusion": ((16, 55), (0.62, 1.07), (0.5, 1.1)),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": ((16, 46), (0.55, 1.07), (0.4, 1.1)),
+            },
+        },
+        "box-aspect": 2,
+    },
 }
 
 # ------------------------------------------------------------------------------
-methods = methods_dict[suffix]
-test_pairs = ((1, 3), (2, 3))
-# test_pairs = ((1, 5), (2, 5), (3, 5), (4, 5))
+methods = methods_dict[suffix]["method-name"]
+test_pairs = methods_dict[suffix]["test-pairs"]
+y_lim_dict = methods_dict[suffix]["y_lim_dict"]
+box_aspect = methods_dict[suffix]["box-aspect"]
 
 titles = [x[0] for x in methods]
 methods_id = [x[1] for x in methods]
@@ -178,7 +278,9 @@ def plot_voilin(ax, data, metric, y_lim):
         # ax_voilin.axhline(y=1.0, color="gray", linestyle="--", linewidth=1)
 
 
+# ------------------------------------------------------------------------------
 # save source data
+# ------------------------------------------------------------------------------
 writer = pandas.ExcelWriter(
     os.path.join(path_figure, f"compare_{suffix}.xlsx"), engine="xlsxwriter"
 )
@@ -211,7 +313,7 @@ if task_fusion == False:
                 ax.set_title(task.upper() + f" (N = {data.shape[0]})")
             if i_task == 0:
                 ax.set_ylabel(metric)
-            ax.set_box_aspect(1)
+            ax.set_box_aspect(box_aspect)
 
             # save source data
             data.columns = titles
@@ -243,7 +345,7 @@ if task_fusion == True:
         ax.set_ylabel(metric)
         if i_metric == 0:
             ax.set_title(f"N = {data.shape[0]}")
-        ax.set_box_aspect(1)
+        ax.set_box_aspect(box_aspect)
 
         # save source data
         data.columns = titles

@@ -8,20 +8,22 @@ import numpy as np
 
 plt.rcParams["svg.fonttype"] = "none"
 
+# ------------------------------------------------------------------------------
 datasets_info_whole = pandas.read_excel("dataset_test-v2.xlsx")
 path_statistic = os.path.join("results", "statistic", "segmentation")
 path_fig_save_to = os.path.join("results", "figures", "analysis", "segmentation")
+os.makedirs(path_fig_save_to, exist_ok=True)
+
+excel_filename = "mean_std.xlsx"
 
 # ------------------------------------------------------------------------------
 #                             load data
 # ------------------------------------------------------------------------------
 os.makedirs(path_fig_save_to, exist_ok=True)
 # load metrics data
-df_ap = pandas.read_excel(
-    os.path.join(path_statistic, "mean_std.xlsx"), sheet_name="AP"
-)
+df_ap = pandas.read_excel(os.path.join(path_statistic, excel_filename), sheet_name="AP")
 df_iou = pandas.read_excel(
-    os.path.join(path_statistic, "mean_std.xlsx"), sheet_name="IoU"
+    os.path.join(path_statistic, excel_filename), sheet_name="IoU"
 )
 
 id_datasets = df_ap["id"].tolist()
@@ -61,7 +63,7 @@ axes[1].set_box_aspect(0.25)
 
 dict_errorbar = {"fmt": "o", "capsize": 3}
 
-# AP
+# AP ---------------------------------------------------------------------------
 for meth in methods_info:
     axes[0].errorbar(
         x,
@@ -75,9 +77,9 @@ axes[0].set_xticks(x)
 axes[0].set_xticklabels([])
 # axes[0].set_xticklabels(df_ap["id"], rotation=90)
 axes[0].set_ylabel("AP")
-axes[0].legend()
+axes[0].legend(frameon=False)
 
-# IoU
+# IoU --------------------------------------------------------------------------
 for meth in methods_info:
     axes[1].errorbar(
         x,
@@ -87,23 +89,72 @@ for meth in methods_info:
         color=meth[2],
         **dict_errorbar,
     )
+
 axes[1].set_xticks(x)
 xt = [
     # f'{datasets_info_current["dataset-name"][i]} ({df_iou[f"{meth[1]}-n"][i]})'
-    f'SEG-{i} ({structures[i]}) ({df_iou[f"{meth[1]}-n"][i]})'
+    # f'SEG-{i} ({structures[i]}) ({df_iou[f"{meth[1]}-n"][i]})'
+    f"{i}"
     for i in range(num_datasets)
 ]
 axes[1].set_xticklabels(xt, rotation=90)
 xticklabels = axes[1].get_xticklabels()
 for i in range(len(xticklabels)):
     xticklabels[i].set_color(colors_ticklabels[i])
+    # xticklabels[i].set_color("white")
 axes[1].set_ylabel("IoU")
 # axes[1].legend()
 
+
+# collect the structure of each dataset
+structures = datasets_info_current["structure"].tolist()
+num_structure_type = len(set(structures))
+structure_type = list(set(structures))
+structure_type.sort()
+# give each structure a color
+colors_structure = [
+    "#9E4589",
+    "#0068A9",
+    "#FFB000",
+    "#00810A",
+    "#D95D5B",
+    "#4D8FCB",
+    "#42B4B5",
+    "#FF0000",
+    "#000000",
+    "#FF7F00",
+    "#FFD700",
+    "#00FF00",
+    "#00FFFF",
+    "#0000FF",
+    "#FF00FF",
+    "#800080",
+]
+colors_structure = colors_structure[:num_structure_type]
+# construct a dictionary to map structure to color
+dict_structure_color = dict(zip(structure_type, colors_structure))
+
+# set the background of ticks
+width = 1
+xmin = x - width / 2
+xmax = x + width / 2
+for i_tick, xmi, xma in zip(range(len(x)), xmin, xmax):
+    for ax in [axes[0], axes[1]]:
+        ax.axvspan(
+            xmin=xmi,
+            xmax=xma,
+            ymin=0,
+            ymax=0.05 / 1.12,
+            facecolor=dict_structure_color[structures[i_tick]],
+            alpha=0.5,
+            zorder=0,
+        )
+
+
 axes[0].set_xlim(-0.5, num_datasets - 0.5)
 axes[1].set_xlim(-0.5, num_datasets - 0.5)
-axes[0].set_ylim(-0.05, 1.05)
-axes[1].set_ylim(-0.05, 1.05)
+axes[0].set_ylim(-0.12, 1.05)
+axes[1].set_ylim(-0.12, 1.05)
 
 plt.savefig(os.path.join(path_fig_save_to, "mean_std.png"))
 plt.savefig(os.path.join(path_fig_save_to, "mean_std.svg"))
