@@ -132,6 +132,7 @@ fig_line, axes_line = plt.subplots(1, 1, figsize=(nc * 3, nr * 3), **dict_fig)
 
 
 imgs_one = imgs[id_sample]
+line_source_data = []
 for i_method in range(num_methods_show + 1):
     ax = axes[i_method]
     img = imgs_one[i_method]
@@ -142,6 +143,7 @@ for i_method in range(num_methods_show + 1):
     img_color = colorize(img, **dict_colorize)
 
     ax.imshow(img_color)
+
     # show fft of image (no color) ---------------------------------------------
     # pad the image to a square shape
     img_shape = img.shape
@@ -161,6 +163,7 @@ for i_method in range(num_methods_show + 1):
     ax_fft.imshow(img_fft, cmap="hot")
 
     img_shape = img.shape
+
     # add text -----------------------------------------------------------------
     # method name
     pos_text = (int(img_shape[1] * 0.96), int(img_shape[0] * 0.04))
@@ -197,6 +200,9 @@ for i_method in range(num_methods_show + 1):
     # add legend
     axes_line.legend(loc="upper right")
 
+    # save the line data
+    line_source_data.append(y)
+
 
 # save the figure
 fig.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.svg"))
@@ -205,3 +211,12 @@ fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.svg"))
 fig_line.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_line.png"))
 fig_fft.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_fft.svg"))
 fig_fft.savefig(os.path.join(path_save_fig, f"sample_{id_sample}_fft.png"))
+
+# ------------------------------------------------------------------------------
+# save source data
+# ------------------------------------------------------------------------------
+# save the line data
+line_source_data = np.array(line_source_data)
+# save to excel fiel
+df_line = pandas.DataFrame(line_source_data.T, columns=methods_name)
+df_line.to_excel(os.path.join(path_save_fig, f"sample_{id_sample}_line.xlsx"))

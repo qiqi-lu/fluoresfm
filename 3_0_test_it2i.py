@@ -102,16 +102,16 @@ checkpoints = (
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
     #     ("TS", 160),
     # ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
-        ("TSmicro", 160),
-    ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
-        ("TSpixel", 160),
-    ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("TSmicro", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("TSpixel", 160),
+    # ],
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
@@ -139,16 +139,16 @@ checkpoints = (
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-res1-att0123-TS77\epoch_2_iter_700000.pt",
     #     ("TS", 77),
     # ],
-    [
-        "_all_newnorm-ALL-v2-small-bs16-TSmicro77",
-        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-res1-att0123-TSmicro77\epoch_2_iter_700000.pt",
-        ("TSmicro", 77),
-    ],
-    [
-        "_all_newnorm-ALL-v2-small-bs16-TSpixel77",
-        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-res1-att0123-TSpixel77\epoch_2_iter_700000.pt",
-        ("TSpixel", 77),
-    ],
+    # [
+    #     "_all_newnorm-ALL-v2-small-bs16-TSmicro77",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-res1-att0123-TSmicro77\epoch_2_iter_700000.pt",
+    #     ("TSmicro", 77),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-small-bs16-TSpixel77",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-res1-att0123-TSpixel77\epoch_2_iter_700000.pt",
+    #     ("TSpixel", 77),
+    # ],
     # --------------------------- finetune (other tasks) -----------------------
     # --------------------------- (3D image restoration) -----------------------
     # [
@@ -156,6 +156,7 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-npc-dcv-mc/epoch_395_iter_32000.pt",
     #     ("ALL", 160),
     # ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc/epoch_395_iter_34000.pt",
@@ -171,6 +172,12 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc-3d/epoch_2099_iter_31500.pt",
     #     ("ALL", 160),
     # ],
+    [
+        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-3d-0.001",
+        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc-3d/epoch_2099_iter_31500.pt",
+        ("ALL", 160),
+    ],
+    # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-sirdna-dcv-mc",
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-sirdna-dcv-mc/epoch_399_iter_97600.pt",
@@ -300,12 +307,12 @@ params = {
     # model parameters ---------------------------------------------------------
     "model_name": "unet_sd_c",
     # --------------------------------------------------------------------------
-    "in_channels": 1,
-    "out_channels": 1,
-    # "in_channels": 6,
+    # "in_channels": 1,
+    # "out_channels": 1,
+    "in_channels": 6,
     # "in_channels": 5,
     # "in_channels": 50,
-    # "out_channels": 6,
+    "out_channels": 6,
     "channels": 320,
     "n_res_blocks": 1,
     "attention_levels": [0, 1, 2, 3],
@@ -688,9 +695,9 @@ params = {
         # "biotisr-factin-dcv-1",
         # "biotisr-factin-dcv-2",
         # "biotisr-factin-dcv-3",
-        "biotisr-factin-nonlinear-dcv-1",
-        "biotisr-factin-nonlinear-dcv-2",
-        "biotisr-factin-nonlinear-dcv-3",
+        # "biotisr-factin-nonlinear-dcv-1",
+        # "biotisr-factin-nonlinear-dcv-2",
+        # "biotisr-factin-nonlinear-dcv-3",
         # "biotisr-lysosome-dcv-1",
         # "biotisr-lysosome-dcv-2",
         # "biotisr-lysosome-dcv-3",
@@ -797,7 +804,7 @@ params = {
         # "biotisr-ccp-sr-3-live",
         # "biotisr-ccp-sr-3-live-in",
         # ----------- FINETUNE (OTHER TASKS) -----------------------------------
-        # "rcan3d-c2s-mt-dcv-mc",
+        "rcan3d-c2s-mt-dcv-mc",
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
         # "care-projection-flywing-0",

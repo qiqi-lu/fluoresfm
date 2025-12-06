@@ -26,29 +26,29 @@ dataset_show = ("rcan3d-c2s-mt-dcv-mc", 2, 2, GREEN, (512, 200, 400))
 
 methods_show = (
     (
-        "FluoResFM-slice",
+        "FluoResFM-S2S",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
         "#EC8860",
     ),
+    # (
+    #     "FluoResFM-M2O",
+    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
+    #     "#B21F2B",
+    # ),
+    # (
+    #     "FluoResFM-M2O-0.001",
+    #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-0.001",
+    #     "#B21F2B",
+    # ),
     (
-        "FluoResFM-M2O",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc",
-        "#B21F2B",
-    ),
-    (
-        "FluoResFM-M2O-0.001",
-        "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-0.001",
-        "#B21F2B",
-    ),
-    (
-        "FluoResFM-M2M-0.0001",
+        "FluoResFM-M2M",
         "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-3d-0.0001",
         "#B21F2B",
     ),
 )
 
 dataset_id, id_sample, id_slice, dataset_color, line_profile = dataset_show
-methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
+methods_colors = ["#8E99AB"] + [m[2] for m in methods_show] + ["#002752"]
 methods_name = ["Confocal"] + [m[0] for m in methods_show] + ["STED"]
 num_methods_show = len(methods_show)
 
@@ -216,59 +216,112 @@ plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
 # quantitative evaluation
 # ------------------------------------------------------------------------------
 # calculate the metrics of each sample
-print("-" * 80)
-pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
+load_exist_metrics = True
+# load_exist_metrics = False
+path_source_data = os.path.join(path_save_fig, "metrics.npy")
+path_source_data_res_gt = os.path.join(path_save_fig, "res_gt.npy")
 
-metric_values = []
-for i_sample in range(num_samples):
-    pbar.update(1)
-    imgs_one = imgs[i_sample]
-    img_gt = imgs_one[-1]
-    metric_methods = []
-    for i_method in range(num_methods_show + 1):
-        img_pred = imgs_one[i_method]
-        dict_img = dict(img_true=img_gt, img_test=img_pred)
-        data_range = dict_clip["a_max"] - dict_clip["a_min"]
+if load_exist_metrics:
+    print(f"[INFO] Load existing metrics from {path_source_data}")
+    metric_values = np.load(path_source_data)
+    res_gt = np.load(path_source_data_res_gt)
+else:
+    print("-" * 80)
+    pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
+    metric_values = []
+    res_gt = []
+    for i_sample in range(num_samples):
+        pbar.update(1)
+        imgs_one = imgs[i_sample]
+        img_gt = imgs_one[-1]
+        metric_methods = []
+        for i_method in range(num_methods_show + 1):
+            img_pred = imgs_one[i_method]
+            dict_img = dict(img_true=img_gt, img_test=img_pred)
+            data_range = dict_clip["a_max"] - dict_clip["a_min"]
 
-        psnr = PSNR(data_range=data_range, **dict_img)
-        msssim = MSSSIM(data_range=data_range, **dict_img)
-        zncc = ZNCC(**dict_img)
-        rses, rsps, emaps, res_das = [], [], [], []
-        for i_slice in range(img_pred.shape[0]):
-            img_pred_slice = img_pred[i_slice]
+            psnr = PSNR(data_range=data_range, **dict_img)
+            msssim = MSSSIM(data_range=data_range, **dict_img)
+            zncc = ZNCC(**dict_img)
+            rses, rsps, emaps, res_das = [], [], [], []
+            for i_slice in range(img_pred.shape[0]):
+                img_pred_slice = img_pred[i_slice]
+                img_gt_slice = img_gt[i_slice]
+                rse, rsp, emap = SQUIRREL(img=img_pred_slice, img_ref=img_gt_slice)
+                rses.append(rse)
+                rsps.append(rsp)
+                # emaps.append(emap)
+                res_da, curve_da = decorrelation_analysis(
+                    img_pred_slice, pixel_size=pixel_size_xy * 1000.0
+                )
+                res_das.append(res_da)
+            rse = np.mean(rses)
+            rsp = np.mean(rsps)
+            res_da = np.mean(res_das)
+            metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
+        # calculate the resolution of gt
+        res_da_gt = []
+        for i_slice in range(img_gt.shape[0]):
             img_gt_slice = img_gt[i_slice]
-            rse, rsp, emap = SQUIRREL(img=img_pred_slice, img_ref=img_gt_slice)
-            rses.append(rse)
-            rsps.append(rsp)
-            # emaps.append(emap)
             res_da, curve_da = decorrelation_analysis(
-                img_pred_slice, pixel_size=pixel_size_xy * 1000.0
+                img_gt_slice, pixel_size=pixel_size_xy * 1000.0
             )
-            res_das.append(res_da)
-        rse = np.mean(rses)
-        rsp = np.mean(rsps)
-        res_da = np.mean(res_das)
-        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
-    metric_values.append(metric_methods)
-pbar.close()
+            res_da_gt.append(res_da)
+        res_da_gt = np.mean(res_da_gt)
+        res_gt.append(res_da_gt)
+        metric_values.append(metric_methods)
+    pbar.close()
 
 metric_values = np.array(metric_values)
-
 metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP", "Resolution"]
+
+print("-" * 80)
+print(f"[INFO] Metrics: {metrics_name}")
+print(f"[INFO] Metrics shape: {metric_values.shape}")
+print("-" * 80)
+
+# ------------------------------------------------------------------------------
+# save source data
+# ------------------------------------------------------------------------------
+print("-" * 80)
+print(f"[INFO] Save metrics to {path_source_data}")
+# save as .npy
+np.save(path_source_data, metric_values)
+np.save(path_source_data_res_gt, res_gt)
+
+# save as excel, each metric to a single sheet
+writer = pandas.ExcelWriter(
+    os.path.join(path_save_fig, f"metrics.xlsx"), engine="xlsxwriter"
+)
+for i_metric in range(len(metrics_name)):
+    metric = metrics_name[i_metric]
+    value = metric_values[:, :, i_metric]
+    if metric == "Resolution":
+        value = np.concatenate([value, np.array(res_gt).reshape(-1, 1)], axis=1)
+        columes = methods_name
+    else:
+        columes = methods_name[:-1]
+    df_metric = pandas.DataFrame(value, columns=columes)
+    df_metric.to_excel(writer, sheet_name=metric, index=True)
+writer.close()
+
+
+# ------------------------------------------------------------------------------
+# plot the metrics
+# ------------------------------------------------------------------------------
 metrics_ticks = (
     np.linspace(0, 40, 40, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 20, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(0, 1, 10, endpoint=False),
-    np.linspace(600, 700, 10, endpoint=False),
+    np.linspace(0, 0.2, 20, endpoint=False),
+    np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(0, 700, 10, endpoint=False),
     # np.linspace(450, 550, 10, endpoint=False),
 )
 
-# plot the metrics -------------------------------------------------------------
 print("-" * 80)
 
-# construct frame used for seaborn boxplot
+# construct frame used for seaborn boxplot -------------------------------------
 df_metrics = pandas.DataFrame(
     columns=["Method", "Metric", "Value"],
 )
@@ -291,7 +344,24 @@ for i_method in range(num_methods_show + 1):
         )
 print(df_metrics)
 
-nr, nc = 1, len(metrics_name)
+# append the ground truth resolution to the dataframe
+df_metrics = pandas.concat(
+    [
+        df_metrics,
+        pandas.DataFrame(
+            {
+                "Method": ["STED"] * len(res_gt),
+                "Metric": ["Resolution"] * len(res_gt),
+                "Value": res_gt,
+            }
+        ),
+    ],
+    ignore_index=True,
+)
+
+# ------------------------------------------------------------------------------
+# nr, nc = 1, len(metrics_name)
+nc, nr = 1, len(metrics_name)
 fig, axes = plt.subplots(nr, nc, figsize=(3 * nc, 3 * nr), **dict_fig)
 
 for i_metric in range(len(metrics_name)):
@@ -302,22 +372,28 @@ for i_metric in range(len(metrics_name)):
     ticks = metrics_ticks[i_metric]
     if metric == "PSNR":
         ticks = np.round(ticks, 1)
-    elif metric == "MSSSIM":
+    elif metric in ["MSSSIM", "ZNCC", "RSE", "RSP"]:
         ticks = np.round(ticks, 2)
-    elif metric == "ZNCC":
-        ticks = np.round(ticks, 2)
+    elif metric == "Resolution":
+        ticks = ticks.astype(int)
 
     ax.set_yticks(ticks)
     ax.set_yticklabels(ticks, fontsize=10)
 
     df_metric = df_metrics[df_metrics["Metric"] == metric]
+
+    if metric == "Resolution":
+        colors_tmp = methods_colors
+    else:
+        colors_tmp = methods_colors[:-1]
+
     seaborn.boxplot(
         data=df_metric,
         x="Method",
         y="Value",
         ax=ax,
         hue="Method",
-        palette=methods_colors,
+        palette=colors_tmp,
         showfliers=False,
         fill=False,
         legend="auto",
@@ -332,30 +408,43 @@ for i_metric in range(len(metrics_name)):
         ax=ax,
         jitter=True,
         size=4,
-        palette=methods_colors,
+        palette=colors_tmp,
     )
-
+    # --------------------------------------------------------------------------
     # del the xlabel
     ax.set_xlabel("")
     ax.set_ylabel(metric)
     # del upper and left axis
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_box_aspect(1.5)  # y:x
+    ax.set_box_aspect(2)  # y:x
     # del x ticks and ticklabels
     ax.set_xticks([])
     ax.set_xticklabels([])
 
-    # add legend
-    legend = ax.legend(
-        methods_name[:-1],
-        loc="lower right",
-        labelcolor=methods_colors,
-        fontsize=8,
-        frameon=False,
-    )
-    for i, handle in enumerate(legend.legend_handles):
-        handle.set_color(methods_colors[i])
+    if i_metric == 0:
+        # add legend
+        legend = ax.legend(
+            methods_name[:-1],
+            loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
+
+    if metric == "Resolution":
+        # add legend
+        legend = ax.legend(
+            methods_name,
+            # loc="lower right",
+            labelcolor=methods_colors,
+            fontsize=8,
+            frameon=False,
+        )
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_color(methods_colors[i])
 
 
 # save the figure

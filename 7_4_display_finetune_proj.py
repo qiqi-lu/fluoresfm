@@ -9,9 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 
-from utils.data import normalization, win2linux, read_txt, interp_sf, iso_xy
+from utils.data import normalization, win2linux, read_txt, interp_sf
 from utils.plot import colorize, add_scale_bar
-from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis, FRC
+from utils.evaluation import PSNR, MSSSIM, ZNCC, SQUIRREL, decorrelation_analysis
 
 # GLOBAL SETTINGS --------------------------------------------------------------
 plt.rcParams["svg.fonttype"] = "none"
@@ -38,7 +38,7 @@ methods_show = (
 )
 
 dataset_id, id_sample, dataset_color = dataset_show
-methods_colors = ["#8E99AB"] + [m[2] for m in methods_show]
+methods_colors = ["#8E99AB"] + [m[2] for m in methods_show] + ["#101010"]
 methods_name = ["Max."] + [m[0] for m in methods_show] + ["GT"]
 num_methods_show = len(methods_show)
 num_sample_show = 8
@@ -130,49 +130,86 @@ metrics_ticks = (
     np.linspace(0, 1, 20, endpoint=False),
     np.linspace(0, 1, 10, endpoint=False),
     np.linspace(0, 1, 40, endpoint=False),
-    np.linspace(0, 1, 40, endpoint=False),
-    np.linspace(600, 700, 5, endpoint=False),
+    np.linspace(0, 1, 20, endpoint=False),
+    np.linspace(500, 700, 10, endpoint=False),
 )
 
-# calculate the metrics of each sample
-print("-" * 80)
-pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
+# calculate the metrics of each sample -----------------------------------------
+path_source_data = os.path.join(path_save_fig, "metrics.npy")
+path_source_dtaa_res_gt = os.path.join(path_save_fig, "res_gt.npy")
 
-errormaps_sample = []
-metric_values = []
-da_curve_sample = []
+load_exist_metrics = True
+# load_exist_metrics = False
 
-for i_sample in range(num_samples):
-    pbar.update(1)
-    imgs_one = imgs[i_sample]
-    img_gt = imgs_one[-1]
+if load_exist_metrics:
+    print("-" * 80)
+    print(f"[INFO] Load existing metrics from {path_source_data}")
+    metric_values = np.load(path_source_data)
+    res_gt = np.load(path_source_dtaa_res_gt)
+else:
+    print("-" * 80)
+    pbar = tqdm.tqdm(total=num_samples, desc="[INFO] Calculate metrics", ncols=80)
 
-    errormaps_method = []
-    metric_methods = []
-    da_curve_methods = []
+    metric_values = []
+    res_gt = []
 
-    for i_method in range(num_methods_show + 1):
-        img_pred = imgs_one[i_method]
-        dict_img = dict(img_true=img_gt, img_test=img_pred)
-        data_range = dict_clip["a_max"] - dict_clip["a_min"]
+    for i_sample in range(num_samples):
+        pbar.update(1)
+        imgs_one = imgs[i_sample]
+        img_gt = imgs_one[-1]
 
-        psnr = PSNR(data_range=data_range, **dict_img)
-        msssim = MSSSIM(data_range=data_range, **dict_img)
-        zncc = ZNCC(**dict_img)
-        rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
-        res_da, curve_da = decorrelation_analysis(
-            img_pred, pixel_size=pixel_size_xy * 1000.0
-        )
-        metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
-        errormaps_method.append(emap)
-        da_curve_methods.append(curve_da)
+        errormaps_method = []
+        metric_methods = []
+        da_curve_methods = []
 
-    metric_values.append(metric_methods)
-    errormaps_sample.append(errormaps_method)
-    da_curve_sample.append(da_curve_methods)
-pbar.close()
+        for i_method in range(num_methods_show + 1):
+            img_pred = imgs_one[i_method]
+            dict_img = dict(img_true=img_gt, img_test=img_pred)
+            data_range = dict_clip["a_max"] - dict_clip["a_min"]
+
+            psnr = PSNR(data_range=data_range, **dict_img)
+            msssim = MSSSIM(data_range=data_range, **dict_img)
+            zncc = ZNCC(**dict_img)
+            rse, rsp, emap = SQUIRREL(img=img_pred, img_ref=img_gt)
+            res_da = decorrelation_analysis(
+                img_pred, pixel_size=pixel_size_xy * 1000.0
+            )[0]
+            metric_methods.append([psnr, msssim, zncc, rse, rsp, res_da])
+
+        res_da_gt = decorrelation_analysis(img_gt, pixel_size=pixel_size_xy * 1000.0)[0]
+        res_gt.append(res_da_gt)
+
+        metric_values.append(metric_methods)
+    pbar.close()
 
 metric_values = np.array(metric_values)
+print(f"[INFO] Metric values shape: {metric_values.shape}")
+
+# ------------------------------------------------------------------------------
+# save source data
+# ------------------------------------------------------------------------------
+print("-" * 80)
+print(f"[INFO] Save source data to {path_source_data}")
+np.save(path_source_data, metric_values)
+np.save(path_source_dtaa_res_gt, res_gt)
+
+# save each metric into a single sheet
+path_source_data_xlsx = os.path.join(path_save_fig, "metrics.xlsx")
+print(f"[INFO] Save source data to {path_source_data}")
+writer = pandas.ExcelWriter(path_source_data_xlsx, engine="xlsxwriter")
+for i_metric in range(len(metrics_name)):
+    metric = metrics_name[i_metric]
+    values = metric_values[:, :, i_metric]
+    if metric == "Resolution":
+        # concate the resolution of the ground truth
+        values = np.concatenate([values, np.array(res_gt).reshape(-1, 1)], axis=1)
+        columes = methods_name
+    else:
+        columes = methods_name[:-1]
+    df_metric = pandas.DataFrame(values, columns=columes)
+    df_metric.to_excel(writer, sheet_name=metric, index=True)
+writer.close()
+
 
 # ------------------------------------------------------------------------------
 # show image
@@ -191,9 +228,9 @@ dict_line = {"linewidth": 1, "color": "magenta", "linestyle": "--"}
 
 # ------------------------------------------------------------------------------
 if fig_direction == "vertical":
-    nr, nc = num_methods_show + 2, 3
+    nr, nc = num_methods_show + 2, 1
 elif fig_direction == "horizontal":
-    nr, nc = 3, num_methods_show + 2
+    nr, nc = 1, num_methods_show + 2
 else:
     raise ValueError(
         f"fig_direction must be 'vertical' or 'horizontal', but got {fig_direction}"
@@ -203,33 +240,15 @@ fig, axes = plt.subplots(nr, nc, figsize=(nc * 3, nr * 3), **dict_fig)
 [ax.set_axis_off() for ax in axes.ravel()]
 
 imgs_one = imgs[id_sample]
-emaps_one = errormaps_sample[id_sample]
-da_curve_one = da_curve_sample[id_sample]
 
 # plot the image ---------------------------------------------------------------
 for i_method in range(num_methods_show + 2):
-
-    if fig_direction == "vertical":
-        ax = axes[i_method][0]
-        ax_emap = axes[i_method][1]
-        ax_da = axes[i_method][2]
-    elif fig_direction == "horizontal":
-        ax = axes[0][i_method]
-        ax_emap = axes[1][i_method]
-        ax_da = axes[2][i_method]
-
+    ax = axes[i_method]
     img = imgs_one[i_method]
     img_color = colorize(img, **dict_colorize)
     ax.imshow(img_color)
-
-    if i_method <= num_methods_show:
-        emap = emaps_one[i_method]
-        ax_emap.imshow(emap, **dict_emap)
-
-        curve_da = da_curve_one[i_method]
-        ax_da.imshow(curve_da)
-
     img_shape = img.shape
+
     # add text -----------------------------------------------------------------
     # method name
     pos_text = (int(img_shape[1] * 0.96), int(img_shape[0] * 0.04))
@@ -255,7 +274,6 @@ plt.savefig(os.path.join(path_save_fig, f"sample_{id_sample}.png"))
 # plot the metrics
 # ------------------------------------------------------------------------------
 print("-" * 80)
-
 # construct frame used for seaborn boxplot
 df_metrics = pandas.DataFrame(
     columns=["Method", "Metric", "Value"],
@@ -278,8 +296,24 @@ for i_method in range(num_methods_show + 1):
             ignore_index=True,
         )
 print(df_metrics)
+# append the resolution of the ground truth
+df_metrics = pandas.concat(
+    [
+        df_metrics,
+        pandas.DataFrame(
+            {
+                "Method": ["GT"] * len(res_gt),
+                "Metric": ["Resolution"] * len(res_gt),
+                "Value": res_gt,
+            }
+        ),
+    ],
+    ignore_index=True,
+)
 
-nr, nc = 1, len(metrics_name)
+# ------------------------------------------------------------------------------
+# nr, nc = 1, len(metrics_name)
+nc, nr = 1, len(metrics_name)
 fig, axes = plt.subplots(nr, nc, figsize=(3 * nc, 3 * nr), **dict_fig)
 
 for i_metric in range(len(metrics_name)):
@@ -290,28 +324,24 @@ for i_metric in range(len(metrics_name)):
     ticks = metrics_ticks[i_metric]
     if metric == "PSNR":
         ticks = np.round(ticks, 1)
-    elif metric == "MSSSIM":
-        ticks = np.round(ticks, 2)
-    elif metric == "ZNCC":
-        ticks = np.round(ticks, 2)
-    elif metric == "RSE":
-        ticks = np.round(ticks, 2)
-    elif metric == "RSP":
+    elif metric in ["MSSSIM", "ZNCC", "RSE", "RSP"]:
         ticks = np.round(ticks, 2)
     elif metric == "Resolution":
-        ticks = np.round(ticks, 0)
+        ticks = ticks.astype(int)
 
     ax.set_yticks(ticks)
     ax.set_yticklabels(ticks, fontsize=10)
 
     df_metric = df_metrics[df_metrics["Metric"] == metric]
+
+    colors_tmp = methods_colors if metric == "Resolution" else methods_colors[:-1]
     seaborn.boxplot(
         data=df_metric,
         x="Method",
         y="Value",
         ax=ax,
         hue="Method",
-        palette=methods_colors,
+        palette=colors_tmp,
         showfliers=False,
         fill=False,
         legend="auto",
@@ -326,7 +356,7 @@ for i_metric in range(len(metrics_name)):
         ax=ax,
         jitter=True,
         size=4,
-        palette=methods_colors,
+        palette=colors_tmp,
     )
 
     # del the xlabel
@@ -335,16 +365,17 @@ for i_metric in range(len(metrics_name)):
     # del upper and left axis
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_box_aspect(1.5)  # y:x
+    ax.set_box_aspect(2)  # y:x
     # del x ticks and ticklabels
     ax.set_xticks([])
     ax.set_xticklabels([])
 
     if i_metric == 0:
+        names_tmp = methods_name if metric == "Resolution" else methods_name[:-1]
         # add legend
         legend = ax.legend(
-            methods_name[:-1],
-            loc="lower right",
+            names_tmp,
+            # loc="lower right",
             labelcolor=methods_colors,
             fontsize=8,
             frameon=False,
@@ -352,7 +383,6 @@ for i_metric in range(len(metrics_name)):
         for i, handle in enumerate(legend.legend_handles):
             handle.set_color(methods_colors[i])
             handle.set_linewidth(1)
-
 
 # save the figure
 plt.savefig(os.path.join(path_save_fig, "metrics.svg"))

@@ -25,8 +25,12 @@ direction_fig = "horizontal"  # arrangement of different metrics
 # suffix, inex, task_fusion = "different_batch_size", "internal_dataset", True
 # suffix, inex, task_fusion = "different_batch_size", "external_dataset", True
 
-# suffix, inex, task_fusion = "wot-our-fusion", "internal_dataset", True
-suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
+suffix, inex, task_fusion = "wot-our-fusion", "internal_dataset", True
+# suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
+
+# suffix, inex, task_fusion = "tsmm-our-fusion", "internal_dataset", True
+# suffix, inex, task_fusion = "tsmm-our-fusion-x", "internal_dataset", False
+# suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
 
 
 # ------------------------------------------------------------------------------
@@ -161,15 +165,16 @@ methods_dict = {
             (
                 "w/o target metadata",
                 "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
-                "#C1C7D5",
+                "#F48F3D",
             ),
             # (
             #     "w/o target metadata (in)",
             #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
             #     "#92C4E9",
             # ),
-            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#4D8FCB"),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#42B4B5"),
         ],
+        # "test-pairs": ((0, 1), (0, 2), (1, 2)),
         # "test-pairs": ((0, 2), (1, 2)),
         "test-pairs": ((0, 1),),
         "y_lim_dict": {
@@ -177,18 +182,77 @@ methods_dict = {
                 "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
                 "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
                 "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
-                "fusion": ((16, 55), (0.62, 1.07), (0.5, 1.1)),
+                "fusion": (
+                    (20, 55),
+                    (0.65, 1.04),
+                    (0.53, 1.04),
+                    (0.0, 0.185),
+                    (0.55, 1.04),
+                ),
             },
             "external_dataset": {
                 "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
                 "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
                 "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
-                "fusion": ((16, 46), (0.55, 1.07), (0.4, 1.1)),
+                "fusion": (
+                    (17, 44),
+                    (0.5, 1.04),
+                    (0.26, 1.07),
+                    (0.015, 0.21),
+                    (0.3, 1.07),
+                ),
+            },
+        },
+        "box-aspect": 2,
+    },
+    "tsmm-our-fusion": {
+        "method-name": [
+            (
+                "FluoResFM-TSMM (structural prompt)",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-structural-prompt",
+                "#B271AB",
+            ),
+            # (
+            #     "FluoResFM-TSMM",
+            #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
+            #     "#92C4E9",
+            # ),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#42B4B5"),
+        ],
+        # "test-pairs": ((0, 1), (0, 2), (1, 2)),
+        # "test-pairs": ((0, 2), (1, 2)),
+        "test-pairs": ((0, 1),),
+        "y_lim_dict": {
+            "internal_dataset": {
+                "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1), (0.0, 0.185), (0.55, 1.04)),
+                "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1), (0.0, 0.185), (0.55, 1.04)),
+                "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1), (0.0, 0.185), (0.55, 1.04)),
+                "fusion": (
+                    (20, 55),
+                    (0.65, 1.04),
+                    (0.53, 1.04),
+                    (0.0, 0.185),
+                    (0.55, 1.04),
+                ),
+            },
+            "external_dataset": {
+                "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
+                "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
+                "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
+                "fusion": (
+                    (20, 45),
+                    (0.5, 1.04),
+                    (0.24, 1.07),
+                    (0.015, 0.21),
+                    (0.25, 1.07),
+                ),
             },
         },
         "box-aspect": 2,
     },
 }
+
+methods_dict["tsmm-our-fusion-x"] = methods_dict["tsmm-our-fusion"]
 
 # ------------------------------------------------------------------------------
 methods = methods_dict[suffix]["method-name"]
@@ -223,13 +287,20 @@ def plot_voilin(ax, data, metric, y_lim):
     # ax_voilin.axhline(value_ref, color="gray", linestyle="--", linewidth=1)
 
     # ----------------------------------------------------------------------
+    if metric in ["RSE"]:
+        alternative = "less"
+    else:
+        alternative = "greater"
+        # alternative = "less"
+    # alternative = "two-sided"
+
     # add significance test asterisks
     pvalues = []
     for pair in test_pairs:
         test_result = wilcoxon(
             x=data[methods_id[pair[1]]],
             y=data[methods_id[pair[0]]],
-            alternative="greater",
+            alternative=alternative,
         )
         pvalues.append(test_result[1])
 
@@ -237,45 +308,47 @@ def plot_voilin(ax, data, metric, y_lim):
     if metric == "PSNR":
         ax_voilin.set_yticks([10, 20, 30, 40, 50, 60])
         ax_voilin.set_yticklabels([10, 20, 30, 40, 50, 60])
-        ax_voilin.set_ylim(y_lim[0])
-        pos_y = y_lim[0][1] * 0.95
-        for i, pvalue in enumerate(pvalues):
-            add_significant_bars(
-                ax_voilin,
-                test_pairs[i][0],
-                test_pairs[i][1],
-                pos_y + i * 1,
-                pvalue,
-            )
-    if metric in ["MSSSIM", "SSIM", "ZNCC"]:
+
+    if metric in ["MSSSIM", "SSIM", "ZNCC", "RSP"]:
         ax_voilin.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
         ax_voilin.set_yticklabels([0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
+    if metric == "RSE":
+        ax_voilin.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.4, 0.6, 0.8, 1.0])
+        ax_voilin.set_yticklabels([0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.4, 0.6, 0.8, 1.0])
+
+    # ----------------------------------------------------------------------
+    if metric == "PSNR":
+        ax_voilin.set_ylim(y_lim[0])
+        pos_y = y_lim[0][1]
+        yaxis_range = y_lim[0][1] - y_lim[0][0]
     if metric in ["MSSSIM", "SSIM"]:
         ax_voilin.set_ylim(y_lim[1])
-        pos_y = y_lim[1][1] * 0.95
-        for i, pvalue in enumerate(pvalues):
-            add_significant_bars(
-                ax_voilin,
-                test_pairs[i][0],
-                test_pairs[i][1],
-                pos_y + i * 0.02,
-                pvalue,
-            )
-        # ax_voilin.axhline(y=1.0, color="gray", linestyle="--", linewidth=1)
-
+        pos_y = y_lim[1][1]
+        yaxis_range = y_lim[1][1] - y_lim[1][0]
     if metric == "ZNCC":
         ax_voilin.set_ylim(y_lim[2])
-        pos_y = y_lim[2][1] * 0.95
+        pos_y = y_lim[2][1]
+        yaxis_range = y_lim[2][1] - y_lim[2][0]
+    if metric == "RSE":
+        ax_voilin.set_ylim(y_lim[3])
+        pos_y = y_lim[3][1]
+        yaxis_range = y_lim[3][1] - y_lim[3][0]
+    if metric == "RSP":
+        ax_voilin.set_ylim(y_lim[4])
+        pos_y = y_lim[4][1]
+        yaxis_range = y_lim[4][1] - y_lim[4][0]
+
+    if metric in ["PSNR", "MSSSIM", "SSIM", "ZNCC", "RSE", "RSP"]:
+        pos_y = pos_y - yaxis_range * 0.06
         for i, pvalue in enumerate(pvalues):
             add_significant_bars(
                 ax_voilin,
                 test_pairs[i][0],
                 test_pairs[i][1],
-                pos_y + i * 0.02,
+                pos_y + i * 0.02 * yaxis_range,
                 pvalue,
             )
-        # ax_voilin.axhline(y=1.0, color="gray", linestyle="--", linewidth=1)
 
 
 # ------------------------------------------------------------------------------
