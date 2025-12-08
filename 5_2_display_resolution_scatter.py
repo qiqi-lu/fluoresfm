@@ -15,8 +15,8 @@ from scipy.stats import pearsonr
 plt.rcParams["svg.fonttype"] = "none"
 
 # ------------------------------------------------------------------------------
-dataset_group = "internal_dataset"
-# dataset_group = "external_dataset"
+# dataset_group = "internal_dataset"
+dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"
@@ -86,7 +86,12 @@ fig, axes = plt.subplots(
 # xlim = (0, max_global * 1.05)
 # ylim = (0, max_global * 1.05)
 # xlim, ylim = (0, 750), (0, 750)
-xlim, ylim = (0, 12000), (0, 12000)
+if dataset_group == "internal_dataset":
+    xlim, ylim = (0, 12000), (0, 12000)
+    xlim_zoomin, ylim_zoomin = (0, 1000), (0, 1000)
+if dataset_group == "external_dataset":
+    xlim, ylim = (0, 700), (0, 700)
+    xlim_zoomin, ylim_zoomin = (0, 700), (0, 700)
 
 data_x = df_metric[methods[-1]]
 linex = np.linspace(xlim[0], xlim[1], 100)
@@ -123,14 +128,15 @@ ax.set_ylim(ylim)
 ax.set_xlabel("Resolution (nm) - GT", **dict_text)
 ax.set_ylabel("Resolution (nm) - Restored", **dict_text)
 # add the legend
-ax.legend(loc="upper left", fontsize=5, frameon=False)
+ax.legend(
+    # loc="upper left",
+    fontsize=5,
+    frameon=False,
+)
 ax.set_box_aspect(1)
 ax.tick_params(axis="both", which="major", labelsize=fontsize)
 # ------------------------------------------------------------------------------
 # zoom in the plot
-
-xlim_zoomin, ylim_zoomin = (0, 1000), (0, 1000)
-
 # plot a box around the zoom in area
 ax.add_patch(
     plt.Rectangle(

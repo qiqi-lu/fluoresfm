@@ -102,7 +102,7 @@ for metric in metrics:
 
             data_targ = data_frame[methods_targ]
 
-            # save to frame
+            # save to frame (target method)
             mean_std_pvalue_frame.loc[idx, methods_targ + "-mean"] = data_targ.mean()
             mean_std_pvalue_frame.loc[idx, methods_targ + "-std"] = data_targ.std()
             mean_std_pvalue_frame.loc[idx, methods_targ + "-n"] = n
@@ -115,6 +115,7 @@ for metric in metrics:
                     continue
                 data_comp = data_frame[meth]
 
+                # rank test (Wilcoxon signed-rank test) ------------------------
                 if metric in ["PSNR", "MSSSIM", "ZNCC", "RSP"]:
                     res = wilcoxon(data_targ, data_comp, alternative="greater")
                 if metric in ["RSE"]:
@@ -122,9 +123,10 @@ for metric in metrics:
                 if metric in ["Resolution (DA)"]:
                     res = wilcoxon(data_targ, data_comp, alternative="two-sided")
 
+                # calculate the median difference and the confidence interval --
                 med_diff, med_ic = median_diff_IC(data_targ, data_comp)
 
-                # save to frame
+                # save to frame ------------------------------------------------
                 mean_std_pvalue_frame.loc[idx, meth + "-mean"] = data_comp.mean()
                 mean_std_pvalue_frame.loc[idx, meth + "-std"] = data_comp.std()
                 mean_std_pvalue_frame.loc[idx, meth + "-n"] = n

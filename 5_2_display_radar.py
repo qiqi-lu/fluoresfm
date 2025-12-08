@@ -225,7 +225,7 @@ for i_metric, metric in enumerate(metrics):
 
         if i_meth != 0:
             m_ic = [
-                f"{m:.4f}({l:.4f}, {h:.4f})"
+                f"{m:.4f} ({l:.4f}, {h:.4f})"
                 for m, l, h in zip(
                     df_metric[methods_median[i_meth]],
                     df_metric[methods_IC_low[i_meth]],
