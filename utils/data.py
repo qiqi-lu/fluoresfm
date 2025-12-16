@@ -18,6 +18,15 @@ import utils.data as utils_data
 from torch.utils.data import Dataset
 
 
+def grayto255(x):
+    """
+    Convert the image to 255.
+    """
+    x = np.array(x)
+    x = x / x.max() * 255.0
+    return x.astype(np.uint8)
+
+
 class IDTokenizer(object):
     def __init__(self, all_tokens):
         self.all_tokens = all_tokens
@@ -1919,10 +1928,11 @@ def tensor_to_array(img):
 
 def normalization(image, p_low, p_high, clip=False):
     """
+    [`numpy` version]
     Normalize image using percentile-based normalization.
     - image: numpy array or torch tensor.
-    - p_low: low percentile.
-    - p_high: high percentile.
+    - p_low: low percentile. [0,1]
+    - p_high: high percentile. [0,1]
     - clip: clip the image to [0, 1].
     """
     image = tensor_to_array(image).astype(np.float32)
