@@ -7,12 +7,12 @@ Embedding each line in the `txt` file to a numpy array, and saved as `npy` file.
 
 # from models.clip_embedder import CLIPTextEmbedder
 from models.biomedclip_embedder import BiomedCLIPTextEmbedder
-import torch, os, tqdm
+import torch, os, tqdm, time
 import numpy as np
 
 # ------------------------------------------------------------------------------
-# finetune = False
-finetune = True  # only process the text for the finetune datasets.
+finetune = False
+# finetune = True  # only process the text for the finetune datasets.
 # ------------------------------------------------------------------------------
 
 text_type = ("ALL", 160)
@@ -23,7 +23,7 @@ text_type = ("ALL", 160)
 # text_type = ("T", 77)
 
 # ------------------------------------------------------------------------------
-device = torch.device("cuda:0")
+device = torch.device("cuda:1")
 path_text = os.path.join("text", "v2")
 
 if finetune == True:
@@ -31,7 +31,7 @@ if finetune == True:
 
 path_dataset_txt = os.path.join(path_text, f"dataset_text_{text_type[0]}.txt")
 context_length = text_type[1]
-path_save_to = path_dataset_txt.split(".")[0] + "_" + str(context_length)
+path_save_to = path_dataset_txt.split(".")[0] + "_" + str(context_length) + "_tmp"
 os.makedirs(path_save_to, exist_ok=True)
 
 print("-" * 80)
@@ -66,12 +66,19 @@ embedder = BiomedCLIPTextEmbedder(
 embedder.eval()
 
 # ------------------------------------------------------------------------------
+time_used = []
 pbar = tqdm.tqdm(total=num_dataset, ncols=80, desc="[INFO] EMBEDDING")
 for i in range(num_dataset):
     prompt = dataset_text[i]
+    torch.cuda.synchronize(device=device)
+    tic = time.time()
     cond = embedder(prompt)  # shape = [1, 160, 768]
+    torch.cuda.synchronize(device=device)
+    toc = time.time()
+    time_used.append(toc - tic)
     np.save(os.path.join(path_save_to, f"{i}.npy"), cond.cpu().detach().numpy())
     pbar.update(1)
 pbar.close()
 
 print("-" * 80)
+print(f"[INFO] Time used (average): {np.mean(time_used):.4f}s")

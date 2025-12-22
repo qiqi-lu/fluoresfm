@@ -1,5 +1,5 @@
 import numpy as np
-import torch, os, pandas, math, tqdm, datetime
+import torch, os, pandas, math, tqdm, datetime, time
 import skimage.io as io
 from models.unet import UNet
 from models.care import CARE
@@ -10,20 +10,22 @@ import utils.data as utils_data
 import utils.evaluation as utils_eva
 import utils.optim as utils_optim
 
+from torchinfo import summary
+
 # ------------------------------------------------------------------------------
 # parameters
 # ------------------------------------------------------------------------------
 checkpoints = [
-    # [
-    #     "care",
-    #     "_newnorm-v2-all",
-    #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
-    # ],
-    # [
-    #     "dfcan",
-    #     "_newnorm-v2-all",
-    #     "checkpoints\conditional\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
-    # ],
+    [
+        "care",
+        "_newnorm-v2-all",
+        "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
+    ],
+    [
+        "dfcan",
+        "_newnorm-v2-all",
+        "checkpoints\conditional\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-all\epoch_2_iter_700000.pt",
+    ],
     # -------------------------- distribution bias -----------------------------
     # [
     #     "care",
@@ -51,148 +53,148 @@ checkpoints = [
     #     "checkpoints\conditional\care_mae_bs_16_lr_0.0001_newnorm-v2-biosr-sr-mix\epoch_40_iter_700000.pt",
     # ],
     # --------------------------------------------------------------------------
-    # [
-    #     "unifmir",
-    #     "_all-newnorm-v2",
-    #     "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_1_iter_4300000.pt",
-    # ],
-    # -------------------------------- fintune ---------------------------------
-    [
-        "care",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
-        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
-    ],
-    [
-        "dfcan",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
-        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
-    ],
     [
         "unifmir",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_150_iter_36600.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_150_iter_82200.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_150_iter_82200.pt",
-        # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_150_iter_82200.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_150_iter_82200.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_150_iter_82200.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_150_iter_82200.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_150_iter_36600.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_150_iter_36600.pt",
-        # ----------------------------------------------------------------------
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_150_iter_36600.pt",
-        # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
-        # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_150_iter_36600.pt",
-        "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
-        "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_150_iter_36600.pt",
+        "_all-newnorm-v2",
+        "checkpoints\conditional\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-all\epoch_1_iter_4300000.pt",
     ],
+    # -------------------------------- fintune ---------------------------------
+    # [
+    # "care",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+    # "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
+    #     "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+    #     "checkpoints\conditional\\finetune\care_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
+    # ],
+    # [
+    # "dfcan",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_2000_iter_70000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_2000_iter_70000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_2000_iter_70000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_2000_iter_32000.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_2000_iter_32000.pt",
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+    # "checkpoints\conditional\\finetune\dfcan_mae_bs_16_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_2000_iter_32000.pt",
+    # ],
+    # [
+    # "unifmir",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-1\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-2\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mt-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mt-sr-3\epoch_150_iter_36600.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-1\epoch_150_iter_82200.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-2\epoch_150_iter_82200.pt",
+    # "-v2-newnorm-ft-inout-biotisr-mito-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-mito-sr-3\epoch_150_iter_82200.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-1\epoch_150_iter_82200.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-2\epoch_150_iter_82200.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-nonlinear-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-nonlinear-sr-3\epoch_150_iter_82200.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-1\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-2\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-ccp-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-ccp-sr-3\epoch_150_iter_36600.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-1\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-2\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-factin-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-factin-sr-3\epoch_150_iter_36600.pt",
+    # ----------------------------------------------------------------------
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-1",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-1\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-2",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-2\epoch_150_iter_36600.pt",
+    # "-v2-newnorm-ft-inout-biotisr-lysosome-sr-3",
+    # "checkpoints\conditional\\finetune\\unifmir_mae_bs_1_lr_0.0001_newnorm-v2-ft-biotisr-lysosome-sr-3\epoch_150_iter_36600.pt",
+    # ],
 ]
 
 params = {
-    "device": "cuda:0",
+    "device": "cuda:1",
     # dataset ------------------------------------------------------------------
     "dim": 2,
     "path_dataset_test": "dataset_test-v2.xlsx",
@@ -546,7 +548,7 @@ params = {
         # "biotisr-factin-sr-3",
         # "biotisr-lysosome-sr-1",
         # "biotisr-lysosome-sr-2",
-        "biotisr-lysosome-sr-3",
+        # "biotisr-lysosome-sr-3",
         # "biotisr-mt-sr-1",
         # "biotisr-mt-sr-2",
         # "biotisr-mt-sr-3",
@@ -634,6 +636,9 @@ params = {
         # "stardist-50",
         # "stardist-100",
         # "cellpose3-ccdb6843-dn",
+        "cost-eva-256",
+        "cost-eva-512",
+        "cost-eva-1024",
     ],
     "scale_factor": 1,
     "num_sample": 8,
@@ -685,7 +690,8 @@ for checkpoint in checkpoints:
     params.update(
         {
             "overlap": params["patch_size"] // 4,
-            "batch_size": int(64 / params["patch_size"] * 32),
+            # "batch_size": int(64 / params["patch_size"] * 32),
+            "batch_size": 1,
         }
     )
 
@@ -753,6 +759,21 @@ for checkpoint in checkpoints:
         )
 
     model = model.to(device)
+
+    if model_name in ["care", "dfcan"]:
+        summary(
+            model=model,
+            input_size=(1, 1, 256, 256),
+            dtypes=(torch.float32,),
+            device=params["device"],
+        )
+    # if model_name in ["unifmir"]:
+    #     summary(
+    #         model=model,
+    #         input_size=(1, 1, 256, 256),
+    #         dtypes=(torch.float32,),
+    #         device=params["device"],
+    #     )
 
     # --------------------------------------------------------------------------
     # load model parameters
@@ -838,6 +859,8 @@ for checkpoint in checkpoints:
             img_lr = torch.tensor(img_lr[None]).to(device)
 
             # prediction -------------------------------------------------------
+            torch.cuda.synchronize(device=device)
+            tic = time.time()
             with torch.no_grad():
                 if params["patch_image"] and (
                     params["patch_size"] < max(img_lr.shape[-2:])
@@ -926,6 +949,9 @@ for checkpoint in checkpoints:
                             img_est = img_est[
                                 :, :, : input_shape[-2], : input_shape[-1]
                             ]
+            torch.cuda.synchronize(device=device)
+            toc = time.time()
+            print(f"[INFO] Prediction time: {toc - tic:.4f}s")
             img_est = img_est.float().cpu().detach().numpy()
 
             # ------------------------------------------------------------------

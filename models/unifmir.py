@@ -1025,4 +1025,4 @@ if __name__ == "__main__":
     )
     out = model(x, 4)
     print(out.shape)
-    # torchinfo.summary(model=model, input_size=(2, in_channels, 64, 64))
+    torchinfo.summary(model=model, input_size=(2, in_channels, 64, 64))

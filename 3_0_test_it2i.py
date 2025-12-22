@@ -5,7 +5,7 @@ The z dimension is treated as channels for 3D image.
 """
 
 import numpy as np
-import torch, os, tqdm, pandas, math, datetime
+import torch, os, tqdm, pandas, math, datetime, time
 import skimage.io as io
 
 from models.clip_embedder import CLIPTextEmbedder
@@ -23,11 +23,11 @@ from constants import task_struc_micro_voc
 # ------------------------------------------------------------------------------
 checkpoints = (
     # ---------------------------- FINAL MODEL ---------------------------------
-    # [
-    #     "_all_newnorm-ALL-v2-160-small-bs16",
-    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
-    #     ("ALL", 160),
-    # ],
+    [
+        "_all_newnorm-ALL-v2-160-small-bs16",
+        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+        ("ALL", 160),
+    ],
     # -------------------------- w/o text (train stage) ------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-crossx",
@@ -172,11 +172,11 @@ checkpoints = (
     #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.0001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc-3d/epoch_2099_iter_31500.pt",
     #     ("ALL", 160),
     # ],
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-3d-0.001",
-        "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc-3d/epoch_2099_iter_31500.pt",
-        ("ALL", 160),
-    ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-mt-dcv-mc-3d-0.001",
+    #     "checkpoints/conditional/finetune/unet_sd_c_mae_bs_16_lr_0.001_all_newnorm_ALL-v2-160-res1-att0123-ft-in-out-rcan3d-c2s-mt-dcv-mc-3d/epoch_2099_iter_31500.pt",
+    #     ("ALL", 160),
+    # ],
     # --------------------------------------------------------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-ft-inout-rcan3d-c2s-sirdna-dcv-mc",
@@ -307,12 +307,12 @@ params = {
     # model parameters ---------------------------------------------------------
     "model_name": "unet_sd_c",
     # --------------------------------------------------------------------------
-    # "in_channels": 1,
-    # "out_channels": 1,
-    "in_channels": 6,
+    "in_channels": 1,
+    "out_channels": 1,
+    # "in_channels": 6,
     # "in_channels": 5,
     # "in_channels": 50,
-    "out_channels": 6,
+    # "out_channels": 6,
     "channels": 320,
     "n_res_blocks": 1,
     "attention_levels": [0, 1, 2, 3],
@@ -804,7 +804,7 @@ params = {
         # "biotisr-ccp-sr-3-live",
         # "biotisr-ccp-sr-3-live-in",
         # ----------- FINETUNE (OTHER TASKS) -----------------------------------
-        "rcan3d-c2s-mt-dcv-mc",
+        # "rcan3d-c2s-mt-dcv-mc",
         # "rcan3d-c2s-npc-dcv-mc",
         # "rcan3d-c2s-sirdna-dcv-mc",
         # "care-projection-flywing-0",
@@ -830,6 +830,10 @@ params = {
         # "dl-smlm-microtubule",
         # "synprot-channe-0-reg",
         # "synprot-channe-1-reg",
+        # ------------------------ COST EVALUATION -----------------------------
+        "cost-eva-256",
+        "cost-eva-512",
+        "cost-eva-1024",
     ],
     "num_sample": 8,
     "percentiles": (0.03, 0.995),
@@ -847,7 +851,8 @@ params.update(
     {
         "overlap": params["patch_size"] // 4,
         "batch_size": int(64 / params["patch_size"] * 32),
-        "path_output": utils_data.win2linux(params["path_output"]),
+        "batch_size": 1,
+        # "path_output": utils_data.win2linux(params["path_output"]),
         "path_embedder_json": utils_data.win2linux(params["path_embedder_json"]),
         "path_embedder_bin": utils_data.win2linux(params["path_embedder_bin"]),
     }
@@ -964,7 +969,7 @@ for checkpoint in checkpoints:
     state_dict = torch.load(path_checkpoint, map_location=device, weights_only=True)[
         "model_state_dict"
     ]
-    # del prefix for complied model
+    # del prefix for complied model --------------------------------------------
     state_dict = utils_optim.on_load_checkpoint(checkpoint=state_dict)
     model.load_state_dict(state_dict)
     if params["complie_model"]:
@@ -1174,8 +1179,11 @@ for checkpoint in checkpoints:
             # ------------------------------------------------------------------
             # prediction
             # generate restored image slice-by-slice
+            torch.cuda.synchronize(device=device)
+            tic = time.time()
             with torch.autocast("cuda", torch.float16, enabled=params["enable_amp"]):
-                with torch.no_grad():
+                # with torch.no_grad():
+                with torch.inference_mode():
 
                     if params["patch_image"] and (
                         params["patch_size"] < max(img_lr.shape[-2:])
@@ -1192,10 +1200,13 @@ for checkpoint in checkpoints:
                                 img_lr, pad=(0, 0, 0, pad_size), mode="reflect"
                             )
 
-                        img_est_multi_slice = []
                         pbar_slice = tqdm.tqdm(
-                            desc="[INFO] PREDICT", total=num_slices, ncols=80
+                            desc="[INFO] PREDICT",
+                            total=num_slices,
+                            ncols=80,
+                            disable=num_slices == 1,
                         )
+                        img_est_multi_slice = []
                         for i_slice in range(num_slices):
                             # get the current slice
                             img_lr_slice = img_lr[
@@ -1209,12 +1220,6 @@ for checkpoint in checkpoints:
 
                             # ------------------------------------------------------
                             num_iter = math.ceil(img_lr_slice_patches.shape[0] / bs)
-                            pbar = tqdm.tqdm(
-                                desc="[INFO] PREDICT-slice",
-                                total=num_iter,
-                                ncols=80,
-                                leave=False,
-                            )
 
                             img_est_slice_patches = torch.zeros(
                                 img_lr_slice_patches.shape[0],
@@ -1223,15 +1228,31 @@ for checkpoint in checkpoints:
                                 img_lr_slice_patches.shape[-1],
                                 device=img_lr_slice_patches.device,
                             )
-
+                            pbar = tqdm.tqdm(
+                                desc="[INFO] PREDICT-slice",
+                                total=num_iter,
+                                ncols=80,
+                                leave=num_slices == 1,
+                                disable=True,
+                            )
                             for i_iter in range(num_iter):
+                                patch_tmp = img_lr_slice_patches[
+                                    i_iter * bs : bs + i_iter * bs, :, :, :
+                                ]
+
+                                # torch.cuda.synchronize(device=device)
+                                # tic_in = time.time()
                                 img_est_slice_patch = model(
-                                    img_lr_slice_patches[
-                                        i_iter * bs : bs + i_iter * bs
-                                    ],
+                                    patch_tmp,
                                     time_embed,
                                     text_embed,
                                 )
+                                # torch.cuda.synchronize(device=device)
+                                # toc_in = time.time()
+                                # print(
+                                #     f"[INFO] Time cost (patch): {toc_in - tic_in:.4f}"
+                                # )
+
                                 img_est_slice_patches[
                                     i_iter * bs : bs + i_iter * bs
                                 ] += img_est_slice_patch
@@ -1269,7 +1290,13 @@ for checkpoint in checkpoints:
                                 :, i_slice : i_slice + params["in_channels"], :, :
                             ]
 
+                            # torch.cuda.synchronize(device=device)
+                            # tic_in = time.time()
                             img_est_slice = model(img_lr_slice, time_embed, text_embed)
+                            # torch.cuda.synchronize(device=device)
+                            # toc_in = time.time()
+                            # print(f"[INFO] Time cost (image): {toc_in - tic_in:.4f}")
+
                             img_est_slice = torch.tensor(img_est_slice)
                             # append the current slice to the list
                             img_est_multi_slice.append(img_est_slice)
@@ -1278,6 +1305,9 @@ for checkpoint in checkpoints:
                     else:
                         img_est = img_est_multi_slice[0]
                     print(f"[INFO] img_est shape: {img_est.shape}")
+            torch.cuda.synchronize(device=device)
+            toc = time.time()
+            print(f"[INFO] Prediction time: {toc - tic:.4f}s")
 
             # clip
             img_est = img_est.float().cpu().detach().numpy()
@@ -1313,9 +1343,9 @@ for checkpoint in checkpoints:
                 arr=img_est[0],
                 check_contrast=False,
             )
-    if structural_prompt == False:
-        del embedder
-    del model
+    # if structural_prompt == False:
+    #     del embedder
+    # del model
 
 print("-" * 80)
 print("[INFO] Done.")

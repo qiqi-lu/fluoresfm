@@ -12,8 +12,8 @@ from dataset_analysis import dataset_names_radar
 plt.rcParams["svg.fonttype"] = "none"
 
 # ------------------------------------------------------------------------------
-# dataset_group = "internal_dataset"
-dataset_group = "external_dataset"
+dataset_group = "internal_dataset"
+# dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"

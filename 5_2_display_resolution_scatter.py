@@ -15,13 +15,14 @@ from scipy.stats import pearsonr
 plt.rcParams["svg.fonttype"] = "none"
 
 # ------------------------------------------------------------------------------
-# dataset_group = "internal_dataset"
-dataset_group = "external_dataset"
+dataset_group = "internal_dataset"
+# dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"
-# ------------------------------------------------------------------------------
 
+threshold_resolution = 700  # higher than threshold will be treated as outliers.
+# ------------------------------------------------------------------------------
 
 methods_info = (
     ("Raw", "raw", "#212C3E"),
@@ -77,6 +78,26 @@ fig, axes = plt.subplots(
     nrows=1, ncols=2, figsize=(6, 3), dpi=600, constrained_layout=True
 )
 
+if threshold_resolution is not None:
+    print(
+        f"[INFO] Number of dataset (show) before filtering:",
+        len(df_metric),
+    )
+    id_drops = []
+    # filter out the outliers
+    # loop over each rows
+    for i_row in range(len(df_metric)):
+        # get the values
+        value_gt = df_metric.iloc[i_row][methods[-1]]
+        if value_gt > threshold_resolution:
+            id_drops.append(i_row)
+        value_raw = df_metric.iloc[i_row][methods[0]]
+        if value_raw > 2000:
+            id_drops.append(i_row)
+    # drop the outliers
+    df_metric = df_metric.drop(id_drops)
+    print(f"[INFO] Number of dataset (show) after filtering:", len(df_metric))
+    id_dataset_show = df_metric["dataset-name"].values
 
 # get max and min value
 # max_gt = df_metric[methods[-1]].max()
@@ -86,9 +107,10 @@ fig, axes = plt.subplots(
 # xlim = (0, max_global * 1.05)
 # ylim = (0, max_global * 1.05)
 # xlim, ylim = (0, 750), (0, 750)
+
 if dataset_group == "internal_dataset":
-    xlim, ylim = (0, 12000), (0, 12000)
-    xlim_zoomin, ylim_zoomin = (0, 1000), (0, 1000)
+    xlim, ylim = (0, 700), (0, 700)
+    xlim_zoomin, ylim_zoomin = (0, 700), (0, 700)
 if dataset_group == "external_dataset":
     xlim, ylim = (0, 700), (0, 700)
     xlim_zoomin, ylim_zoomin = (0, 700), (0, 700)
