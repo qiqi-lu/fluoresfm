@@ -7,7 +7,7 @@ The information is saved in the xlsx file.
 import pandas, os, tqdm
 
 # ------------------------------------------------------------------------------
-finetune = False
+finetune = False  # generate the text for training da
 # finetune = True  # generate the text for finetune datasets
 # ------------------------------------------------------------------------------
 

@@ -16,7 +16,7 @@ direction_fig = "horizontal"  # arrangement of different metrics
 # suffix, inex, task_fusion = "different_methods", "internal_dataset", False
 # suffix, inex, task_fusion = "different_methods", "external_dataset", False
 
-# suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", True
+suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", True
 # suffix, inex, task_fusion = "different_text_test_fusion", "external_dataset", True
 
 # suffix, inex, task_fusion = "different_text_train_fusion", "internal_dataset", True
@@ -29,7 +29,7 @@ direction_fig = "horizontal"  # arrangement of different metrics
 # suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
 
 # suffix, inex, task_fusion = "tsmm-our-fusion", "internal_dataset", True
-suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
+# suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
 
 
 # ------------------------------------------------------------------------------
@@ -90,21 +90,55 @@ methods_dict = {
             #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
             #     "#005D6E",
             # ),
-            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#42B4B5"),
+            # (
+            #     "FluoResFM-T",
+            #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T-v2",
+            #     "#C5E3EB",
+            # ),
+            # (
+            #     "FluoResFM-TS",
+            #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS-v2",
+            #     "#8CCCCE",
+            # ),
+            (
+                "FluoResFM-wot",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+                "#42B4B5",
+            ),
+            (
+                "FluoResFM-wotp",
+                "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-params",
+                "#018F99",
+            ),
+            ("FluoResFM", "UNet-c:all-newnorm-ALL-v2-160-small-bs16", "#005D6E"),
         ],
-        "test-pairs": ((1, 3), (2, 3)),
+        # "test-pairs": ((1, 3), (2, 3)),
+        # "test-pairs": ((1, 4), (2, 4), (3, 4)),
+        "test-pairs": ((1, 5), (2, 5), (3, 5), (4, 5)),
         "y_lim_dict": {
             "internal_dataset": {
                 "sr": ((15, 47), (0.25, 1.07), (0.0, 1.1)),
                 "dcv": ((15, 42), (0.37, 1.07), (0.0, 1.1)),
                 "dn": ((15, 55), (0.35, 1.07), (0.0, 1.1)),
-                "fusion": ((13, 55), (0.25, 1.07), (0.0, 1.1)),
+                "fusion": (
+                    (13, 55),
+                    (0.25, 1.07),
+                    (0.0, 1.1),
+                    (0.0, 0.185),
+                    (0.55, 1.04),
+                ),
             },
             "external_dataset": {
                 "sr": ((18, 40), (0.46, 1.07), (0.42, 1.07)),
                 "dcv": ((16, 41), (0.45, 1.07), (0.22, 1.07)),
                 "dn": ((14, 46), (0.42, 1.07), (0.14, 1.1)),
-                "fusion": ((14, 46), (0.42, 1.07), (0.12, 1.1)),
+                "fusion": (
+                    (14, 46),
+                    (0.42, 1.07),
+                    (0.12, 1.1),
+                    (0.015, 0.21),
+                    (0.25, 1.07),
+                ),
             },
         },
         "box-aspect": 1,

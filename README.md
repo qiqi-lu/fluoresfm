@@ -210,5 +210,8 @@ Before training, our code first uses the information in the information `xlsx` f
 - `substract_background.py` : substract the background of the images using rolling-ball algorithm.
 - `image_denoising.py` : denoise image using conventional denoising algorithms, such as non-local means.
 
+### Running time
+The processing time for a 256x256 image is about 0.30 seconds, 512x512 image is about 2.73 seconds, and 1024x1024 image is about 7.63 seconds on a Nvidia RTX 4090D GPU.
+
 ## LICENSE
 This project is licensed under the MIT License - see the LICENSE file for details.

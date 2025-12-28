@@ -14,66 +14,108 @@ Pred    |
 --------------------------------------------------------------------------------
 """
 
-from utils.data import win2linux, read_txt, normalization
+from utils.data import win2linux, read_txt, normalization, interp_sf
 from utils.plot import colorize, add_scale_bar
 import skimage.io as io
 import numpy as np
 import matplotlib.pyplot as plt
 import os, pandas
 from scipy.io import loadmat
+import seaborn as sns
 
 # set font in svg
 plt.rcParams["svg.fonttype"] = "none"
-# ------------------------------------------------------------------------------
-method_id = "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"
-dataset_name = "biosr-mt-sr-9"
-#
-img_info = (6, (387, 480, 150), (810, 206, 150))
-id_img, box_1, box_2 = img_info
-
-normalizer = lambda image: normalization(image, p_low=0.03, p_high=0.995)
-dict_clip = {"a_min": 0.0, "a_max": 2.5}
 
 # ------------------------------------------------------------------------------
-# load data info
-df_info = pandas.read_excel("dataset_test-v2.xlsx")
-info = df_info[df_info["id"] == dataset_name].iloc[0]
+dataset_name = "biosr-mt-sr-2"
+id_sample_show = 5
 
-path_lr = win2linux(info["path_lr"]) + "_up2"
-path_hr = win2linux(info["path_hr"])
-path_txt = win2linux(info["path_index"])
-pixel_size = float(info["target pixel size"].split("x")[0]) / 1000  # um
-filenames = read_txt(path_txt)
-filename = filenames[id_img]
+# ------------------------------------------------------------------------------
+methods = (
+    ("Raw", "raw"),
+    ("FluoResFM", "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16"),
+    ("GT", "gt"),
+)
 
-path_predict = os.path.join("results", "predictions", dataset_name, method_id)
+path_metadata_excel = "dataset_test-v2.xlsx"
+path_prediction = os.path.join("results", "predictions", dataset_name)
 path_figure = os.path.join(
-    "results", "figures", "images", dataset_name, filename.split(".")[0]
+    "results", "figures", "analysis", "analysis_mt", dataset_name
 )
 os.makedirs(path_figure, exist_ok=True)
 
+# ------------------------------------------------------------------------------
+# load metadata
+# ------------------------------------------------------------------------------
+df_info = pandas.read_excel(path_metadata_excel)
+info = df_info[df_info["id"] == dataset_name].iloc[0]
+path_lr = win2linux(info["path_lr"])
+path_hr = win2linux(info["path_hr"])
+path_txt = win2linux(info["path_index"])
+pixel_size = float(info["target pixel size"].split("x")[0]) / 1000  # um
 
+num_methods = len(methods)
+methods_name = [method[0] for method in methods]
+methods_id = [method[1] for method in methods]
+
+filenames = read_txt(path_txt)[:8]
+num_sample = len(filenames)
+print("-" * 80)
+print(f"[INFO] Number of samples: {len(filenames)}")
 print(f"[INFO] Load image from {path_lr}")
 print(f"[INFO] Load image from {path_hr}")
 print(f"[INFO] Pixel size: {pixel_size} um")
 
 # ------------------------------------------------------------------------------
 # load images
-filename_analysis = os.path.splitext(filename)[0] + "_analysis"
+# ------------------------------------------------------------------------------
+normalizer = lambda image: normalization(image, p_low=0.03, p_high=0.995)
+dict_clip = {"a_min": 0.0, "a_max": 2.5}
 
-paths = [path_lr, path_hr, path_predict]
-methods_name = ["Raw", "GT", "Restored"]
+# ------------------------------------------------------------------------------
+filename = filenames[id_sample_show]
 
-results = []
-for path in paths:
-    print(f"[INFO] Load image from {path}")
-    results_single_meth = []
-    # load image ---------------------------------------------------------------
-    img = io.imread(os.path.join(path, filename))[0]
-    img = np.clip(normalizer(img), **dict_clip)
-    results_single_meth.append(img)
+imgs_meth = []
+for i_meth in range(num_methods):
+    method_name, method_path = methods[i_meth]
+    if method_name == "GT":
+        # load gt image
+        img_gt = io.imread(os.path.join(path_hr, filename))
+        img_gt = interp_sf(img_gt, sf=info["sf_hr"])[0]
+        img_gt = normalizer(img_gt)
+        img_gt = np.clip(img_gt, **dict_clip)
+        imgs_meth.append(img_gt)
+    elif method_name == "Raw":
+        # load raw image
+        img_raw = io.imread(os.path.join(path_lr, filename))
+        img_raw = interp_sf(img_raw, sf=info["sf_lr"])[0]
+        img_raw = normalizer(img_raw)
+        img_raw = np.clip(img_raw, **dict_clip)
+        imgs_meth.append(img_raw)
+    else:
+        # load results
+        meth_id = methods[i_meth][1]
+        img_meth = io.imread(os.path.join(path_prediction, meth_id, filename))[0]
+        img_meth = normalizer(img_meth)
+        img_meth = np.clip(img_meth, **dict_clip)
+        imgs_meth.append(img_meth)
 
-    # load results -------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# load labels
+# ------------------------------------------------------------------------------
+filename_analysis = filenames[id_sample_show].split(".")[0] + "_analysis"
+results_meth = []
+for i_meth in range(num_methods):
+    if methods_name[i_meth] == "Raw":
+        path = path_lr + "_up2"
+    elif methods_name[i_meth] == "GT":
+        path = path_hr
+    else:
+        path = os.path.join(path_prediction, methods_id[i_meth])
+
+    # load results
+    results_single_meth = {}
     path_analysis_data = os.path.join(path, filename_analysis, "data")
     path_analysis_result = os.path.join(path, filename_analysis, "result")
 
@@ -88,34 +130,31 @@ for path in paths:
     all_sorted_filament = loadmat(
         os.path.join(path_analysis_data, "all_sorted_filament.mat")
     )["all_sorted_filament"].astype(np.float32)
-    results_single_meth.append(all_sorted_filament)
 
     R = loadmat(os.path.join(path_analysis_data, "R.mat"))["R"].astype(np.float32)
-    results_single_meth.append(R)
 
     # load junctions
     NewCrPts = loadmat(os.path.join(path_analysis_data, "NewCrPts.mat"))["NewCrPts"]
-    results_single_meth.append(NewCrPts)
 
     # load filament length distribution
     analysis_info = loadmat(os.path.join(path_analysis_data, "AnalysisInfo.mat"))[
         "AnalysisInfo"
     ]  # ['Orientation','Total Length','End-to-End Distance','Centroid X','Centroid Y']
-    results_single_meth.append(analysis_info)
-    results.append(results_single_meth)
 
-# calculate the maximum length of the filaments
-max_length = 0
-min_length = 0
-for res in results:
-    analysis_info = res[4]
-    max_length = max(max_length, analysis_info[:, 1].max())
-    min_length = min(min_length, analysis_info[:, 1].min())
+    results_single_meth["filaments"] = all_sorted_filament
+    results_single_meth["R"] = R
+    results_single_meth["junctions"] = NewCrPts
+    results_single_meth["analysis_info"] = analysis_info * np.array(
+        [1, pixel_size, 1, 1, 1]
+    )
+    results_meth.append(results_single_meth)
 
 
 # ------------------------------------------------------------------------------
 # show images
-nr, nc = 3, 3
+# ------------------------------------------------------------------------------
+print("-" * 80)
+print(f"[INFO] Show images ...")
 dict_fig = dict(dpi=600, constrained_layout=True)
 num_colors = 32
 ColorList = np.random.rand(num_colors, 3)
@@ -129,20 +168,22 @@ dict_junction = dict(
     markerfacecolor="#A6FF00",
 )
 dict_hist = dict(facecolor="none", edgecolor="black", linewidth=1)
-dict_fit_line = dict(color="#C23637", linewidth=1)
 dict_rect = dict(facecolor="none", edgecolor="white", linewidth=1, linestyle="-")
+dict_text_rt = dict(color="black", fontsize=14, ha="right", va="top")
 
-
+# ------------------------------------------------------------------------------
+nr, nc = 3, 4
 fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), **dict_fig)
-fig_len, axes_len = plt.subplots(nrows=nr, ncols=1, figsize=(3, nr * 3), **dict_fig)
+
+imgs_show = imgs_meth
+results_show = results_meth
 
 for i_meth in range(nr):
-    res = results[i_meth]
+    img = imgs_show[i_meth]
+    res = results_show[i_meth]
     ax = axes[i_meth]
-    ax_len = axes_len[i_meth]
 
     # show image ---------------------------------------------------------------
-    img = res[0]
     img_color = colorize(img, vmin=0, vmax=0.9, color=(0, 255, 0))
     ax[0].imshow(img_color, cmap="gray")
     ax[0].set_axis_off()
@@ -171,8 +212,9 @@ for i_meth in range(nr):
         add_scale_bar(ax[0], image=img, **dict_scale_bar)
 
     # show filaments -----------------------------------------------------------
-    all_sorted_filament = res[1]
-    R = res[2][0, 0].astype(np.int32)
+    # (num_pixel x coordinate x num_filaments)
+    all_sorted_filament = res["filaments"]  # shape = (N, 2, num_filaments)
+    R = res["R"][0, 0].astype(np.int32)
 
     num_filaments = all_sorted_filament.shape[2]
     # plot each filament
@@ -193,7 +235,8 @@ for i_meth in range(nr):
     ax[1].set_box_aspect(1)
 
     # show junctions -----------------------------------------------------------
-    NewCrPts = res[3]
+    # (num_junctions x coordinate)
+    NewCrPts = res["junctions"]  # shape (N, 2)
     # get all the cooridinates of points == 1 in overlap_map
 
     ax[2].plot(NewCrPts[:, 1] - R, NewCrPts[:, 0] - R, **dict_junction)
@@ -220,39 +263,50 @@ for i_meth in range(nr):
             )
 
     # show filament length distribution ----------------------------------------
-    analysis_info = res[4]
-    # get the total length of each filament
-    total_length = analysis_info[:, 1]
-
-    # plot
-    xlim_h = (max_length // 100 + 1) * 100
-    freq, bins, _ = ax_len.hist(
-        total_length, bins=25, range=(0, xlim_h), cumulative=True, **dict_hist
+    # (num_filaments x 5)
+    # ['Orientation','Total Length','End-to-End Distance','Centroid X','Centroid Y']
+    analysis_info = res["analysis_info"]
+    df_analysis_info = pandas.DataFrame(
+        analysis_info,
+        columns=[
+            "Orientation",
+            "Total Length",
+            "End-to-End Distance",
+            "Centroid X",
+            "Centroid Y",
+        ],
+    )
+    sns.histplot(
+        data=df_analysis_info,
+        x="Total Length",
+        binwidth=1,
+        kde=True,
+        ax=ax[3],
+        color="#C23637",
+        **dict_hist,
     )
     if i_meth == nr - 1:
-        ax_len.set_xlabel("Filament length (nm)")
+        ax[3].set_xlabel("Filament length ($\mu$m)")
     # ax_len.set_ylabel("Frequency")
-    ax_len.set_xlim([0, xlim_h])
-    ax_len.set_yticks([0, 100, 200, 300, 400])
-    ax_len.set_ylim([0, 400])
-    ax_len.set_box_aspect(1)
+    ax[3].set_xlim([0, 16])
+    ax[3].set_yticks([0, 100, 200, 300, 400])
+    # ax[3].set_ylim([0, 150])
+    ax[3].set_box_aspect(1)
+    ax[3].set_xlabel(None)
 
-    # add a fitted polynomial curve of the histogram
-    x = bins[:-1] + np.diff(bins) / 2
-    y = freq
-    fit = np.polyfit(x, y, 6)
-    fitted_curve = np.polyval(fit, x)
-    ax_len.plot(x, fitted_curve, **dict_fit_line)
-
-# add boxes --------------------------------------------------------------------
-for ax in axes.ravel():
-    for box in [box_1, box_2]:
-        ax.add_patch(
-            plt.Rectangle((box[0], box[1]), box[2], box[2], fill=False, **dict_rect)
-        )
+    median_length = df_analysis_info["Total Length"].median()
+    print(
+        f"[INFO] median filament length ({methods_name[i_meth]}): {median_length:.2f} um"
+    )
+    # add text at the top right of the histogram
+    ax[3].text(
+        0.95, 0.95, f"{median_length:.2f} um", transform=ax[3].transAxes, **dict_text_rt
+    )
 
 # save figures -----------------------------------------------------------------
-fig.savefig(os.path.join(path_figure, f"{filename_analysis}.png"))
-fig.savefig(os.path.join(path_figure, f"{filename_analysis}.svg"))
-fig_len.savefig(os.path.join(path_figure, f"{filename_analysis}_len.png"))
-fig_len.savefig(os.path.join(path_figure, f"{filename_analysis}_len.svg"))
+fig.savefig(
+    os.path.join(path_figure, f"{filenames[id_sample_show].split('.')[0]}_image.png")
+)
+fig.savefig(
+    os.path.join(path_figure, f"{filenames[id_sample_show].split('.')[0]}_image.svg")
+)

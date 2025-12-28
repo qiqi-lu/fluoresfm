@@ -351,9 +351,9 @@ params = {
         # "biotisr-factin-dcv-1",
         # "biotisr-factin-dcv-2",
         # "biotisr-factin-dcv-3",
-        "biotisr-factin-nonlinear-dcv-1",
-        "biotisr-factin-nonlinear-dcv-2",
-        "biotisr-factin-nonlinear-dcv-3",
+        # "biotisr-factin-nonlinear-dcv-1",
+        # "biotisr-factin-nonlinear-dcv-2",
+        # "biotisr-factin-nonlinear-dcv-3",
         # "biotisr-lysosome-dcv-1",
         # "biotisr-lysosome-dcv-2",
         # "biotisr-lysosome-dcv-3",
@@ -393,28 +393,28 @@ params = {
         # "rcan3d-c2s-mt-sr",
         # "rcan3d-c2s-npc-sr",
         # # ----------------------------- finetune -------------------------------
-        # "biotisr-mt-sr-1",
-        # "biotisr-mt-sr-2",
-        # "biotisr-mt-sr-3",
-        # "biotisr-mito-sr-1",
-        # "biotisr-mito-sr-2",
-        # "biotisr-mito-sr-3",
-        # "biotisr-factin-nonlinear-sr-1",
-        # "biotisr-factin-nonlinear-sr-2",
-        # "biotisr-factin-nonlinear-sr-3",
-        # "biotisr-ccp-sr-1",
-        # "biotisr-ccp-sr-2",
-        # "biotisr-ccp-sr-3",
-        # "biotisr-factin-sr-1",
-        # "biotisr-factin-sr-2",
-        # "biotisr-factin-sr-3",
-        # "biotisr-lysosome-sr-1",
-        # "biotisr-lysosome-sr-2",
-        # "biotisr-lysosome-sr-3",
-        # "cellpose3-2photon-dn-1",
-        # "cellpose3-2photon-dn-4",
-        # "cellpose3-2photon-dn-16",
-        # "cellpose3-2photon-dn-64",
+        "biotisr-mt-sr-1",
+        "biotisr-mt-sr-2",
+        "biotisr-mt-sr-3",
+        "biotisr-mito-sr-1",
+        "biotisr-mito-sr-2",
+        "biotisr-mito-sr-3",
+        "biotisr-factin-nonlinear-sr-1",
+        "biotisr-factin-nonlinear-sr-2",
+        "biotisr-factin-nonlinear-sr-3",
+        "biotisr-ccp-sr-1",
+        "biotisr-ccp-sr-2",
+        "biotisr-ccp-sr-3",
+        "biotisr-factin-sr-1",
+        "biotisr-factin-sr-2",
+        "biotisr-factin-sr-3",
+        "biotisr-lysosome-sr-1",
+        "biotisr-lysosome-sr-2",
+        "biotisr-lysosome-sr-3",
+        "cellpose3-2photon-dn-1",
+        "cellpose3-2photon-dn-4",
+        "cellpose3-2photon-dn-16",
+        "cellpose3-2photon-dn-64",
     ],
     "num_sample": 8,
     # "num_sample": None,
@@ -439,64 +439,84 @@ params = {
         #     "UNet-c:all-newnorm-ALL-v2-160-small-bs8",
         #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs8",
         # ),
-        # ------------------- comparison methods -------------------------------
-        ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
-        # --------------------- FINAL MODEL-------------------------------------
+        # # ------------------- comparison methods -------------------------------
+        # ("UniFMIR:all-v2", "unifmir_all-newnorm-v2"),
+        # # --------------------- FINAL MODEL-------------------------------------
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+        # ),
+        # # ----------------------- W/O TEXT -------------------------------------
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
+        # ),
+        # # # -------------------- TEXT EFFECT (TRAIN) ---------------------------
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
+        #     "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
+        # ),
+        # # ----------------------------------------------------------------------
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-structural-prompt",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-structural-prompt",
+        # ),
+        # # # -------------------- TEXT EFFECT (TEST) ------------------------
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
+        # ),
+        # (
+        #     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+        #     "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+        # ),
         (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T-v2",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T-v2",
         ),
-        # ----------------------- W/O TEXT -------------------------------------
         (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-crossx",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-crossx",
-        ),
-        # # -------------------- TEXT EFFECT (TRAIN) ---------------------------
-        (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-T77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-T77",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS-v2",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS-v2",
         ),
         (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-TS77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TS77",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro-v2",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro-v2",
         ),
         (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSmicro77",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata-v2",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata-v2",
         ),
         (
-            "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
-            "unet_sd_c_all_newnorm-ALL-v2-small-bs16-TSpixel77",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
-        ),
-        # ----------------------------------------------------------------------
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-structural-prompt",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-structural-prompt",
-        ),
-        # # -------------------- TEXT EFFECT (TEST) ------------------------
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-T",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TS",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
-        ),
-        (
-            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
-            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+            "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-params",
+            "unet_sd_c_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-params",
         ),
     ),
     "percentiles": (0.03, 0.995),

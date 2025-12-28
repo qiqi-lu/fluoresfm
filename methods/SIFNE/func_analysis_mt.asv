@@ -2,10 +2,10 @@
 % The codes are extracted from other GUI files.
 % Can only analysis single image.
 % @qiqilu
-
+function func_analysis_mt(imgpath)
 %% PARAMETER SETTINGS
-clc
-clear
+% clc
+% clear
 disp('### Parameter setting ...')
 
 % imgpath = "E:\qiqilu\datasets\SIFNE\unzip\SIFNE\MT.tiff";           % path of image
@@ -15,8 +15,8 @@ disp('### Parameter setting ...')
 % imgpath = "E:\qiqilu\datasets\RCAN3D\transformed\C2S_MT\test\channel_0\confocal_2d\29_0.tif";
 % imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\rcan3d-c2s-mt-sr\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\29_0.tif";
 
-id_sample = 42;
-imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\"+num2str(id_sample)+".tif";
+% id_sample = 46;
+% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\"+num2str(id_sample)+".tif";
 % imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_3_up2\"+num2str(id_sample)+".tif";
 % imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-3\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\"+num2str(id_sample)+".tif";
 maskpath = "";
@@ -404,7 +404,6 @@ disp('### Remove short line segments ...')
 % load data\L.mat;
 
 MinNofPixels = 6;
-% MinNofPixels = 3;
 
 MIN_FragmentLength = MinNofPixels;
 AllFragments = bwareaopen(AllFragments, MIN_FragmentLength); % delete small segments
@@ -523,8 +522,8 @@ save(fullfile(path_data,"RegR.mat"),"RegR")
 tempInfo = zeros(size(all_tips,1),3);
 
 % MultiCoreList = 1; % None 
-% MultiCoreList = 2; % Half
-MultiCoreList = 0; % Max
+MultiCoreList = 2; % Half
+% MultiCoreList = 0; % Max
 
 MultiCore = MultiCoreList;
 
@@ -576,11 +575,10 @@ save(fullfile(path_data,"all_tips.mat"),"all_tips")
 disp('### Done.')
 
 %% Grouping and analysis
+
 disp('### Grouping and analysis parameter setting ...')
-% -------------------------------------------------------------------------
 EditPixelSize = 0.02; % um, pixel size
 MaxCurEdit = 1; % rad/um, max curvature
-% -------------------------------------------------------------------------
 % this parameter is only used to help automatically set other parameters.
 % If the user doesn't know the max curvature of your filament, you can
 % mannually set other parameters.
@@ -1770,3 +1768,4 @@ fprintf(fileID,['Maximum Curvature (radian/um):                 ',num2str(MaxCur
 close all;
 
 disp('### Done.')
+disp()

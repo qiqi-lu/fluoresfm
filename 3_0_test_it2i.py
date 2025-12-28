@@ -23,11 +23,11 @@ from constants import task_struc_micro_voc
 # ------------------------------------------------------------------------------
 checkpoints = (
     # ---------------------------- FINAL MODEL ---------------------------------
-    [
-        "_all_newnorm-ALL-v2-160-small-bs16",
-        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
-        ("ALL", 160),
-    ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("ALL", 160),
+    # ],
     # -------------------------- w/o text (train stage) ------------------------
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-crossx",
@@ -98,14 +98,29 @@ checkpoints = (
     #     ("T", 160),
     # ],
     # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-T-v2",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("T-v2", 160),
+    # ],
+    # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-TS",
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
     #     ("TS", 160),
     # ],
+    [
+        "_all_newnorm-ALL-v2-160-small-bs16-in-TS-v2",
+        "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+        ("TS-v2", 160),
+    ],
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro",
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
     #     ("TSmicro", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-TSmicro-v2",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("TSmicro-v2", 160),
     # ],
     # [
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-TSpixel",
@@ -116,6 +131,16 @@ checkpoints = (
     #     "_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
     #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
     #     ("ALL_wot", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata-v2",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("ALL_wot-v2", 160),
+    # ],
+    # [
+    #     "_all_newnorm-ALL-v2-160-small-bs16-in-wo-target-params",
+    #     "checkpoints\\conditional\\unet_sd_c_mae_bs_16_lr_1e-05_all_newnorm_ALL-v2-160-res1-att0123\epoch_0_iter_700000.pt",
+    #     ("ALL_wotp", 160),  # without target parameters
     # ],
     # ----------------------------- Batch size effect --------------------------
     # [
@@ -725,18 +750,18 @@ params = {
         # "cellpose3-2photon-dn-16",
         # "cellpose3-2photon-dn-64",
         # ---------------------------FINTUNE -----------------------------------
-        # "biotisr-ccp-sr-1",
-        # "biotisr-ccp-sr-2",
-        # "biotisr-ccp-sr-3",
-        # "biotisr-factin-sr-1",
-        # "biotisr-factin-sr-2",
-        # "biotisr-factin-sr-3",
-        # "biotisr-lysosome-sr-1",
-        # "biotisr-lysosome-sr-2",
-        # "biotisr-lysosome-sr-3",
-        # "biotisr-mt-sr-1",
-        # "biotisr-mt-sr-2",
-        # "biotisr-mt-sr-3",
+        "biotisr-ccp-sr-1",
+        "biotisr-ccp-sr-2",
+        "biotisr-ccp-sr-3",
+        "biotisr-factin-sr-1",
+        "biotisr-factin-sr-2",
+        "biotisr-factin-sr-3",
+        "biotisr-lysosome-sr-1",
+        "biotisr-lysosome-sr-2",
+        "biotisr-lysosome-sr-3",
+        "biotisr-mt-sr-1",
+        "biotisr-mt-sr-2",
+        "biotisr-mt-sr-3",
         # # -------------------------- SEGMENTATION ----------------------------
         # "colon-tissue-dn-high",
         # "colon-tissue-dn-low",
@@ -787,6 +812,12 @@ params = {
         # "biosr-er-sr-2-in-ccp",
         # "biosr-er-sr-2-in-actin",
         # "biosr-er-sr-2-in-mt",
+        # "biosr-cpp-sr-2-in-er",
+        # "biosr-cpp-sr-2-in-mt",
+        # "biosr-mt-sr-2-in-ccp",
+        # "biosr-mt-sr-2-in-er",
+        # "biosr-er-dcv-2-in-ccp",
+        # "biosr-er-dcv-2-in-mt",
         # ----------- FINETUNE (LIVE) ------------------------------------------
         # "biotisr-mito-sr-1-live",
         # "biotisr-mito-sr-2-live",
@@ -831,9 +862,9 @@ params = {
         # "synprot-channe-0-reg",
         # "synprot-channe-1-reg",
         # ------------------------ COST EVALUATION -----------------------------
-        "cost-eva-256",
-        "cost-eva-512",
-        "cost-eva-1024",
+        # "cost-eva-256",
+        # "cost-eva-512",
+        # "cost-eva-1024",
     ],
     "num_sample": 8,
     "percentiles": (0.03, 0.995),
@@ -842,7 +873,8 @@ params = {
     # "patch_size": 128,
     # "patch_size": 64,
     # output -------------------------------------------------------------------
-    "path_output": "results\\predictions",
+    # "path_output": "results\\predictions",
+    "path_output": os.path.join("results", "predictions"),
 }
 
 assert params["patch_size"] >= 64, "[ERROR] Patch size should be >= 64."
@@ -851,8 +883,8 @@ params.update(
     {
         "overlap": params["patch_size"] // 4,
         "batch_size": int(64 / params["patch_size"] * 32),
-        "batch_size": 1,
-        # "path_output": utils_data.win2linux(params["path_output"]),
+        # "batch_size": 1,
+        "path_output": utils_data.win2linux(params["path_output"]),
         "path_embedder_json": utils_data.win2linux(params["path_embedder_json"]),
         "path_embedder_bin": utils_data.win2linux(params["path_embedder_bin"]),
     }
@@ -1024,10 +1056,16 @@ for checkpoint in checkpoints:
                 "all",
                 "ALL",
                 "ALL_wot",
+                "ALL_wot-v2",
+                "ALL_wotp",
                 "TSpixel",
+                "TSpixel-v2",
                 "TSmicro",
+                "TSmicro-v2",
                 "TS",
+                "TS-v2",
                 "T",
+                "T-v2",
             ]:
                 if text_type[0] == "all":
                     text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
@@ -1051,6 +1089,17 @@ for checkpoint in checkpoints:
                         f'{ds["target microscope-device"]} {ds["target microscope-params"]}',
                         ds["target pixel size"],
                     )
+                elif text_type[0] == "ALL_wotp":  # without target params
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        ds["sample"],
+                        ds["structure#"],
+                        ds["fluorescence indicator"],
+                        f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
+                        ds["input pixel size"],
+                        f'{ds["target microscope-device"]}',
+                        ds["target pixel size"],
+                    )
                 elif text_type[0] == "ALL_wot":
                     text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}.".format(
                         ds["task#"],
@@ -1059,6 +1108,17 @@ for checkpoint in checkpoints:
                         ds["fluorescence indicator"],
                         f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
                         ds["input pixel size"],
+                    )
+                elif text_type[0] == "ALL_wot-v2":  # without target metadata
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        ds["sample"],
+                        ds["structure#"],
+                        ds["fluorescence indicator"],
+                        f'{ds["input microscope-device"]} {ds["input microscope-params"]}',
+                        ds["input pixel size"],
+                        "",
+                        "",
                     )
                 elif text_type[0] == "TSpixel":
                     text = "Task: {}; struture: {}; input pixel size: {}; target pixel size: {}.".format(
@@ -1074,12 +1134,31 @@ for checkpoint in checkpoints:
                         ds["input microscope-device"],
                         ds["target microscope-device"],
                     )
+                elif text_type[0] == "TSmicro-v2":  # without target metadata
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"],
+                        "",
+                        ds["structure#"],
+                        "",
+                        f'{ds["input microscope-device"]}',
+                        "",
+                        f'{ds["target microscope-device"]}',
+                        "",
+                    )
                 elif text_type[0] == "TS":
                     text = "Task: {}; struture: {}".format(
                         ds["task#"], ds["structure#"]
                     )
+                elif text_type[0] == "TS-v2":  # without target metadata
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"], "", ds["structure#"], "", "", "", "", ""
+                    )
                 elif text_type[0] == "T":
                     text = "Task: {}.".format(ds["task#"])
+                elif text_type[0] == "T-v2":  # without target metadata
+                    text = "Task: {}; sample: {}; structure: {}; fluorescence indicator: {}; input microscope: {}; input pixel size: {}; target microscope: {}; target pixel size: {}.".format(
+                        ds["task#"], "", "", "", "", "", "", ""
+                    )
                 else:
                     raise ValueError(f"Text type '{text_type[0]}' does not supported.")
 
@@ -1343,9 +1422,9 @@ for checkpoint in checkpoints:
                 arr=img_est[0],
                 check_contrast=False,
             )
-    # if structural_prompt == False:
-    #     del embedder
-    # del model
+    if structural_prompt == False:
+        del embedder
+    del model
 
 print("-" * 80)
 print("[INFO] Done.")

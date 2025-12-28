@@ -15,7 +15,10 @@ from utils.data import normalization
 
 # ------------------------------------------------------------------------------
 id_gpu = 0
-path_image = "results\predictions\\biosr-er-dn-2\gt\\58.tif"
+# path_image = "results\predictions\\biosr-er-dn-2\gt\\58.tif"
+path_image = (
+    "results\\figures\\analysis\\analysis_er\\biosr-er-sr-2\\images\\gt\\51.tif"
+)
 path_save = os.path.join("results", "figures", "analysis", "analysis_er")
 os.makedirs(path_save, exist_ok=True)
 
@@ -74,6 +77,7 @@ img = normalizer(img)
 img = np.clip(img, 0, 0.9)
 axes.imshow(img, cmap="gray")
 
+# add node markers -------------------------------------------------------------
 df_node = pandas.DataFrame(columns=["x", "y", "degree"])
 df_node["x"] = node_coords[:, 1]
 df_node["y"] = node_coords[:, 0]
@@ -89,6 +93,17 @@ seaborn.scatterplot(
     edgecolor="none",
     ax=axes,
     legend=False,
+)
+
+# add text ---------------------------------------------------------------------
+dict_text = dict(fontsize=8, color="white", ha="right", va="bottom")
+# add average node degree
+axes.text(
+    0.95,
+    0.05,
+    f"avg. degree: {node_degree.mean():.2f} ({node_degree.std():.2f})",
+    transform=axes.transAxes,
+    **dict_text,
 )
 
 axes.axis("off")

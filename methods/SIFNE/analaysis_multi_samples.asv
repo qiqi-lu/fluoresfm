@@ -1,0 +1,6 @@
+% maltiple sample analysis
+id_smaple_list = [41,42,43]
+
+for id = id_smaple_list
+    imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-3\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\"+num2str(id_sample)+".tif";
+    funcan

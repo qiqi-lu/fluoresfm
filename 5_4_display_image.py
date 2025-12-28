@@ -109,7 +109,7 @@ datasets_show_dict = {
         ("biotisr-ccp-sr-1-live-in", 12) + pos_live_ccp_in,
         ("biotisr-ccp-sr-1-live-in", 16) + pos_live_ccp_in,
     ),
-    "_live_lyso_in": (
+    "_live_lyso_in": (  # train on the first sample of training data, test all on training data
         ("biotisr-lysosome-sr-3-live-in", 0) + pos_live_lysosome_in,
         ("biotisr-lysosome-sr-3-live-in", 4) + pos_live_lysosome_in,
         ("biotisr-lysosome-sr-3-live-in", 8) + pos_live_lysosome_in,
@@ -437,6 +437,7 @@ plt.savefig(os.path.join(path_save_fig, f"structure_method{figure_suffix}.svg"))
 
 # ------------------------------------------------------------------------------
 # show heatmap
+# ------------------------------------------------------------------------------
 # load reaults and calculate the mean of each methods
 if plot_heatmap:
     print("-" * 50)

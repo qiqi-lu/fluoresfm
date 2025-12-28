@@ -1,5 +1,6 @@
 """
 Calculate the (mean, std, n, p value) of each dataset, and save them into a single excel file.
++ meedian paired differernce with 95% confidence interval.
 Ouput:
     - results/statistic/{dataset_group}/all_mean_std_pvalue.xlsx
     ---------------------------------------------------------------------------------------

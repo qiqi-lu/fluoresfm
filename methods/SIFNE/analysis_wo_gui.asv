@@ -15,11 +15,13 @@ disp('### Parameter setting ...')
 % imgpath = "E:\qiqilu\datasets\RCAN3D\transformed\C2S_MT\test\channel_0\confocal_2d\29_0.tif";
 % imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\rcan3d-c2s-mt-sr\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\29_0.tif";
 
-% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\47.tif";
-% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_6_up2\47.tif";
-imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-6\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\47.tif";
+id_sample = 42;
+imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\SIM\"+num2str(id_sample)+".tif";
+% imgpath = "E:\qiqilu\datasets\BioSR\transformed\MTs\test\channel_0\WF_noise_level_3_up2\"+num2str(id_sample)+".tif";
+% imgpath = "E:\qiqilu\Project\2024 Foundation model\code\results\predictions\biosr-mt-sr-3\unet_sd_c_all_newnorm-ALL-v2-160-small-bs16\"+num2str(id_sample)+".tif";
 maskpath = "";
 
+disp('Image Path: '+imgpath)
 disp('### Done.')
 
 %% Path setting
@@ -51,15 +53,15 @@ disp('### Done.')
 disp('### Load image ...')
 
 % save data\imgpath.mat imgpath
-save(fullfile(path_data,'imgpath.mat'), 'imgpath');
-
-OriginImg = imread(imgpath);
+save(fullfile(path_data,'imgpath.mat'), 'imgpath'); % path of input image
+% read image
+OriginImg = imread(imgpath); 
 OriginImg = squeeze(OriginImg);
-
+% convert to gray image
 if length(size(OriginImg))==3
     OriginImg = rgb2gray(OriginImg);
 end
-
+% rescale to 0-1
 if isa(OriginImg,'single') || isa(OriginImg,'double')
     OriginImg = rescale(OriginImg);
 end
@@ -86,7 +88,7 @@ disp('### Done.')
 
 %% Preview FT
 % The image enhancement methd used in this algorithm is line and
-% orientation filter transform (LFT and OFT). The user shold define the
+% orientation filter transform (LFT and OFT). The user should define the
 % radius and number of rotations of the scanning line segmenta.
 % Preview of the filter dimension of LFT adn OFT
 
@@ -136,7 +138,8 @@ disp('### Done.')
 % choose region of interest. This region will be used to dfien the cell
 % boundary and calculate the distance map in the analysis section. The user
 % should choose the ROI carefully.
-% Here, a mask drawn using ImageJ can be used.
+% Here, a mask drawn using ImageJ can be used, which should be specified at
+% the beginning parameter setting part.
 
 disp('### Load cell mask ...')
 
@@ -144,7 +147,7 @@ disp('### Load cell mask ...')
 % save data\NofOrientations_FT.mat NofOrientations_FT;
 % load data\OriginImg;
 
-% get ROI_mask use mouse click
+% get ROI_mask use mouse click [YOU CAN USE THIS]
 % load(fullfile(path_data,"OriginImg.mat"))
 % close(figure(1));
 % I = zeros(size(OriginImg,1)+2*R,  size(OriginImg,2)+2*R);
@@ -401,6 +404,7 @@ disp('### Remove short line segments ...')
 % load data\L.mat;
 
 MinNofPixels = 6;
+MinNofPixels = ;
 
 MIN_FragmentLength = MinNofPixels;
 AllFragments = bwareaopen(AllFragments, MIN_FragmentLength); % delete small segments
@@ -572,10 +576,11 @@ save(fullfile(path_data,"all_tips.mat"),"all_tips")
 disp('### Done.')
 
 %% Grouping and analysis
-
 disp('### Grouping and analysis parameter setting ...')
+% -------------------------------------------------------------------------
 EditPixelSize = 0.02; % um, pixel size
 MaxCurEdit = 1; % rad/um, max curvature
+% -------------------------------------------------------------------------
 % this parameter is only used to help automatically set other parameters.
 % If the user doesn't know the max curvature of your filament, you can
 % mannually set other parameters.
@@ -595,7 +600,7 @@ ShortFilamentEdit=FanRadius;
 disp('### Done.')
 
 %% preview and search criteria
-% the seach angle and radius can be automatically set as above
+% the seaRch angle and radius can be automatically set as above
 % preview the search region and check whether it is suitable to cover most
 % gaps that should be filled.
 

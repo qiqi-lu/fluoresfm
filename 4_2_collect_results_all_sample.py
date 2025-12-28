@@ -18,8 +18,8 @@ import os, pandas
 from dataset_analysis import dataset_names_all
 
 # ------------------------------------------------------------------------------
-dataset_group = "internal_dataset"
-# dataset_group = "external_dataset"
+# dataset_group = "internal_dataset"
+dataset_group = "external_dataset"
 excel_file_name = "metrics-v3.xlsx"
 # ------------------------------------------------------------------------------
 
@@ -35,12 +35,17 @@ methods = [
     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSpixel77",
     "UNet-c:all-newnorm-ALL-v2-small-bs16-TSmicro77",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T",
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-T-v2",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS",
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TS-v2",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSpixel",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro",
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-TSmicro-v2",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-structural-prompt",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-wo-target-metadata",
     "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata",
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-metadata-v2",
+    "UNet-c:all-newnorm-ALL-v2-160-small-bs16-in-wo-target-params",
 ]
 
 tasks = ["sr", "dcv", "dn"]
