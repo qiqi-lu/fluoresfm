@@ -16,7 +16,7 @@ direction_fig = "horizontal"  # arrangement of different metrics
 # suffix, inex, task_fusion = "different_methods", "internal_dataset", False
 # suffix, inex, task_fusion = "different_methods", "external_dataset", False
 
-suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", True
+# suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", True
 # suffix, inex, task_fusion = "different_text_test_fusion", "external_dataset", True
 
 # suffix, inex, task_fusion = "different_text_train_fusion", "internal_dataset", True
@@ -29,7 +29,7 @@ suffix, inex, task_fusion = "different_text_test_fusion", "internal_dataset", Tr
 # suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
 
 # suffix, inex, task_fusion = "tsmm-our-fusion", "internal_dataset", True
-# suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
+suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
 
 
 # ------------------------------------------------------------------------------

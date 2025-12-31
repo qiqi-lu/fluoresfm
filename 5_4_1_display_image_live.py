@@ -30,13 +30,13 @@ plt.rcParams["svg.fonttype"] = "none"
 GREEN, BLUE, RED, YELLOW = (0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)
 
 show_images = False
-show_images = True
+# show_images = True
 time_step = 0.25
 # ------------------------------------------------------------------------------
 #              | filename | heatmap | profile | patch | figure direction
 # ------------------------------------------------------------------------------
-# fig_params = ("_live_ccp_in", False, False, True)
-fig_params = ("_live_lyso_in", False, False, True)
+fig_params = ("_live_ccp_in", False, False, True)
+# fig_params = ("_live_lyso_in", False, False, True)
 
 print(f"[INFO] figure:{fig_params[0]}")
 # ------------------------------------------------------------------------------
@@ -50,57 +50,57 @@ pos_live_lysosome_in = ((130, 431), 91, YELLOW, (93, 345, 157, 269), 2.0)
 # ------------------------------------------------------------------------------
 timepoint_show_dict = {
     "_live_ccp_in": (
-        ("biotisr-ccp-sr-1-live-in", 0) + pos_live_ccp_in,
-        ("biotisr-ccp-sr-1-live-in", 4) + pos_live_ccp_in,
-        ("biotisr-ccp-sr-1-live-in", 8) + pos_live_ccp_in,
-        ("biotisr-ccp-sr-1-live-in", 12) + pos_live_ccp_in,
-        ("biotisr-ccp-sr-1-live-in", 16) + pos_live_ccp_in,
-        # ----------------------------------------------------------------------
         # ("biotisr-ccp-sr-1-live-in", 0) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 1) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 2) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 3) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 4) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 5) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 6) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 7) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 8) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 9) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 10) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 11) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 12) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 13) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 14) + pos_live_ccp_in,
-        # ("biotisr-ccp-sr-1-live-in", 15) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 16) + pos_live_ccp_in,
+        # ----------------------------------------------------------------------
+        ("biotisr-ccp-sr-1-live-in", 0) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 1) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 2) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 3) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 4) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 5) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 6) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 7) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 8) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 9) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 10) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 11) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 12) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 13) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 14) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 15) + pos_live_ccp_in,
+        ("biotisr-ccp-sr-1-live-in", 16) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 17) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 18) + pos_live_ccp_in,
         # ("biotisr-ccp-sr-1-live-in", 19) + pos_live_ccp_in,
     ),
     "_live_lyso_in": (  # train on the first sample of training data, test all on training data
-        ("biotisr-lysosome-sr-3-live-in", 0) + pos_live_lysosome_in,
-        ("biotisr-lysosome-sr-3-live-in", 4) + pos_live_lysosome_in,
-        ("biotisr-lysosome-sr-3-live-in", 8) + pos_live_lysosome_in,
-        ("biotisr-lysosome-sr-3-live-in", 12) + pos_live_lysosome_in,
-        ("biotisr-lysosome-sr-3-live-in", 16) + pos_live_lysosome_in,
-        # ----------------------------------------------------------------------
         # ("biotisr-lysosome-sr-3-live-in", 0) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 1) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 2) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 3) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 4) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 5) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 6) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 7) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 8) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 9) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 10) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 11) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 12) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 13) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 14) + pos_live_lysosome_in,
-        # ("biotisr-lysosome-sr-3-live-in", 15) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 16) + pos_live_lysosome_in,
+        # ----------------------------------------------------------------------
+        ("biotisr-lysosome-sr-3-live-in", 0) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 1) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 2) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 3) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 4) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 5) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 6) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 7) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 8) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 9) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 10) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 11) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 12) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 13) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 14) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 15) + pos_live_lysosome_in,
+        ("biotisr-lysosome-sr-3-live-in", 16) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 17) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 18) + pos_live_lysosome_in,
         # ("biotisr-lysosome-sr-3-live-in", 19) + pos_live_lysosome_in,

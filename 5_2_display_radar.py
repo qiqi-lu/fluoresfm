@@ -12,8 +12,8 @@ from dataset_analysis import dataset_names_radar
 plt.rcParams["svg.fonttype"] = "none"
 
 # ------------------------------------------------------------------------------
-dataset_group = "internal_dataset"
-# dataset_group = "external_dataset"
+# dataset_group = "internal_dataset"
+dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"
@@ -189,9 +189,10 @@ writer_stat = pandas.ExcelWriter(
 
 methods_mean = [meth[1] + "-mean" for meth in methods_info]
 methods_std = [meth[1] + "-std" for meth in methods_info]
-methods_median = [meth[1] + "-median-diff" for meth in methods_info]
+methods_median_diff = [meth[1] + "-median-diff" for meth in methods_info]
 methods_IC_low = [meth[1] + "-IC (low)" for meth in methods_info]
 methods_IC_high = [meth[1] + "-IC (high)" for meth in methods_info]
+methods_median = [meth[1] + "-median" for meth in methods_info]
 
 
 for i_metric, metric in enumerate(metrics):
@@ -227,12 +228,16 @@ for i_metric, metric in enumerate(metrics):
             m_ic = [
                 f"{m:.4f} ({l:.4f}, {h:.4f})"
                 for m, l, h in zip(
-                    df_metric[methods_median[i_meth]],
+                    df_metric[methods_median_diff[i_meth]],
                     df_metric[methods_IC_low[i_meth]],
                     df_metric[methods_IC_high[i_meth]],
                 )
             ]
-            df_save_stat[titles[i_meth] + "-median(IC)"] = m_ic
+            df_save_stat[titles[i_meth] + "-median-diff(IC)"] = m_ic
+        if i_meth == 0:
+            medi = [f"{m:.4f}" for m in df_metric[methods_median[i_meth]]]
+            df_save_stat[titles[i_meth] + "-median"] = medi
+
     df_save_stat.to_excel(writer_stat, sheet_name=metric, index=True)
 
 writer.close()

@@ -15,8 +15,8 @@ from scipy.stats import pearsonr
 plt.rcParams["svg.fonttype"] = "none"
 
 # ------------------------------------------------------------------------------
-dataset_group = "internal_dataset"
-# dataset_group = "external_dataset"
+# dataset_group = "internal_dataset"
+dataset_group = "external_dataset"
 
 prefix = "compare_different_methods"
 # prefix = "compare_different_text"
@@ -36,13 +36,11 @@ methods_info = (
     ("GT", "gt", "#000000"),
 )
 
-
-colors_task = {"sr": "#D95D5B", "dcv": "#57AA3E", "dn": "#4D8FCB"}
 metric = "Resolution (DA)"
 
 # ------------------------------------------------------------------------------
 # datasets
-id_dataset_show = dataset_names_radar[dataset_group]
+id_dataset_show = dataset_names_radar[dataset_group]  # only show the dataset in radar
 num_dataset_show = len(id_dataset_show)
 
 # methods
@@ -65,6 +63,8 @@ print("[INFO] Number of dataset (show):", num_dataset_show)
 print("-" * 80)
 
 # ------------------------------------------------------------------------------
+# show the scatter plot
+# ------------------------------------------------------------------------------
 print("-" * 80)
 print(f"[INFO] Metric: {metric}")
 
@@ -73,10 +73,6 @@ df_metric = pandas.read_excel(path_xlsx, sheet_name=metric)[
 ]
 df_metric = df_metric[df_metric["dataset-name"].isin(id_dataset_show)]
 df_metric = df_metric.set_index("dataset-name").loc[id_dataset_show].reset_index()
-
-fig, axes = plt.subplots(
-    nrows=1, ncols=2, figsize=(6, 3), dpi=600, constrained_layout=True
-)
 
 if threshold_resolution is not None:
     print(
@@ -97,6 +93,7 @@ if threshold_resolution is not None:
     # drop the outliers
     df_metric = df_metric.drop(id_drops)
     print(f"[INFO] Number of dataset (show) after filtering:", len(df_metric))
+    # update the dataset names to show
     id_dataset_show = df_metric["dataset-name"].values
 
 # get max and min value
@@ -121,7 +118,10 @@ dict_line = dict(linestyle="-", linewidth=1, alpha=0.5)
 dict_line_1 = dict(linestyle="--", linewidth=1, alpha=0.5)
 fontsize = 8
 dict_text = dict(fontsize=fontsize, ha="center", va="center")
+dict_fig = dict(dpi=600, constrained_layout=True)
 
+# ------------------------------------------------------------------------------
+fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(6, 3), **dict_fig)
 ax = axes[0]
 ax_zoomin = axes[1]
 
@@ -201,7 +201,7 @@ df_metric = pandas.read_excel(path_xlsx, sheet_name=metric)[
 ]
 df_metric = df_metric[df_metric["dataset-name"].isin(id_dataset_show)]
 df_metric = df_metric.set_index("dataset-name").loc[id_dataset_show].reset_index()
-# rename the columns
+
 df_save = pandas.DataFrame()
 df_save["dataset-name"] = df_metric["dataset-name"]
 df_save["task"] = df_metric["task"]

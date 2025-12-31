@@ -213,5 +213,10 @@ Before training, our code first uses the information in the information `xlsx` f
 ### Running time
 The processing time for a 256x256 image is about 0.30 seconds, 512x512 image is about 2.73 seconds, and 1024x1024 image is about 7.63 seconds on a Nvidia RTX 4090D GPU.
 
+### Warnings and Recommondations :warning:
+1. When the target metadata is unknow, only using the task, structure, input metadata, and the target microscope type information, FluoResFM can still obtain an acceptable restoration. In such cases, we recommend selecting an existing target microscope type in the training data.
+2. To minimize restoration error as much as possible, especially on data that differ substantially from the training distribution, we recommend fine-tuning the model with one or a few paired samples from the target domain.
+3. Incorrectly specifying the structure type may result in distortion of detailed structures in the restored image, which can lead to inaccurate morphology-aware measurements. To help users recognize the correct structure type, we have implemented an image retrieval-based classifier that can automatically identify the structure type of the input image. The most probable structure type provided by the classifier can serve as a useful reference for users.
+
 ## LICENSE
 This project is licensed under the MIT License - see the LICENSE file for details.

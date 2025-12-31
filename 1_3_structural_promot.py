@@ -13,20 +13,35 @@ excel_test = "dataset_test-v2.xlsx"
 
 # keys = ["task#", "structure#", "input microscope-device", "target microscope-device"]
 keys = ["structure#"]
+# keys = ["input microscope-device"]
+# keys = ["target microscope-device"]
 
 # ------------------------------------------------------------------------------
 all_items = []
 # get the dictionary
 for key in keys:
-    for excel in [excel_train, excel_test]:
+    for i_excel, excel in enumerate([excel_train, excel_test]):
         df = pandas.read_excel(excel)
-        items = df[key]
-        items = items.unique()
-        items = items.tolist()
-        all_items.extend(items)
-        print("-" * 50)
-        print("[INFO] {} - {}".format(key, excel))
-        print(items)
+        if i_excel == 0:
+            items = df[key]
+            items = items.unique()
+            items = items.tolist()
+            all_items.extend(items)
+            print("-" * 50)
+            print("[INFO] {} - {}".format(key, excel))
+            for i, item in enumerate(items):
+                print("{} - {}".format(i, item))
+        if i_excel == 1:
+            for inex in ["in", "ex"]:
+                df_part = df[df["in#ex"] == inex]
+                items = df_part[key]
+                items = items.unique()
+                items = items.tolist()
+                all_items.extend(items)
+                print("-" * 50)
+                print(f"[INFO] {key} - {excel} ({inex})")
+                for i, item in enumerate(items):
+                    print("{} - {}".format(i, item))
 
 print("-" * 80)
 print("[INFO] Final dictionary:")
