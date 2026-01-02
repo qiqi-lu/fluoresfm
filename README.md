@@ -49,6 +49,8 @@ The text encoder from [BiomedCLIP](https://huggingface.co/microsoft/BiomedCLIP-P
 ![unet](/markdown/figures/unet.png)
 **Detailed architecture of FluoResFM.** FluoResFM takes the low-quality image and its corresponding textual prior information as inputs and outputs the restored high-quality image. It employs a text-conditioned U-Net as backbone, which consists of an encoder, a decoder, and skip connections. The encoder begins with a convolution layer, and the decoder ends with a convolution layer to generate the restored images. Each scale of the encoder and decoder contains a residual block and a text-image fusion block. The text prompt is projected into a text embedding using a text embedder and then injected into the cross-attention layer within the text-image fusion block. Only blocks labeled with “fire” markers are fine-finetuned during the fine-tuning stage.
 
+
+
 A small example data and pre-trained model can be download from
 1. Baidu Yun: https://pan.baidu.com/s/16gSqctnA0EqE8zHGTL4yFg?pwd=ypcm.
 2. Google Drive:  https://drive.google.com/drive/folders/1WoTo2at_4-9HGW_b7Ia1o_axYQqHqzJA?usp=drive_link
@@ -147,6 +149,18 @@ The original datasets can be download from the following links:
 | GranuSEG     | DN        | nuclei                | confocal    | [Link](https://cbia.fi.muni.cz/datasets/)                        |
 | ColonTissue  | DCV       | nuclei                | confocal    | [Link](https://cbia.fi.muni.cz/datasets/)                        |
 
+#### Datasets used for other tasks
+Datasets sued for 3D image restoration, surface projection from 3D volumes, isotropic reconstruction, and super-resolution with 3x, 4x, and 8x up-sampling factors.
+| Dataset    | Task       | Imaging object   | Microscopy       | Link                                      |
+|------------|------------|------------------|------------------|-------------------------------------------|
+| RCAN-3D    | 3D DCV     | MT               | confocal, STED   | [link](https://zenodo.org/records/4624364#.YF4lBa9Kgal) |
+| CARE-proj  | Proj       | membrane         | confocal         | [link](https://doi.org/10.17617/3.FDFZOF) |
+| CARE-iso   | ISO        | histone          | light-sheet      | [link](https://doi.org/10.17617/3.FDFZOF) |
+| BioSR-3x   | SR (×3)    | F-actin          | WF, SIM          | [link](https://figshare.com/articles/dataset/BioSR/13264793) |
+| TA-GAN     | SR (×4)    | synaptic protein | confocal, STED   | [link](https://s3.valeria.science/flclab-tagan/index.html) |
+| DL-SMLM    | SR (×8)    | MT               | WF, STORM        | [link](https://doi.org/10.6084/m9.figshare.26879218.v1) |
+
+
 The processed datasets are available upon request from the corresponding author and can be provided via physical transfer if necessary.
 
 ## DATA PROCESSING
@@ -202,13 +216,32 @@ Before training, our code first uses the information in the information `xlsx` f
 - `display_mask.py` : display segmentation results of selected samples in the internal and external datasets.
 
 #### finetune
+**Only the first convolutional layer and the last convolutional layer of the backbone are fine-tuned during the fine-tuning stage.**
 - `display_finetune_metrics.py` : display the metrics of the finetuned models. Mutlple datasets, three metrics.
 - `display_finetune_training_curve.py` : display the training curve of the finetuned models. Single dataset. To present the overfitting phenomenon.
 - `display_finetune_num_sample.py` : display the effect of numbder of samples used for finetuning.
+- `dispaly_finetune_3d.py` : display the results in 3D image restoration task.
+- `display_finetune_proj.py` : display the results in projection image restoration task.
+- `display_finetune_iso_wo_gt.py` : display the results in isotropic image restoration task without ground truth.
+- `display_finetune_srx.py` : display the results in image restoration task with various scale factors.
+
+#### image classfication
+The file start with `classfication_` is used to implement the image retrieval-based structure type prediction directly from input images.
+- `classification_dataset_construct.py` : construct the dataset for image retrieval-based structure type prediction, including searching database and test images.
+- `classification_manual.py` : manually anotate the structure type of each image in the test dataset.
+- `classification_dataset_embedding.py` : embed the images using the text embedder.
+- `classification_predct.py` : predict the structure type of each image in the test dataset.
+
+#### morphology-aware measurements
+- `analysis_ccp_single_sample(dataset).py` : calculate the CCP diameter in a single sample or a single dataset.
+- `analysis_ER_node_single_sample(dataset).py` : calculate the ER node number/degree in a single sample or a single dataset.
+- `analysis_mt_single_sample(dataset).py` : calculate the filament length in MT network in a single sample or a single dataset.
+- `analysis_text_confusion_matrix.py` : confusion matrix analysis of structure type prompt impact.
 
 ### Other functions
 - `substract_background.py` : substract the background of the images using rolling-ball algorithm.
 - `image_denoising.py` : denoise image using conventional denoising algorithms, such as non-local means.
+- `collect_datasets_info.py` : collect the information of each dataset to generate Supplmentary Data 1 in our manuscript.
 
 ### Running time
 The processing time for a 256x256 image is about 0.30 seconds, 512x512 image is about 2.73 seconds, and 1024x1024 image is about 7.63 seconds on a Nvidia RTX 4090D GPU.
