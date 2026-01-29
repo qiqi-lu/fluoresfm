@@ -301,7 +301,7 @@ fig.savefig(
 df_source_data = pandas.DataFrame(columns=methods_name)
 datas = []
 for i_meth in range(num_methods):
-    res = results_show[i_meth]["analysis_info"][:, 1]
+    res = results_show[i_meth]["analysis_info"][:, 1]  # shape = (num_filaments,)
     datas.append(list(res))
 length_max = max([len(data) for data in datas])
 for i_meth in range(num_methods):

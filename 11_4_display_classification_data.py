@@ -197,3 +197,13 @@ axes[3].axis("off")
 
 fig.savefig(os.path.join(path_analysis, "distribution_data.png"))
 fig.savefig(os.path.join(path_analysis, "distribution_data.svg"))
+
+# save source data (counts_train, counts_test_in) to excel ---------------------
+dataframe = pandas.DataFrame(
+    columns=["structure type", "counts_train", "counts_test_in", "counts_test_ex"]
+)
+dataframe["structure type"] = structure_types_train
+dataframe["counts_train"] = counts_train
+dataframe["counts_test_in"] = counts_test_in
+dataframe["counts_test_ex"] = counts_test_ex
+dataframe.to_excel(os.path.join(path_analysis, "distribution_data.xlsx"), index=False)

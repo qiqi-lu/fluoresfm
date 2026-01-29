@@ -178,6 +178,7 @@ fig, axes = plt.subplots(nrows=nr, ncols=nc, figsize=(nc * 3, nr * 3), **dict_fi
 imgs_show = imgs_meth
 results_show = results_meth
 
+source_data = []
 for i_meth in range(nr):
     img = imgs_show[i_meth]
     res = results_show[i_meth]
@@ -285,6 +286,8 @@ for i_meth in range(nr):
         color="#C23637",
         **dict_hist,
     )
+    source_data.append(df_analysis_info["Total Length"])
+
     if i_meth == nr - 1:
         ax[3].set_xlabel("Filament length ($\mu$m)")
     # ax_len.set_ylabel("Frequency")
@@ -309,4 +312,12 @@ fig.savefig(
 )
 fig.savefig(
     os.path.join(path_figure, f"{filenames[id_sample_show].split('.')[0]}_image.svg")
+)
+
+# save source data (total length)
+df_source_data = pandas.DataFrame(columns=methods_name, data=source_data)
+df_source_data.to_csv(
+    os.path.join(
+        path_figure, f"{filenames[id_sample_show].split('.')[0]}_source_data.csv"
+    )
 )

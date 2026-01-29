@@ -201,16 +201,19 @@ def plot_voilin(ax, data, metric, y_lim):
                 pos_y + i * 0.02,
                 pvalue,
             )
+    return pvalues
 
 
 y_lim = ((17, 39), (0.35, 1.07), (0.25, 1.05))
 
+pvalues_all = []
 for i_metric, metric in enumerate(metrics_name):
     ax = axes[i_metric]
     # set ax to be square
     values = metrics_value_each_sample[metric]
     values = np.concatenate(values, axis=0)
-    plot_voilin(ax, values, metric, y_lim)
+    pvs = plot_voilin(ax, values, metric, y_lim)
+    pvalues_all.append([metric, pvs])
     ax.set_box_aspect(1)
     ax.set_ylabel(metric)
 
@@ -224,4 +227,8 @@ for metric in metrics_name:
     values = np.concatenate(values, axis=0)
     df = pd.DataFrame(values, columns=methods_title)
     df.to_excel(writer, sheet_name=metric, index=False)
+
+# save pvalues into excel
+df_pvalues = pd.DataFrame(pvalues_all, columns=["Metric", "Pvalues"])
+df_pvalues.to_excel(writer, sheet_name="Pvalues", index=False)
 writer.close()

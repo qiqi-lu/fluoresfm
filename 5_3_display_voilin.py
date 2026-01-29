@@ -28,12 +28,13 @@ direction_fig = "horizontal"  # arrangement of different metrics
 # suffix, inex, task_fusion = "wot-our-fusion", "internal_dataset", True
 # suffix, inex, task_fusion = "wot-our-fusion", "external_dataset", True
 
-# suffix, inex, task_fusion = "tsmm-our-fusion", "internal_dataset", True
-suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
+suffix, inex, task_fusion = "tsmm-our-fusion", "internal_dataset", True
+# suffix, inex, task_fusion = "tsmm-our-fusion", "external_dataset", True
 
 
 # ------------------------------------------------------------------------------
-metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
+# metrics_name = ["PSNR", "MSSSIM", "ZNCC", "RSE", "RSP"]
+metrics_name = ["PSNR", "MSSSIM", "ZNCC"]
 tasks = ["sr", "dcv", "dn"]
 
 path_statistic = os.path.join("results", "statistic", inex)
@@ -328,6 +329,9 @@ def plot_voilin(ax, data, metric, y_lim):
         # alternative = "less"
     # alternative = "two-sided"
 
+    if "wot" in suffix:
+        alternative = "less"
+
     # add significance test asterisks
     pvalues = []
     for pair in test_pairs:
@@ -383,6 +387,7 @@ def plot_voilin(ax, data, metric, y_lim):
                 pos_y + i * 0.02 * yaxis_range,
                 pvalue,
             )
+    return pvalues
 
 
 # ------------------------------------------------------------------------------
@@ -391,6 +396,8 @@ def plot_voilin(ax, data, metric, y_lim):
 writer = pandas.ExcelWriter(
     os.path.join(path_figure, f"compare_{suffix}.xlsx"), engine="xlsxwriter"
 )
+
+pvalues_all = []
 
 # ------------------------------------------------------------------------------
 if task_fusion == False:
@@ -414,7 +421,8 @@ if task_fusion == False:
 
             # ------------------------------------------------------------------
             # plot the data
-            plot_voilin(ax, data, metric, y_lim_dict[inex][task])
+            pvs = plot_voilin(ax, data, metric, y_lim_dict[inex][task])
+            pvalues_all.append([metric, task, pvs])
 
             if i_metric == 0:
                 ax.set_title(task.upper() + f" (N = {data.shape[0]})")
@@ -448,7 +456,9 @@ if task_fusion == True:
         data = pandas.concat(data, axis=0)
         # ----------------------------------------------------------------------
         # plot the data
-        plot_voilin(ax, data, metric, y_lim_dict[inex]["fusion"])
+        pvs = plot_voilin(ax, data, metric, y_lim_dict[inex]["fusion"])
+        pvalues_all.append([metric, task, pvs])
+
         ax.set_ylabel(metric)
         if i_metric == 0:
             ax.set_title(f"N = {data.shape[0]}")
@@ -459,6 +469,10 @@ if task_fusion == True:
         # reindex
         data = data.reset_index(drop=True)
         data.to_excel(writer, sheet_name=metric, index=True)
+
+# save all the pvalues in to excel
+pvalues_all = pandas.DataFrame(pvalues_all, columns=["metric", "task", "pvalues"])
+pvalues_all.to_excel(writer, sheet_name="pvalues", index=False)
 
 # ------------------------------------------------------------------------------
 writer.close()
